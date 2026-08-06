@@ -1,0 +1,35 @@
+# Secrets & Environment Files
+.env
+.env.local
+.env.*.local
+*.env
+backend/.env
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+.venv/
+venv/
+env/
+
+# Build Outputs
+dist/
+build/
+frontend/dist/
+
+# Python & Django Cache / Local Database
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+db.sqlite3
+backend/db.sqlite3
+.pytest_cache/
+
+# System / OS Files
+.DS_Store
+Thumbs.db
+
+# Documents & HTML Mockups
+*.pdf
+*.html
