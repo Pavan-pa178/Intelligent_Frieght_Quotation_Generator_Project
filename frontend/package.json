@@ -6,7 +6,7 @@
   "description": "Freight Quote Generator (PORTLINE) — React + Vite + Tailwind CSS frontend",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build .",
     "preview": "vite preview",
     "lint": "eslint src --ext .js,.jsx"
   },
