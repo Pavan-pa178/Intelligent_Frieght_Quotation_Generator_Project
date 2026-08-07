@@ -23,7 +23,12 @@ export function computeLiveEstimate(formState = {}) {
   const dg = typeof destGateway === 'object' ? destGateway : getGatewayByCode(destGateway) || resolveGateway(destGateway, mode)[0]
 
   // Check minimal completeness
-  const hasItems = cargoItems && cargoItems.length > 0 && cargoItems.some(i => (parseFloat(i.gross_weight_kg) > 0) || (parseFloat(i.weight_per_unit_kg || i.weight) > 0) || i.package_type === 'CONTAINER')
+  const hasItems = cargoItems && cargoItems.length > 0 && cargoItems.some(i =>
+    i.package_type === 'CONTAINER' ||
+    (parseFloat(i.gross_weight_kg) > 0) ||
+    (parseFloat(i.weight_per_unit_kg || i.weight) > 0) ||
+    (parseFloat(i.quantity || i.qty) > 0)
+  )
   const isMinimallyComplete = Boolean(og && dg && hasItems)
 
   if (!isMinimallyComplete) {
