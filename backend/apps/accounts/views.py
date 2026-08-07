@@ -11,7 +11,7 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        email = request.data.get('email', '').strip()
+        email = request.data.get('email', '').strip().lower()
         password = request.data.get('password', '').strip()
 
         if not email or not password:
@@ -20,12 +20,12 @@ class LoginView(APIView):
         # Authenticate against Django database
         user = authenticate(username=email, password=password)
         if user is None:
-            # Check by email if username differs
+            # Case-insensitive check by email if username differs
             try:
-                user_obj = User.objects.get(email=email)
+                user_obj = User.objects.get(email__iexact=email)
                 if user_obj.check_password(password):
                     user = user_obj
-            except User.DoesNotExist:
+            except (User.DoesNotExist, User.MultipleObjectsReturned):
                 user = None
 
         if user is None:
@@ -45,8 +45,8 @@ class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        email = request.data.get('email', '').strip()
-        if User.objects.filter(email=email).exists():
+        email = request.data.get('email', '').strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
             return Response({'detail': 'An account with this email address already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = RegisterSerializer(data=request.data)

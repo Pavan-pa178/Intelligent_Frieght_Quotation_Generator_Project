@@ -1,6 +1,6 @@
 import { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react'
 import { seedShipments, demoUser } from '../lib/mockData'
-import { loginRequest, signupRequest, logoutRequest, trackShipmentRequest } from '../lib/api'
+import { loginRequest, signupRequest, logoutRequest, trackShipmentRequest, fetchShipments } from '../lib/api'
 
 const AppContext = createContext(null)
 
@@ -57,7 +57,23 @@ export function AppProvider({ children }) {
       } catch {
         // ignore
       }
-      setShipments(loadUserShipments(user))
+      const local = loadUserShipments(user)
+      setShipments(local)
+      
+      // Fetch user shipments from backend API
+      fetchShipments().then(remote => {
+        if (Array.isArray(remote) && remote.length > 0) {
+          setShipments(prev => {
+            const combined = [...prev]
+            remote.forEach(r => {
+              if (!combined.some(c => c.tn === r.tn)) {
+                combined.push(r)
+              }
+            })
+            return combined
+          })
+        }
+      }).catch(() => {})
     } else {
       try {
         localStorage.removeItem('portline_user_profile')

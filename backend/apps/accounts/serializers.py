@@ -45,7 +45,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         name = validated_data.pop('name', '')
         company = validated_data.pop('company', 'Company')
         phone = validated_data.pop('phone', '')
-        email = validated_data['email']
+        email = validated_data['email'].strip().lower()
         password = validated_data['password']
 
         names = name.split(' ') if name else []

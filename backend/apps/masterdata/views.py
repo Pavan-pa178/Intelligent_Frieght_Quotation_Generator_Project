@@ -45,3 +45,20 @@ class ContainerTypesView(APIView):
 
     def get(self, request):
         return Response(CONTAINER_TYPES_DATA)
+
+from core.mongodb import get_collection
+import datetime
+
+class ContactView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        payload = request.data or {}
+        payload['created_at'] = datetime.datetime.utcnow().isoformat()
+        try:
+            col = get_collection('contact_messages')
+            if col is not None:
+                col.insert_one(payload)
+        except Exception:
+            pass
+        return Response({'ok': True, 'message': 'Message received successfully'}, status=status.HTTP_201_CREATED)
