@@ -40,17 +40,41 @@ SEED_SHIPMENTS = [
   }
 ]
 
+from core.mongodb import get_collection
+
 class ShipmentListCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        try:
+            col = get_collection('shipments')
+            if col is not None:
+                db_shipments = list(col.find({}, {'_id': 0}))
+                if db_shipments:
+                    return Response(db_shipments + SEED_SHIPMENTS)
+        except Exception:
+            pass
         return Response(SEED_SHIPMENTS)
 
     def post(self, request):
         payload = request.data
+        if not payload:
+            return Response({'detail': 'Payload empty'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            col = get_collection('shipments')
+            if col is not None:
+                tn = payload.get('tn')
+                if tn:
+                    col.update_one({'tn': tn}, {'$set': payload}, upsert=True)
+                else:
+                    col.insert_one(payload)
+        except Exception:
+            pass
+
         return Response({
             'shipment_id': f"SHP-{uuid.uuid4().hex[:8].upper()}",
-            'reference': payload.get('reference', 'PORT-REQ-2026'),
+            'reference': payload.get('tn', 'PORT-REQ-2026'),
             'status': 'DRAFT_CREATED',
             'data': payload
         }, status=status.HTTP_201_CREATED)
@@ -59,7 +83,16 @@ class TrackingDetailView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, tracking_number):
-        tn = tracking_number.strip().upper()
+        tn = (tracking_number or '').strip().upper()
+        try:
+            col = get_collection('shipments')
+            if col is not None:
+                found_db = col.find_one({'tn': {'$regex': f'^{tn}$', '$options': 'i'}}, {'_id': 0})
+                if found_db:
+                    return Response(found_db)
+        except Exception:
+            pass
+
         found = next((s for s in SEED_SHIPMENTS if s['tn'].upper() == tn), None)
         if found:
             return Response(found)

@@ -167,10 +167,20 @@ export function getSavedQuotes() {
   }
 }
 
-export function saveQuote(quote) {
+export async function saveQuote(quote) {
   const existing = getSavedQuotes()
   const updated = [quote, ...existing.filter(q => q.id !== quote.id)]
   localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+  if (!MOCK_MODE) {
+    try {
+      await apiFetch('/api/v1/quotes/', {
+        method: 'POST',
+        body: JSON.stringify(quote)
+      })
+    } catch {
+      // fallback saved locally
+    }
+  }
   return quote
 }
 

@@ -234,20 +234,55 @@ SEED_QUOTES = [
   }
 ]
 
+from core.mongodb import get_collection
+
 class QuoteListCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        try:
+            col = get_collection('quotes')
+            if col is not None:
+                db_quotes = list(col.find({}, {'_id': 0}))
+                if db_quotes:
+                    # Return saved DB quotes prepended to seed quotes
+                    return Response(db_quotes + SEED_QUOTES)
+        except Exception:
+            pass
         return Response(SEED_QUOTES)
 
     def post(self, request):
         payload = request.data
+        if not payload:
+            return Response({'detail': 'Payload empty'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            col = get_collection('quotes')
+            if col is not None:
+                # Upsert by quote id
+                qid = payload.get('id')
+                if qid:
+                    col.update_one({'id': qid}, {'$set': payload}, upsert=True)
+                else:
+                    col.insert_one(payload)
+        except Exception as e:
+            pass
+
         return Response(payload, status=status.HTTP_201_CREATED)
 
 class QuoteDetailView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, quote_id):
-        qid = quote_id.strip().upper()
+        qid = (quote_id or '').strip().upper()
+        try:
+            col = get_collection('quotes')
+            if col is not None:
+                found_db = col.find_one({'id': {'$regex': f'^{qid}$', '$options': 'i'}}, {'_id': 0})
+                if found_db:
+                    return Response(found_db)
+        except Exception:
+            pass
+
         found = next((q for q in SEED_QUOTES if q['id'].upper() == qid), SEED_QUOTES[0])
         return Response(found)

@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/freightquote_db')
-DB_NAME = os.getenv('MONGO_DB_NAME', 'freightquote_db')
+MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/freight_db')
+DB_NAME = os.getenv('MONGO_DB_NAME', 'freight_db')
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ def get_mongo_db():
 
     try:
         from pymongo import MongoClient
-        _mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=2000)
+        _mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
         # Test connection
         _mongo_client.admin.command('ping')
         _mongo_db = _mongo_client[DB_NAME]
