@@ -70,15 +70,7 @@ export async function loginRequest({ email, password }) {
       return found.user
     }
 
-    // Default demo account handling
-    if (password === 'demo' || password.length >= 4) {
-      const u = { ...demoUser, email }
-      saveMockUser(email, { password, user: u })
-      setToken('mock_jwt_token_' + Date.now())
-      return u
-    }
-
-    throw new Error('Invalid email or password. Please check your credentials.')
+    throw new Error('No account found with this email. Please sign up first.')
   }
 
   const data = await apiFetch('/api/v1/auth/login/', {
