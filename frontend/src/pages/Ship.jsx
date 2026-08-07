@@ -377,6 +377,7 @@ export default function Ship() {
                       type="date"
                       value={readyDate}
                       onChange={(e) => setReadyDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
                       className={brandInputStyle}
                     />
                   </div>
@@ -388,6 +389,7 @@ export default function Ship() {
                       type="date"
                       value={reqDeliveryDate}
                       onChange={(e) => setReqDeliveryDate(e.target.value)}
+                      min={readyDate || new Date().toISOString().split('T')[0]}
                       className={brandInputStyle}
                     />
                   </div>
