@@ -61,8 +61,8 @@ export function AppProvider({ children }) {
       setShipments(local)
       
       // Fetch user shipments from backend API
-      fetchShipments().then(remote => {
-        if (Array.isArray(remote) && remote.length > 0) {
+      fetchShipments(user.email).then(remote => {
+        if (Array.isArray(remote)) {
           setShipments(prev => {
             const combined = [...prev]
             remote.forEach(r => {

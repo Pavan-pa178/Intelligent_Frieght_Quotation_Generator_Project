@@ -120,12 +120,13 @@ export function logoutRequest() {
 
 // ---------------- Shipments ----------------
 
-export async function fetchShipments() {
+export async function fetchShipments(email) {
   if (MOCK_MODE) {
     await delay(200)
     return seedShipments
   }
-  return apiFetch('/api/v1/shipments/')
+  const query = email ? `?email=${encodeURIComponent(email)}` : ''
+  return apiFetch(`/api/v1/shipments/${query}`)
 }
 
 export async function createShipmentRequest(payload) {
@@ -184,13 +185,14 @@ export async function saveQuote(quote) {
   return quote
 }
 
-export async function fetchQuotes() {
+export async function fetchQuotes(email) {
   if (MOCK_MODE) {
     await delay(200)
     const local = getSavedQuotes()
     return [...local, ...seedQuotes]
   }
-  return apiFetch('/api/v1/quotes/')
+  const query = email ? `?email=${encodeURIComponent(email)}` : ''
+  return apiFetch(`/api/v1/quotes/${query}`)
 }
 
 export async function fetchQuoteById(id) {

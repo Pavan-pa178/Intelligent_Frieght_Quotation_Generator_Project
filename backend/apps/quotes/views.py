@@ -240,15 +240,20 @@ class QuoteListCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        user_email = request.query_params.get('email', '').strip().lower()
         try:
             col = get_collection('quotes')
             if col is not None:
-                db_quotes = list(col.find({}, {'_id': 0}))
+                query = {'user_email': user_email} if user_email else {}
+                db_quotes = list(col.find(query, {'_id': 0}))
                 if db_quotes:
-                    # Return saved DB quotes prepended to seed quotes
-                    return Response(db_quotes + SEED_QUOTES)
+                    return Response(db_quotes)
+                elif user_email and user_email != 'demo@portline.in':
+                    return Response([])
         except Exception:
             pass
+        if user_email and user_email != 'demo@portline.in':
+            return Response([])
         return Response(SEED_QUOTES)
 
     def post(self, request):
@@ -256,6 +261,10 @@ class QuoteListCreateView(APIView):
         if not payload:
             return Response({'detail': 'Payload empty'}, status=status.HTTP_400_BAD_REQUEST)
         
+        user_email = payload.get('user_email') or (request.user.email if request.user and request.user.is_authenticated else '')
+        if user_email:
+            payload['user_email'] = user_email.lower()
+
         try:
             col = get_collection('quotes')
             if col is not None:

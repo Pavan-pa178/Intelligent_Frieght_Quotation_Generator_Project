@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeftRight, Plus, Trash2, Ship as ShipIcon, Plane, Truck, Zap, CheckCircle2 } from 'lucide-react'
+import { ArrowLeftRight, Plus, Trash2, Ship as ShipIcon, Plane, Truck, Zap, CheckCircle2, Lock } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
@@ -9,6 +9,16 @@ import { resolveGateway } from '../lib/pricing/gateway'
 import { computeLiveEstimate } from '../lib/pricing/index'
 
 const DRAFT_KEY = 'portline_ship_draft_v1'
+
+function getMinDeliveryDate(readyDateStr) {
+  if (!readyDateStr) {
+    const d = new Date(Date.now() + 2 * 86400000)
+    return d.toISOString().split('T')[0]
+  }
+  const d = new Date(readyDateStr)
+  d.setDate(d.getDate() + 2)
+  return d.toISOString().split('T')[0]
+}
 
 const SERVICE_CHIPS = [
   { key: 'OCEAN', label: 'Ocean Freight', icon: ShipIcon },
@@ -40,8 +50,10 @@ function newCargoItem(isFcl = true) {
 export default function Ship() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { addShipment, user } = useApp()
+  const { addShipment, user, loggedIn } = useApp()
   const toast = useToast()
+
+  const [showAuthGate, setShowAuthGate] = useState(false)
 
   // 1. Route state
   const [originGw, setOriginGw] = useState(null)
@@ -56,7 +68,7 @@ export default function Ship() {
   
   const tomorrowStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
   const [readyDate, setReadyDate] = useState(tomorrowStr)
-  const [reqDeliveryDate, setReqDeliveryDate] = useState('')
+  const [reqDeliveryDate, setReqDeliveryDate] = useState(getMinDeliveryDate(tomorrowStr))
 
   // 2. Service type state
   const [mode, setMode] = useState(params.get('service')?.toUpperCase() || 'OCEAN')
@@ -80,10 +92,10 @@ export default function Ship() {
   const [tempMinC, setTempMinC] = useState('-18')
   const [tempMaxC, setTempMaxC] = useState('-10')
 
-  // 5. Contact details state
-  const [fullName, setFullName] = useState(user?.name || '')
-  const [companyName, setCompanyName] = useState(user?.company || '')
-  const [email, setEmail] = useState(user?.email || '')
+  // 5. Destination contact details state — starts empty so user types recipient info
+  const [fullName, setFullName] = useState('')
+  const [companyName, setCompanyName] = useState('')
+  const [email, setEmail] = useState('')
   const [country, setCountry] = useState('India')
   const [hasCustomerCode, setHasCustomerCode] = useState(false)
   const [existingCustomerCode, setExistingCustomerCode] = useState('')
@@ -99,9 +111,6 @@ export default function Ship() {
         if (d.mode) setMode(d.mode)
         if (d.loadType) setLoadType(d.loadType)
         if (d.incoterm) setIncoterm(d.incoterm)
-        if (d.fullName) setFullName(d.fullName)
-        if (d.companyName) setCompanyName(d.companyName)
-        if (d.email) setEmail(d.email)
         toast('Restored draft - continue where you left off')
       }
     } catch {
@@ -113,14 +122,14 @@ export default function Ship() {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        const draftData = { mode, loadType, incoterm, fullName, companyName, email }
+        const draftData = { mode, loadType, incoterm }
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
       } catch {
         // ignore storage error
       }
     }, 1000)
     return () => clearTimeout(timer)
-  }, [mode, loadType, incoterm, fullName, companyName, email])
+  }, [mode, loadType, incoterm])
 
   const estimate = useMemo(() => {
     return computeLiveEstimate({
@@ -154,13 +163,23 @@ export default function Ship() {
     setCargo((prev) => prev.filter((item) => item.id !== id))
   }
 
+  const checkAuthGate = () => {
+    if (!loggedIn && !user) {
+      setShowAuthGate(true)
+      return true
+    }
+    return false
+  }
+
   const handleSubmitQuote = async () => {
+    if (checkAuthGate()) return
+
     if (!originGw || !destGw) {
       toast('Please select origin and destination locations from master data')
       return
     }
     if (!fullName.trim() || !email.trim() || !companyName.trim()) {
-      toast('Please fill in your contact information')
+      toast('Please fill in destination contact information')
       return
     }
 
@@ -171,6 +190,7 @@ export default function Ship() {
 
     const quoteRecord = {
       id: quoteId,
+      user_email: user?.email || email,
       customer: companyName,
       city: originGw.city,
       laneCode: `${originGw.code} → ${destGw.code}`,
@@ -208,6 +228,7 @@ export default function Ship() {
 
     const shipmentRecord = {
       tn,
+      user_email: user?.email || email,
       from: `${originGw.city}, ${originGw.countryCode}`,
       to: `${destGw.city}, ${destGw.countryCode}`,
       service: quoteRecord.mode,
@@ -266,20 +287,29 @@ export default function Ship() {
                     <input
                       type="text"
                       value={originSearch}
-                      onChange={(e) => { setOriginSearch(e.target.value); setShowOriginDropdown(true) }}
-                      onFocus={() => setShowOriginDropdown(true)}
+                      onChange={(e) => {
+                        if (checkAuthGate()) return
+                        setOriginSearch(e.target.value)
+                        setShowOriginDropdown(true)
+                      }}
+                      onFocus={() => {
+                        if (checkAuthGate()) return
+                        setShowOriginDropdown(true)
+                      }}
+                      onClick={() => checkAuthGate()}
                       className={brandInputStyle}
                       placeholder="Search origin port or airport..."
                     />
                     {showOriginDropdown && (
                       <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-md2 border border-brand-line bg-white shadow-md2">
                         {originCandidates.length === 0 ? (
-                          <div className="p-3 text.xs text-brand-slate">No matching ports/airports found</div>
+                          <div className="p-3 text-xs text-brand-slate">No matching ports/airports found</div>
                         ) : (
                           originCandidates.map((g) => (
                             <div
                               key={g.code}
                               onClick={() => {
+                                if (checkAuthGate()) return
                                 setOriginGw(g)
                                 setOriginSearch(`${g.code} — ${g.name}`)
                                 setShowOriginDropdown(false)
@@ -297,7 +327,10 @@ export default function Ship() {
                   {/* Swap button */}
                   <button
                     type="button"
-                    onClick={handleSwap}
+                    onClick={() => {
+                      if (checkAuthGate()) return
+                      handleSwap()
+                    }}
                     className="mx-auto mb-0.5 flex h-[42px] w-[42px] items-center justify-center rounded-full border-[1.5px] border-brand-line bg-brand-cloud text-brand-marine transition-transform hover:rotate-180 hover:bg-brand-marinePale shadow-xs"
                     title="Swap origin and destination"
                   >
@@ -376,20 +409,27 @@ export default function Ship() {
                     <input
                       type="date"
                       value={readyDate}
-                      onChange={(e) => setReadyDate(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setReadyDate(val)
+                        const minDel = getMinDeliveryDate(val)
+                        if (!reqDeliveryDate || reqDeliveryDate < minDel) {
+                          setReqDeliveryDate(minDel)
+                        }
+                      }}
                       min={new Date().toISOString().split('T')[0]}
                       className={brandInputStyle}
                     />
                   </div>
                   <div>
                     <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
-                      Required delivery date <span className="text-brand-slateLight font-normal">(optional)</span>
+                      Required delivery date <span className="text-brand-slateLight font-normal">(min. 2 days after ready date)</span>
                     </label>
                     <input
                       type="date"
                       value={reqDeliveryDate}
                       onChange={(e) => setReqDeliveryDate(e.target.value)}
-                      min={readyDate || new Date().toISOString().split('T')[0]}
+                      min={getMinDeliveryDate(readyDate)}
                       className={brandInputStyle}
                     />
                   </div>
@@ -972,6 +1012,44 @@ export default function Ship() {
           </div>
         </div>
       </section>
+
+      {/* AUTH GATE MODAL */}
+      {showAuthGate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-brand-line text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-orangePale text-brand-orange">
+              <Lock className="h-7 w-7" />
+            </div>
+            <h3 className="font-display text-xl font-bold text-brand-navy">Login Required</h3>
+            <p className="mt-2 text-sm text-brand-slate leading-relaxed">
+              Please log in or create an account to select route origins and generate live freight quotations.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => navigate('/login?redirect=/ship')}
+                className="w-full rounded-xl bg-brand-navy py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-marine shadow-md"
+              >
+                Log in
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/login?tab=signup&redirect=/ship')}
+                className="w-full rounded-xl border border-brand-line bg-brand-cloud py-3 text-sm font-semibold text-brand-navy hover:bg-brand-marinePale"
+              >
+                Create account
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAuthGate(false)}
+                className="text-xs text-brand-slateLight hover:underline mt-1"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
