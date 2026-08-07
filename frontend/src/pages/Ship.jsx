@@ -410,7 +410,12 @@ export default function Ship() {
                         <button
                           key={chip.key}
                           type="button"
-                          onClick={() => setMode(chip.key)}
+                          onClick={() => {
+                            setMode(chip.key)
+                            if (chip.key !== 'OCEAN') {
+                              setLoadType('LCL')
+                            }
+                          }}
                           className={`flex items-center gap-2 rounded-full border-[1.5px] px-[18px] py-2.5 text-[13.5px] font-semibold transition-colors ${
                             active
                               ? 'border-brand-navy bg-brand-navy text-white'
@@ -514,7 +519,15 @@ export default function Ship() {
                           </label>
                           <select
                             value={item.package_type}
-                            onChange={(e) => updateCargo(item.id, 'package_type', e.target.value)}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              updateCargo(item.id, 'package_type', val)
+                              if (val === 'CONTAINER') {
+                                setLoadType('FCL')
+                              } else {
+                                setLoadType('LCL')
+                              }
+                            }}
                             className={brandInputStyle}
                           >
                             <option value="CONTAINER">Container</option>
