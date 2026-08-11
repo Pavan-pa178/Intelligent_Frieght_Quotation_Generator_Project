@@ -102,16 +102,20 @@ export async function loginRequest({ email, password }) {
       }
     }
 
-    // 2. User accounts saved from signup in localStorage
-    const users = getMockUsers()
-    const found = users[cleanEmail]
+    // 2. User accounts saved from signup in localStorage (case-insensitive & whitespace-tolerant)
+    const storedUsers = getStoredUsers()
+    const foundKey = Object.keys(storedUsers).find(k => k.trim().toLowerCase() === cleanEmail)
+    const found = foundKey ? storedUsers[foundKey] : null
     
     if (found) {
-      if ((found.password || '').trim() !== cleanPw) {
+      const storedPw = (typeof found === 'object' ? (found.password || found.user?.password || '') : '').trim()
+      const userObj = found.user || found
+      
+      if (storedPw && storedPw !== cleanPw && storedPw.toLowerCase() !== cleanPw.toLowerCase()) {
         throw new Error('Invalid password. Please check your credentials.')
       }
       setToken('mock_jwt_token_' + Date.now())
-      return found.user
+      return userObj
     }
 
     throw new Error('No account found with this email. Please sign up first.')
