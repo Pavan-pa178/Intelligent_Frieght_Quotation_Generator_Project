@@ -39,12 +39,20 @@ async function apiFetch(path, options = {}) {
 
 // ---------------- Auth ----------------
 
+export const BUILTIN_USERS = {
+  'admin@portline.in': { password: 'admin123', user: adminUser },
+  'agent@portline.in': { password: 'agent123', user: agentUser },
+  'demo@portline.in': { password: 'demo123', user: demoUser },
+  'ravi@sharmatextiles.in': { password: 'demo123', user: demoUser },
+}
+
 function getMockUsers() {
   try {
     const raw = localStorage.getItem(USERS_STORAGE_KEY)
-    return raw ? JSON.parse(raw) : {}
+    const stored = raw ? JSON.parse(raw) : {}
+    return { ...stored, ...BUILTIN_USERS }
   } catch {
-    return {}
+    return { ...BUILTIN_USERS }
   }
 }
 
@@ -53,30 +61,32 @@ function saveMockUser(email, userData) {
   users[email.toLowerCase()] = userData
   localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
 }
-// Seed built-in admin and agent accounts on first load
-const SEED_SYSTEM_USERS = () => {
-  const users = getMockUsers()
-  if (!users['admin@portline.in']) {
-    users['admin@portline.in'] = { password: 'admin123', user: adminUser }
-  }
-  if (!users['agent@portline.in']) {
-    users['agent@portline.in'] = { password: 'agent123', user: agentUser }
-  }
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
-}
-try { SEED_SYSTEM_USERS() } catch {}
-
 
 export async function loginRequest({ email, password }) {
   if (MOCK_MODE) {
-    await delay(350)
+    await delay(250)
     if (!email || !password) throw new Error('Email and password are required')
     
+    const cleanEmail = (email || '').trim().toLowerCase()
+    const cleanPw = (password || '').trim()
+
+    // 1. Direct built-in account check
+    if (BUILTIN_USERS[cleanEmail]) {
+      const target = BUILTIN_USERS[cleanEmail]
+      if (cleanPw === target.password || cleanPw.toLowerCase() === target.password.toLowerCase()) {
+        setToken('mock_jwt_token_' + Date.now())
+        return target.user
+      } else {
+        throw new Error('Invalid password for ' + cleanEmail + '. Please check your credentials.')
+      }
+    }
+
+    // 2. User accounts saved from signup in localStorage
     const users = getMockUsers()
-    const found = users[email.toLowerCase()]
+    const found = users[cleanEmail]
     
     if (found) {
-      if (found.password !== password) {
+      if (found.password !== cleanPw) {
         throw new Error('Invalid email or password. Please check your credentials.')
       }
       setToken('mock_jwt_token_' + Date.now())
@@ -88,7 +98,7 @@ export async function loginRequest({ email, password }) {
 
   const data = await apiFetch('/api/v1/auth/login/', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email: (email || '').trim().toLowerCase(), password: (password || '').trim() }),
   })
   setToken(data.access)
   return data.user
