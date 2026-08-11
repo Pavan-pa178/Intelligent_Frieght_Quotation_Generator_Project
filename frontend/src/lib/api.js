@@ -17,24 +17,37 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+function delay(ms = 30) {
+  return new Promise((resolve) => setTimeout(resolve, Math.min(ms, 50)))
 }
 
 async function apiFetch(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
-      ...(options.headers || {}),
-    },
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail || `Request failed (${res.status})`)
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 6000)
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+        ...(options.headers || {}),
+      },
+    })
+    clearTimeout(timeoutId)
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.detail || `Request failed (${res.status})`)
+    }
+    return res.status === 204 ? null : res.json()
+  } catch (err) {
+    clearTimeout(timeoutId)
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your backend connection.')
+    }
+    throw err
   }
-  return res.status === 204 ? null : res.json()
 }
 
 // ---------------- Auth ----------------
@@ -46,29 +59,37 @@ export const BUILTIN_USERS = {
   'ravi@sharmatextiles.in': { password: 'demo123', user: demoUser },
 }
 
-function getMockUsers() {
+function getStoredUsers() {
   try {
     const raw = localStorage.getItem(USERS_STORAGE_KEY)
-    const stored = raw ? JSON.parse(raw) : {}
-    return { ...stored, ...BUILTIN_USERS }
+    return raw ? JSON.parse(raw) : {}
   } catch {
-    return { ...BUILTIN_USERS }
+    return {}
   }
 }
 
+function getMockUsers() {
+  const stored = getStoredUsers()
+  return { ...stored, ...BUILTIN_USERS }
+}
+
 function saveMockUser(email, userData) {
-  const users = getMockUsers()
-  users[email.toLowerCase()] = userData
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
+  try {
+    const stored = getStoredUsers()
+    stored[email.trim().toLowerCase()] = userData
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(stored))
+  } catch (err) {
+    console.error('Failed to save mock user:', err)
+  }
 }
 
 export async function loginRequest({ email, password }) {
+  const cleanEmail = (email || '').trim().toLowerCase()
+  const cleanPw = (password || '').trim()
+  if (!cleanEmail || !cleanPw) throw new Error('Email and password are required')
+
   if (MOCK_MODE) {
-    await delay(250)
-    if (!email || !password) throw new Error('Email and password are required')
-    
-    const cleanEmail = (email || '').trim().toLowerCase()
-    const cleanPw = (password || '').trim()
+    await delay(30)
 
     // 1. Direct built-in account check
     if (BUILTIN_USERS[cleanEmail]) {
@@ -77,7 +98,7 @@ export async function loginRequest({ email, password }) {
         setToken('mock_jwt_token_' + Date.now())
         return target.user
       } else {
-        throw new Error('Invalid password for ' + cleanEmail + '. Please check your credentials.')
+        throw new Error('Invalid password. Please check your credentials.')
       }
     }
 
@@ -86,8 +107,8 @@ export async function loginRequest({ email, password }) {
     const found = users[cleanEmail]
     
     if (found) {
-      if (found.password !== cleanPw) {
-        throw new Error('Invalid email or password. Please check your credentials.')
+      if ((found.password || '').trim() !== cleanPw) {
+        throw new Error('Invalid password. Please check your credentials.')
       }
       setToken('mock_jwt_token_' + Date.now())
       return found.user
@@ -98,39 +119,42 @@ export async function loginRequest({ email, password }) {
 
   const data = await apiFetch('/api/v1/auth/login/', {
     method: 'POST',
-    body: JSON.stringify({ email: (email || '').trim().toLowerCase(), password: (password || '').trim() }),
+    body: JSON.stringify({ email: cleanEmail, password: cleanPw }),
   })
   setToken(data.access)
   return data.user
 }
 
 export async function signupRequest({ name, company, email, password }) {
+  const cleanEmail = (email || '').trim().toLowerCase()
+  const cleanPw = (password || '').trim()
+  if (!cleanEmail || !cleanPw) throw new Error('Email and password are required')
+
   if (MOCK_MODE) {
-    await delay(350)
-    if (!email || !password) throw new Error('Email and password are required')
+    await delay(30)
     
     const users = getMockUsers()
-    if (users[email.toLowerCase()]) {
+    if (users[cleanEmail]) {
       throw new Error('An account with this email address already exists.')
     }
 
     const newUser = {
-      name: name || 'New User',
-      company: company || 'Company',
-      email: email,
-      role: 'Broker',
+      name: (name || 'New User').trim(),
+      company: (company || 'Company').trim(),
+      email: cleanEmail,
+      role: 'customer',
       phone: '+91 98765 43210',
-      since: 'August 2026'
+      since: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     }
 
-    saveMockUser(email, { password, user: newUser })
+    saveMockUser(cleanEmail, { password: cleanPw, user: newUser })
     setToken('mock_jwt_token_' + Date.now())
     return newUser
   }
 
   const data = await apiFetch('/api/v1/auth/register/', {
     method: 'POST',
-    body: JSON.stringify({ name, company, email, password }),
+    body: JSON.stringify({ name: (name || '').trim(), company: (company || '').trim(), email: cleanEmail, password: cleanPw }),
   })
   setToken(data.access)
   return data.user
@@ -145,8 +169,17 @@ export function logoutRequest() {
 
 export async function fetchShipments(email) {
   if (MOCK_MODE) {
-    await delay(200)
-    return seedShipments
+    await delay(20)
+    const emailLower = (email || '').toLowerCase().trim()
+    if (!emailLower || emailLower === 'ravi@sharmatextiles.in' || emailLower === 'demo@portline.in') {
+      return seedShipments
+    }
+    try {
+      const raw = localStorage.getItem(`portline_shipments_${emailLower}`)
+      return raw ? JSON.parse(raw) : []
+    } catch {
+      return []
+    }
   }
   const query = email ? `?email=${encodeURIComponent(email)}` : ''
   return apiFetch(`/api/v1/shipments/${query}`)
@@ -154,7 +187,7 @@ export async function fetchShipments(email) {
 
 export async function createShipmentRequest(payload) {
   if (MOCK_MODE) {
-    await delay(500)
+    await delay(30)
     return { ...payload, date: new Date().toISOString().slice(0, 10) }
   }
   return apiFetch('/api/v1/shipments/', {
@@ -165,7 +198,7 @@ export async function createShipmentRequest(payload) {
 
 export async function trackShipmentRequest(trackingNumber, localShipments = []) {
   if (MOCK_MODE) {
-    await delay(250)
+    await delay(30)
     const all = [...localShipments, ...seedShipments]
     return all.find((s) => s.tn.toLowerCase() === trackingNumber.trim().toLowerCase()) || null
   }
@@ -210,7 +243,7 @@ export async function saveQuote(quote) {
 
 export async function fetchQuotes(email) {
   if (MOCK_MODE) {
-    await delay(200)
+    await delay(20)
     const local = getSavedQuotes()
     return [...local, ...seedQuotes]
   }
@@ -220,7 +253,7 @@ export async function fetchQuotes(email) {
 
 export async function fetchQuoteById(id) {
   if (MOCK_MODE) {
-    await delay(150)
+    await delay(20)
     const all = [...getSavedQuotes(), ...seedQuotes]
     return all.find(q => q.id.toUpperCase() === (id || '').toUpperCase()) || seedQuotes[0]
   }
@@ -229,7 +262,7 @@ export async function fetchQuoteById(id) {
 
 export async function fetchRouteAnalytics() {
   if (MOCK_MODE) {
-    await delay(200)
+    await delay(20)
     return routeAnalytics
   }
   return apiFetch('/api/v1/routes/analytics/')
@@ -237,7 +270,7 @@ export async function fetchRouteAnalytics() {
 
 export async function sendContactMessage(payload) {
   if (MOCK_MODE) {
-    await delay(400)
+    await delay(30)
     return { ok: true }
   }
   return apiFetch('/api/v1/contact/', {
@@ -249,7 +282,7 @@ export async function sendContactMessage(payload) {
 // Fetch ALL quotes (for admin panel — all users)
 export async function fetchAllQuotes() {
   if (MOCK_MODE) {
-    await delay(200)
+    await delay(20)
     const local = getSavedQuotes()
     return [...local, ...seedQuotes]
   }
