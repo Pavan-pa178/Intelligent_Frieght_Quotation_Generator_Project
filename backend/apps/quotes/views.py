@@ -295,3 +295,41 @@ class QuoteDetailView(APIView):
 
         found = next((q for q in SEED_QUOTES if q['id'].upper() == qid), SEED_QUOTES[0])
         return Response(found)
+
+
+class QuoteAgentActionView(APIView):
+    """Agent approve / reject a quote and store the decision."""
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, quote_id):
+        from datetime import datetime, timezone
+        qid = (quote_id or '').strip()
+        action = request.data.get('action', '').strip()   # 'approved' | 'rejected'
+        comment = request.data.get('comment', '').strip()
+        agent_email = request.data.get('agent_email', '').strip()
+        agent_name = request.data.get('agent_name', '').strip()
+
+        if action not in ('approved', 'rejected'):
+            return Response({'detail': 'action must be approved or rejected'}, status=status.HTTP_400_BAD_REQUEST)
+
+        review = {
+            'status': action,
+            'comment': comment,
+            'agent_email': agent_email,
+            'agent_name': agent_name,
+            'reviewed_at': datetime.now(timezone.utc).isoformat(),
+        }
+
+        try:
+            col = get_collection('quotes')
+            if col is not None:
+                result = col.update_one(
+                    {'id': {'$regex': f'^{qid}$', '$options': 'i'}},
+                    {'$set': {'agent_review': review}}
+                )
+                if result.matched_count == 0:
+                    return Response({'detail': f'Quote {qid} not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'ok': True, 'quote_id': qid, 'review': review})

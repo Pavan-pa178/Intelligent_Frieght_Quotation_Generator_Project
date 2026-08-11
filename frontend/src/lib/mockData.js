@@ -1,10 +1,28 @@
 export const demoUser = {
   name: 'Ravi Sharma',
-  role: 'Broker',
+  role: 'customer',
   company: 'Sharma Textiles',
   email: 'ravi@sharmatextiles.in',
   phone: '+91 98765 43210',
   since: 'January 2024',
+}
+
+export const adminUser = {
+  name: 'Priya Admin',
+  role: 'admin',
+  company: 'PORTLINE Operations',
+  email: 'admin@portline.in',
+  phone: '+91 99000 11111',
+  since: 'March 2023',
+}
+
+export const agentUser = {
+  name: 'Arjun Agent',
+  role: 'agent',
+  company: 'PORTLINE Logistics',
+  email: 'agent@portline.in',
+  phone: '+91 99000 22222',
+  since: 'June 2024',
 }
 
 export const seedShipments = [
@@ -107,6 +125,8 @@ export const seedQuotes = [
     indicativeTotal: 384500,
     status: 'Draft',
     created: '2 min ago',
+    assigned_agent: 'agent@portline.in',
+    agent_review: { status: 'pending', comment: '', agent_name: 'Arjun Agent', reviewed_at: null },
     details: {
       originGw: { code: 'INNSA', name: 'Nhava Sheva, Mumbai', city: 'Mumbai', country: 'India' },
       destGw: { code: 'AEJEA', name: 'Jebel Ali, Dubai', city: 'Dubai', country: 'UAE' },
@@ -175,6 +195,8 @@ export const seedQuotes = [
     indicativeTotal: 215800,
     status: 'Issued',
     created: '1 hour ago',
+    assigned_agent: 'agent@portline.in',
+    agent_review: { status: 'approved', comment: 'Route verified. Maersk weekly slot confirmed.', agent_name: 'Arjun Agent', reviewed_at: '2026-08-10T09:15:00Z' },
     details: {
       originGw: { code: 'INNSA', name: 'Nhava Sheva, Mumbai', city: 'Mumbai', country: 'India' },
       destGw: { code: 'NLRTM', name: 'Port of Rotterdam', city: 'Rotterdam', country: 'Netherlands' },
@@ -230,6 +252,8 @@ export const seedQuotes = [
     indicativeTotal: 64300,
     status: 'Issued',
     created: '3 hours ago',
+    assigned_agent: 'agent@portline.in',
+    agent_review: { status: 'rejected', comment: 'Cargo dimensions exceed airline limits. Customer needs to split shipment.', agent_name: 'Arjun Agent', reviewed_at: '2026-08-09T14:30:00Z' },
     details: {
       originGw: { code: 'BOM', name: 'Mumbai Airport (BOM)', city: 'Mumbai', country: 'India' },
       destGw: { code: 'DXB', name: 'Dubai Intl Airport (DXB)', city: 'Dubai', country: 'UAE' },
@@ -271,6 +295,8 @@ export const seedQuotes = [
     indicativeTotal: 88400,
     status: 'Draft',
     created: 'Yesterday',
+    assigned_agent: 'agent@portline.in',
+    agent_review: { status: 'pending', comment: '', agent_name: 'Arjun Agent', reviewed_at: null },
     details: {
       originGw: { code: 'INNSA', name: 'Nhava Sheva, Mumbai', city: 'Mumbai', country: 'India' },
       destGw: { code: 'SGSIN', name: 'Port of Singapore', city: 'Singapore', country: 'Singapore' },

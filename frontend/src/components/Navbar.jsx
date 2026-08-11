@@ -63,6 +63,22 @@ export default function Navbar() {
           </ul>
 
           <div className="flex items-center gap-2.5">
+            {loggedIn && user?.role === 'admin' && (
+              <Link
+                to="/admin"
+                className="hidden md:inline-flex items-center gap-1.5 rounded-[10px] border border-white/20 bg-white/10 px-3.5 py-2 text-[13px] font-semibold text-white hover:bg-white/15 transition-colors"
+              >
+                Admin Panel
+              </Link>
+            )}
+            {loggedIn && user?.role === 'agent' && (
+              <Link
+                to="/agent"
+                className="hidden md:inline-flex items-center gap-1.5 rounded-[10px] border border-white/20 bg-white/10 px-3.5 py-2 text-[13px] font-semibold text-white hover:bg-white/15 transition-colors"
+              >
+                Agent Panel
+              </Link>
+            )}
             <Link
               to="/ship"
               className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight px-4 py-2 text-[13.5px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(217,80,10,.55)] transition-transform hover:-translate-y-0.5"
@@ -120,6 +136,12 @@ export default function Navbar() {
             {item.label}
           </Link>
         ))}
+        {loggedIn && user?.role === 'admin' && (
+          <Link to="/admin" onClick={() => setMobileOpen(false)} className="border-b border-white/10 py-3.5 font-display text-2xl text-white">Admin Panel</Link>
+        )}
+        {loggedIn && user?.role === 'agent' && (
+          <Link to="/agent" onClick={() => setMobileOpen(false)} className="border-b border-white/10 py-3.5 font-display text-2xl text-white">Agent Panel</Link>
+        )}
         {loggedIn ? (
           <button
             onClick={() => { logout(); setMobileOpen(false); navigate('/') }}

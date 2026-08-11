@@ -16,6 +16,8 @@ import RoutesPage from './pages/Routes'
 import Portal from './pages/Portal'
 import Contact from './pages/Contact'
 import Login from './pages/Login'
+import Admin from './pages/Admin'
+import Agent from './pages/Agent'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -62,6 +64,8 @@ export default function App() {
                 <Route path="/portal" element={<Portal />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/agent" element={<Agent />} />
               </Routes>
             </ErrorBoundary>
           </LayoutChrome>

@@ -284,43 +284,58 @@ export default function Ship() {
                     <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
                       Origin port / airport <span className="text-brand-danger">*</span>
                     </label>
-                    <input
-                      type="text"
-                      value={originSearch}
-                      onChange={(e) => {
-                        if (checkAuthGate()) return
-                        setOriginSearch(e.target.value)
-                        setShowOriginDropdown(true)
-                      }}
-                      onFocus={() => {
-                        if (checkAuthGate()) return
-                        setShowOriginDropdown(true)
-                      }}
-                      onClick={() => checkAuthGate()}
-                      className={brandInputStyle}
-                      placeholder="Search origin port or airport..."
-                    />
-                    {showOriginDropdown && (
-                      <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-md2 border border-brand-line bg-white shadow-md2">
-                        {originCandidates.length === 0 ? (
-                          <div className="p-3 text-xs text-brand-slate">No matching ports/airports found</div>
-                        ) : (
-                          originCandidates.map((g) => (
-                            <div
-                              key={g.code}
-                              onClick={() => {
-                                if (checkAuthGate()) return
-                                setOriginGw(g)
-                                setOriginSearch(`${g.code} — ${g.name}`)
-                                setShowOriginDropdown(false)
-                              }}
-                              className="cursor-pointer px-4 py-2.5 text-xs hover:bg-brand-cloud border-b border-brand-line/50 last:border-0"
-                            >
-                              <span className="font-mono font-semibold text-brand-marine">{g.code}</span> — {g.name} ({g.country})
-                            </div>
-                          ))
-                        )}
+                    {originGw ? (
+                      <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-brand-marine bg-brand-marinePale px-3.5 py-2.5">
+                        <span className="font-mono text-xs font-bold text-brand-marine">{originGw.code}</span>
+                        <span className="flex-1 truncate text-[13px] font-medium text-brand-navy">{originGw.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => { setOriginGw(null); setOriginSearch(''); setShowOriginDropdown(false) }}
+                          className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-marine/20 text-brand-marine text-xs font-bold hover:bg-brand-marine hover:text-white transition-colors"
+                          title="Clear origin"
+                        >×</button>
                       </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          value={originSearch}
+                          onChange={(e) => {
+                            if (checkAuthGate()) return
+                            setOriginSearch(e.target.value)
+                            setShowOriginDropdown(true)
+                          }}
+                          onFocus={() => {
+                            if (checkAuthGate()) return
+                            setShowOriginDropdown(true)
+                          }}
+                          onClick={() => checkAuthGate()}
+                          className={brandInputStyle}
+                          placeholder="Search origin port or airport..."
+                        />
+                        {showOriginDropdown && (
+                          <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-md2 border border-brand-line bg-white shadow-md2">
+                            {originCandidates.length === 0 ? (
+                              <div className="p-3 text-xs text-brand-slate">No matching ports/airports found</div>
+                            ) : (
+                              originCandidates.map((g) => (
+                                <div
+                                  key={g.code}
+                                  onClick={() => {
+                                    if (checkAuthGate()) return
+                                    setOriginGw(g)
+                                    setOriginSearch(`${g.code} — ${g.name}`)
+                                    setShowOriginDropdown(false)
+                                  }}
+                                  className="cursor-pointer px-4 py-2.5 text-xs hover:bg-brand-cloud border-b border-brand-line/50 last:border-0"
+                                >
+                                  <span className="font-mono font-semibold text-brand-marine">{g.code}</span> — {g.name} ({g.country})
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -342,34 +357,49 @@ export default function Ship() {
                     <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
                       Destination port / airport <span className="text-brand-danger">*</span>
                     </label>
-                    <input
-                      type="text"
-                      value={destSearch}
-                      onChange={(e) => { setDestSearch(e.target.value); setShowDestDropdown(true) }}
-                      onFocus={() => setShowDestDropdown(true)}
-                      className={brandInputStyle}
-                      placeholder="Search destination port or airport..."
-                    />
-                    {showDestDropdown && (
-                      <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-md2 border border-brand-line bg-white shadow-md2">
-                        {destCandidates.length === 0 ? (
-                          <div className="p-3 text-xs text-brand-slate">No matching ports/airports found</div>
-                        ) : (
-                          destCandidates.map((g) => (
-                            <div
-                              key={g.code}
-                              onClick={() => {
-                                setDestGw(g)
-                                setDestSearch(`${g.code} — ${g.name}`)
-                                setShowDestDropdown(false)
-                              }}
-                              className="cursor-pointer px-4 py-2.5 text-xs hover:bg-brand-cloud border-b border-brand-line/50 last:border-0"
-                            >
-                              <span className="font-mono font-semibold text-brand-marine">{g.code}</span> — {g.name} ({g.country})
-                            </div>
-                          ))
-                        )}
+                    {destGw ? (
+                      <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-brand-marine bg-brand-marinePale px-3.5 py-2.5">
+                        <span className="font-mono text-xs font-bold text-brand-marine">{destGw.code}</span>
+                        <span className="flex-1 truncate text-[13px] font-medium text-brand-navy">{destGw.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => { setDestGw(null); setDestSearch(''); setShowDestDropdown(false) }}
+                          className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-marine/20 text-brand-marine text-xs font-bold hover:bg-brand-marine hover:text-white transition-colors"
+                          title="Clear destination"
+                        >×</button>
                       </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          value={destSearch}
+                          onChange={(e) => { setDestSearch(e.target.value); setShowDestDropdown(true) }}
+                          onFocus={() => setShowDestDropdown(true)}
+                          className={brandInputStyle}
+                          placeholder="Search destination port or airport..."
+                        />
+                        {showDestDropdown && (
+                          <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-md2 border border-brand-line bg-white shadow-md2">
+                            {destCandidates.length === 0 ? (
+                              <div className="p-3 text-xs text-brand-slate">No matching ports/airports found</div>
+                            ) : (
+                              destCandidates.map((g) => (
+                                <div
+                                  key={g.code}
+                                  onClick={() => {
+                                    setDestGw(g)
+                                    setDestSearch(`${g.code} — ${g.name}`)
+                                    setShowDestDropdown(false)
+                                  }}
+                                  className="cursor-pointer px-4 py-2.5 text-xs hover:bg-brand-cloud border-b border-brand-line/50 last:border-0"
+                                >
+                                  <span className="font-mono font-semibold text-brand-marine">{g.code}</span> — {g.name} ({g.country})
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

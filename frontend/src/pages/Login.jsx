@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { ChevronLeft, Eye, EyeOff, User, Container, AlertTriangle } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 
 export default function Login() {
-  const [tab, setTab] = useState('signin')
+  const [searchParams] = useSearchParams()
+  const initialTab = searchParams.get('tab') === 'signup' ? 'signup' : 'signin'
+  const redirectTo = searchParams.get('redirect') || '/portal'
+  const [tab, setTab] = useState(initialTab)
   const navigate = useNavigate()
   const { login, loginDemo, signup } = useApp()
   const toast = useToast()
@@ -27,7 +30,7 @@ export default function Login() {
     const nameStr = userObj?.name || userObj?.email || 'User'
     const firstName = nameStr.split(' ')[0] || 'User'
     toast(`Welcome back, ${firstName}!`)
-    navigate('/portal')
+    navigate(redirectTo)
   }
 
   const handleSignin = async (e) => {
