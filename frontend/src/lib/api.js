@@ -1,4 +1,4 @@
-import { seedShipments, seedQuotes, routeAnalytics, demoUser, RATES } from './mockData'
+import { seedShipments, seedQuotes, routeAnalytics, demoUser, adminUser, agentUser, RATES } from './mockData'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 export const MOCK_MODE = !API_BASE
@@ -53,6 +53,19 @@ function saveMockUser(email, userData) {
   users[email.toLowerCase()] = userData
   localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
 }
+// Seed built-in admin and agent accounts on first load
+const SEED_SYSTEM_USERS = () => {
+  const users = getMockUsers()
+  if (!users['admin@portline.in']) {
+    users['admin@portline.in'] = { password: 'admin123', user: adminUser }
+  }
+  if (!users['agent@portline.in']) {
+    users['agent@portline.in'] = { password: 'agent123', user: agentUser }
+  }
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
+}
+try { SEED_SYSTEM_USERS() } catch {}
+
 
 export async function loginRequest({ email, password }) {
   if (MOCK_MODE) {
@@ -221,4 +234,57 @@ export async function sendContactMessage(payload) {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+}
+
+// Fetch ALL quotes (for admin panel — all users)
+export async function fetchAllQuotes() {
+  if (MOCK_MODE) {
+    await delay(200)
+    const local = getSavedQuotes()
+    return [...local, ...seedQuotes]
+  }
+  return apiFetch('/api/v1/quotes/')
+}
+
+// Agent approves or rejects a quote
+export async function agentActionOnQuote(quoteId, action, comment, agentUser) {
+  const AGENT_ACTIONS_KEY = 'portline_agent_actions'
+  const reviewObj = {
+    status: action, // 'approved' | 'rejected' | 'pending'
+    comment: comment || '',
+    agent_name: agentUser?.name || 'Agent',
+    agent_email: agentUser?.email || '',
+    reviewed_at: new Date().toISOString()
+  }
+
+  if (MOCK_MODE) {
+    await delay(300)
+    // Update saved quotes in localStorage
+    const all = getSavedQuotes()
+    const updated = all.map(q => q.id === quoteId ? { ...q, agent_review: reviewObj } : q)
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+    // Also track in a separate agent actions store
+    try {
+      const raw = localStorage.getItem(AGENT_ACTIONS_KEY)
+      const actions = raw ? JSON.parse(raw) : {}
+      actions[quoteId] = reviewObj
+      localStorage.setItem(AGENT_ACTIONS_KEY, JSON.stringify(actions))
+    } catch {}
+    return { ok: true, quoteId, review: reviewObj }
+  }
+
+  return apiFetch(`/api/v1/quotes/${quoteId}/action/`, {
+    method: 'POST',
+    body: JSON.stringify({ action, comment, agent_email: agentUser?.email }),
+  })
+}
+
+// Get all agent actions from localStorage (mock mode)
+export function getAgentActions() {
+  try {
+    const raw = localStorage.getItem('portline_agent_actions')
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
 }
