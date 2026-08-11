@@ -24,6 +24,7 @@ export default function Login() {
   const [suEmail, setSuEmail] = useState('')
   const [suPassword, setSuPassword] = useState('')
   const [suShowPw, setSuShowPw] = useState(false)
+  const [suError, setSuError] = useState('')
   const [suLoading, setSuLoading] = useState(false)
 
   const afterLogin = (userObj) => {
@@ -42,7 +43,7 @@ export default function Login() {
     setSiError('')
     setSiLoading(true)
     try {
-      const userObj = await login({ email: siEmail, password: siPassword })
+      const userObj = await login({ email: siEmail.trim(), password: siPassword.trim() })
       afterLogin(userObj)
     } catch (err) {
       setSiError(err.message || 'Could not log in — please try again.')
@@ -58,12 +59,22 @@ export default function Login() {
 
   const handleSignup = async (e) => {
     e.preventDefault()
+    if (!suEmail.trim() || !suPassword.trim()) {
+      setSuError('Enter an email and password to continue.')
+      return
+    }
+    setSuError('')
     setSuLoading(true)
     try {
-      const userObj = await signup({ name: suName, company: suCompany, email: suEmail, password: suPassword })
+      const userObj = await signup({
+        name: suName.trim(),
+        company: suCompany.trim(),
+        email: suEmail.trim(),
+        password: suPassword.trim()
+      })
       afterLogin(userObj)
     } catch (err) {
-      toast(err.message || 'Could not create account — please try again.')
+      setSuError(err.message || 'Could not create account — please try again.')
     } finally {
       setSuLoading(false)
     }
@@ -95,8 +106,8 @@ export default function Login() {
           </Link>
 
           <div className="mb-5 flex gap-1.5 rounded-[11px] bg-brand-cloud p-1.5">
-            <TabButton active={tab === 'signin'} onClick={() => setTab('signin')}>Log in</TabButton>
-            <TabButton active={tab === 'signup'} onClick={() => setTab('signup')}>Create account</TabButton>
+            <TabButton active={tab === 'signin'} onClick={() => { setTab('signin'); setSiError(''); setSuError('') }}>Log in</TabButton>
+            <TabButton active={tab === 'signup'} onClick={() => { setTab('signup'); setSiError(''); setSuError('') }}>Create account</TabButton>
           </div>
 
           {tab === 'signin' ? (
@@ -214,6 +225,13 @@ export default function Login() {
             <>
               <h2 className="mb-1.5 text-[25px]">Create an account</h2>
               <p className="mb-5 text-sm text-brand-slate">Get instant access to live freight estimates.</p>
+
+              {suError && (
+                <div className="mb-4 flex items-center gap-2.5 rounded-[10px] bg-brand-dangerBg p-3 text-xs font-semibold text-brand-danger">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  {suError}
+                </div>
+              )}
 
               <form onSubmit={handleSignup} className="space-y-3.5">
                 <div>
