@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Route, FileText, Package, ChevronRight, CheckCircle2, XCircle, Clock, AlertTriangle, DollarSign, Ship, Plane, Truck, RefreshCw, Eye } from 'lucide-react'
+import { LayoutDashboard, Route, FileText, Package, ChevronRight, CheckCircle2, XCircle, Clock, AlertTriangle, DollarSign, Ship, Plane, Truck, RefreshCw, Eye, Database } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
+import AdminMasterData from '../components/AdminMasterData'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { fetchAllQuotes, fetchShipments } from '../lib/api'
@@ -10,6 +11,7 @@ import { routeAnalytics } from '../lib/mockData'
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { key: 'masterdata', label: 'Master Database', icon: Database },
   { key: 'routes', label: 'Route Management', icon: Route },
   { key: 'quotes', label: 'Quotes', icon: FileText },
   { key: 'shipments', label: 'Shipments', icon: Package },
@@ -198,6 +200,11 @@ export default function Admin() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* MASTER DATABASE TAB */}
+          {activeTab === 'masterdata' && (
+            <AdminMasterData />
           )}
 
           {/* ROUTES TAB */}

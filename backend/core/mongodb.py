@@ -23,7 +23,12 @@ def get_mongo_db():
 
     try:
         from pymongo import MongoClient
-        _mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+        _mongo_client = MongoClient(
+            MONGO_URI,
+            serverSelectionTimeoutMS=15000,
+            connectTimeoutMS=15000,
+            socketTimeoutMS=20000
+        )
         # Test connection
         _mongo_client.admin.command('ping')
         _mongo_db = _mongo_client[DB_NAME]

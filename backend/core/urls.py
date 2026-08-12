@@ -9,6 +9,7 @@ urlpatterns = [
     path('api/v1/auth/', include('apps.accounts.urls')),
     path('api/v1/gateways/', include('apps.masterdata.urls')),
     path('api/v1/masterdata/', include('apps.masterdata.urls')),
+    path('api/v1/master/', include('apps.masterdata.urls')),
     path('api/v1/ports/', include('apps.masterdata.urls')),
     path('api/v1/shipments/', include('apps.shipments.urls')),
     path('api/v1/runs/<str:run_id>/', AgentRunStatusView.as_view(), name='run_status'),
