@@ -335,3 +335,163 @@ export function getAgentActions() {
     return {}
   }
 }
+
+// ---------------- Master Database (Admin Only) ----------------
+import { FALLBACK_SEED, MASTER_COLLECTIONS_META } from './masterSeedData'
+
+function getLocalMasterCollection(name) {
+  const key = `portline_master_${name}`
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  const initial = FALLBACK_SEED[name] || []
+  try {
+    localStorage.setItem(key, JSON.stringify(initial))
+  } catch {}
+  return initial
+}
+
+function saveLocalMasterCollection(name, items) {
+  const key = `portline_master_${name}`
+  try {
+    localStorage.setItem(key, JSON.stringify(items))
+  } catch {}
+}
+
+export async function fetchMasterOverview() {
+  if (MOCK_MODE) {
+    await delay(30)
+    const collections = {}
+    let total = 0
+    MASTER_COLLECTIONS_META.forEach(m => {
+      const items = getLocalMasterCollection(m.key)
+      collections[m.key] = {
+        count: items.length,
+        seed_available: items.length,
+        is_empty: items.length === 0,
+      }
+      total += items.length
+    })
+    return { collections_count: MASTER_COLLECTIONS_META.length, total_records: total, collections }
+  }
+  return apiFetch('/api/v1/master/overview/', {
+    headers: { 'X-User-Role': 'admin' }
+  })
+}
+
+export async function fetchMasterCollection(collectionName, params = {}) {
+  const { q = '', active = null, page = 1, limit = 100 } = params
+  if (MOCK_MODE) {
+    await delay(30)
+    let items = getLocalMasterCollection(collectionName)
+    if (active !== null) {
+      items = items.filter(i => i.active === (active === true || active === 'true'))
+    }
+    if (q) {
+      const query = q.toLowerCase()
+      items = items.filter(i => {
+        return Object.values(i).some(val => 
+          typeof val === 'string' && val.toLowerCase().includes(query)
+        )
+      })
+    }
+    return {
+      collection: collectionName,
+      total: items.length,
+      page,
+      limit,
+      items: items.slice((page - 1) * limit, page * limit)
+    }
+  }
+  const searchParams = new URLSearchParams()
+  if (q) searchParams.set('q', q)
+  if (active !== null) searchParams.set('active', active)
+  if (page) searchParams.set('page', page)
+  if (limit) searchParams.set('limit', limit)
+  const qs = searchParams.toString() ? `?${searchParams.toString()}` : ''
+  return apiFetch(`/api/v1/master/${collectionName}/${qs}`, {
+    headers: { 'X-User-Role': 'admin' }
+  })
+}
+
+export async function createMasterRecord(collectionName, recordData) {
+  if (MOCK_MODE) {
+    await delay(50)
+    const items = getLocalMasterCollection(collectionName)
+    const newDoc = {
+      ...recordData,
+      id: 'doc_' + Math.random().toString(36).substr(2, 9),
+      active: recordData.active !== false,
+      _created_at: new Date().toISOString(),
+    }
+    items.unshift(newDoc)
+    saveLocalMasterCollection(collectionName, items)
+    return newDoc
+  }
+  return apiFetch(`/api/v1/master/${collectionName}/`, {
+    method: 'POST',
+    headers: { 'X-User-Role': 'admin' },
+    body: JSON.stringify(recordData),
+  })
+}
+
+export async function updateMasterRecord(collectionName, docId, recordData) {
+  if (MOCK_MODE) {
+    await delay(50)
+    const items = getLocalMasterCollection(collectionName)
+    const idx = items.findIndex(i => (i.id === docId || i._id === docId || i.locode === docId || i.iata === docId || i.code === docId || i.card_id === docId))
+    if (idx !== -1) {
+      items[idx] = { ...items[idx], ...recordData, _updated_at: new Date().toISOString() }
+      saveLocalMasterCollection(collectionName, items)
+      return items[idx]
+    }
+    throw new Error('Record not found')
+  }
+  return apiFetch(`/api/v1/master/${collectionName}/${docId}/`, {
+    method: 'PUT',
+    headers: { 'X-User-Role': 'admin' },
+    body: JSON.stringify(recordData),
+  })
+}
+
+export async function deleteMasterRecord(collectionName, docId, hard = false) {
+  if (MOCK_MODE) {
+    await delay(50)
+    let items = getLocalMasterCollection(collectionName)
+    if (hard) {
+      items = items.filter(i => !(i.id === docId || i._id === docId || i.locode === docId || i.iata === docId || i.code === docId || i.card_id === docId))
+    } else {
+      items = items.map(i => {
+        if (i.id === docId || i._id === docId || i.locode === docId || i.iata === docId || i.code === docId || i.card_id === docId) {
+          return { ...i, active: false, _deleted_at: new Date().toISOString() }
+        }
+        return i
+      })
+    }
+    saveLocalMasterCollection(collectionName, items)
+    return { ok: true, id: docId, hard }
+  }
+  const qs = hard ? '?hard=true' : ''
+  return apiFetch(`/api/v1/master/${collectionName}/${docId}/${qs}`, {
+    method: 'DELETE',
+    headers: { 'X-User-Role': 'admin' },
+  })
+}
+
+export async function triggerMasterSeed(drop = false) {
+  if (MOCK_MODE) {
+    await delay(200)
+    MASTER_COLLECTIONS_META.forEach(m => {
+      const initial = FALLBACK_SEED[m.key] || []
+      localStorage.setItem(`portline_master_${m.key}`, JSON.stringify(initial))
+    })
+    return { success: true, message: 'Local master seed loaded successfully.' }
+  }
+  return apiFetch('/api/v1/master/seed/', {
+    method: 'POST',
+    headers: { 'X-User-Role': 'admin' },
+    body: JSON.stringify({ drop }),
+  })
+}
+
