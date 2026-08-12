@@ -1,11 +1,12 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeftRight, Plus, Trash2, Ship as ShipIcon, Plane, Truck, Zap, CheckCircle2, Lock } from 'lucide-react'
+import { ArrowLeftRight, Plus, Trash2, Ship as ShipIcon, Plane, Truck, Zap, CheckCircle2, Lock, Search, Globe, MapPin, X } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
+import GlobalPortDirectory from '../components/GlobalPortDirectory'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { createShipmentRequest, saveQuote } from '../lib/api'
-import { resolveGateway } from '../lib/pricing/gateway'
+import { resolveGateway, getGatewayByCode } from '../lib/pricing/gateway'
 import { computeLiveEstimate } from '../lib/pricing/index'
 
 const DRAFT_KEY = 'portline_ship_draft_v1'
@@ -54,6 +55,8 @@ export default function Ship() {
   const toast = useToast()
 
   const [showAuthGate, setShowAuthGate] = useState(false)
+  const [showPortDirectoryModal, setShowPortDirectoryModal] = useState(false)
+  const [portDirectoryTarget, setPortDirectoryTarget] = useState('origin') // 'origin' | 'dest'
 
   // 1. Route state
   const [originGw, setOriginGw] = useState(null)
@@ -62,6 +65,26 @@ export default function Ship() {
   const [destSearch, setDestSearch] = useState('')
   const [showOriginDropdown, setShowOriginDropdown] = useState(false)
   const [showDestDropdown, setShowDestDropdown] = useState(false)
+
+  // Sync gateways from URL params if present (e.g. ?origin=INNSA&dest=AEJEA&service=ocean)
+  useEffect(() => {
+    const originParam = params.get('origin')
+    const destParam = params.get('dest')
+    if (originParam) {
+      const g = getGatewayByCode(originParam)
+      if (g) {
+        setOriginGw(g)
+        setOriginSearch(`${g.code} — ${g.name}`)
+      }
+    }
+    if (destParam) {
+      const g = getGatewayByCode(destParam)
+      if (g) {
+        setDestGw(g)
+        setDestSearch(`${g.code} — ${g.name}`)
+      }
+    }
+  }, [params])
 
   const [pickupAddress, setPickupAddress] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
@@ -281,42 +304,89 @@ export default function Ship() {
                 <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto_1fr]">
                   {/* Origin Gateway */}
                   <div className="relative">
-                    <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
-                      Origin port / airport <span className="text-brand-danger">*</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-[13px] font-semibold text-brand-navy">
+                        Origin port / airport <span className="text-brand-danger">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (checkAuthGate()) return
+                          setPortDirectoryTarget('origin')
+                          setShowPortDirectoryModal(true)
+                        }}
+                        className="text-[11px] font-semibold text-brand-marine hover:underline flex items-center gap-1"
+                      >
+                        <Globe className="h-3 w-3" /> Directory
+                      </button>
+                    </div>
                     {originGw ? (
-                      <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-brand-marine bg-brand-marinePale px-3.5 py-2.5">
-                        <span className="font-mono text-xs font-bold text-brand-marine">{originGw.code}</span>
-                        <span className="flex-1 truncate text-[13px] font-medium text-brand-navy">{originGw.name}</span>
+                      <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-brand-marine bg-brand-marinePale px-3.5 py-2.5 shadow-xs">
+                        <span className="font-mono text-xs font-bold text-brand-marine bg-white px-2 py-0.5 rounded shadow-2xs">{originGw.code}</span>
+                        <div className="flex-1 truncate">
+                          <span className="truncate text-[13px] font-bold text-brand-navy block">{originGw.name}</span>
+                          <span className="text-[11px] text-brand-slate block truncate">{originGw.city}, {originGw.country}</span>
+                        </div>
                         <button
                           type="button"
                           onClick={() => { setOriginGw(null); setOriginSearch(''); setShowOriginDropdown(false) }}
-                          className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-marine/20 text-brand-marine text-xs font-bold hover:bg-brand-marine hover:text-white transition-colors"
+                          className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-brand-marine/20 text-brand-marine text-xs font-bold hover:bg-brand-marine hover:text-white transition-colors"
                           title="Clear origin"
                         >×</button>
                       </div>
                     ) : (
                       <>
-                        <input
-                          type="text"
-                          value={originSearch}
-                          onChange={(e) => {
-                            if (checkAuthGate()) return
-                            setOriginSearch(e.target.value)
-                            setShowOriginDropdown(true)
-                          }}
-                          onFocus={() => {
-                            if (checkAuthGate()) return
-                            setShowOriginDropdown(true)
-                          }}
-                          onClick={() => checkAuthGate()}
-                          className={brandInputStyle}
-                          placeholder="Search origin port or airport..."
-                        />
+                        <div className="relative">
+                          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-brand-slateLight" />
+                          <input
+                            type="text"
+                            value={originSearch}
+                            onChange={(e) => {
+                              if (checkAuthGate()) return
+                              setOriginSearch(e.target.value)
+                              setShowOriginDropdown(true)
+                            }}
+                            onFocus={() => {
+                              if (checkAuthGate()) return
+                              setShowOriginDropdown(true)
+                            }}
+                            onClick={() => checkAuthGate()}
+                            className={`${brandInputStyle} pl-10 pr-9`}
+                            placeholder="Search city, port name, UN/LOCODE, IATA..."
+                          />
+                          {originSearch && (
+                            <button
+                              type="button"
+                              onClick={() => { setOriginSearch(''); setShowOriginDropdown(false) }}
+                              className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-brand-slateLight/20 text-brand-slate text-xs hover:bg-brand-slateLight/40"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
                         {showOriginDropdown && (
-                          <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-md2 border border-brand-line bg-white shadow-md2">
+                          <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-brand-line bg-white shadow-xl">
+                            <div className="sticky top-0 bg-brand-cloud/90 backdrop-blur-sm px-3.5 py-1.5 border-b border-brand-line flex items-center justify-between text-[11px] text-brand-slate font-medium">
+                              <span>Matching locations ({originCandidates.length})</span>
+                              <button
+                                type="button"
+                                onClick={() => { setPortDirectoryTarget('origin'); setShowPortDirectoryModal(true); setShowOriginDropdown(false); }}
+                                className="text-brand-marine font-semibold hover:underline flex items-center gap-1"
+                              >
+                                <Globe className="h-3 w-3" /> Full Directory
+                              </button>
+                            </div>
                             {originCandidates.length === 0 ? (
-                              <div className="p-3 text-xs text-brand-slate">No matching ports/airports found</div>
+                              <div className="p-4 text-center text-xs text-brand-slate">
+                                <p className="font-semibold text-brand-navy">No matching ports or airports found</p>
+                                <button
+                                  type="button"
+                                  onClick={() => { setPortDirectoryTarget('origin'); setShowPortDirectoryModal(true); setShowOriginDropdown(false); }}
+                                  className="mt-2 text-xs text-brand-marine font-semibold underline"
+                                >
+                                  Browse all 180+ global gateways
+                                </button>
+                              </div>
                             ) : (
                               originCandidates.map((g) => (
                                 <div
@@ -327,9 +397,25 @@ export default function Ship() {
                                     setOriginSearch(`${g.code} — ${g.name}`)
                                     setShowOriginDropdown(false)
                                   }}
-                                  className="cursor-pointer px-4 py-2.5 text-xs hover:bg-brand-cloud border-b border-brand-line/50 last:border-0"
+                                  className="cursor-pointer px-3.5 py-2.5 hover:bg-brand-cloud/70 border-b border-brand-line/40 last:border-0 flex items-center justify-between gap-2 transition-colors"
                                 >
-                                  <span className="font-mono font-semibold text-brand-marine">{g.code}</span> — {g.name} ({g.country})
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="font-mono text-xs font-bold text-brand-marine bg-brand-marinePale px-1.5 py-0.5 rounded flex-shrink-0">
+                                      {g.code}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="truncate text-xs font-semibold text-brand-navy">{g.name}</div>
+                                      <div className="truncate text-[11px] text-brand-slate flex items-center gap-1">
+                                        <MapPin className="h-2.5 w-2.5 flex-shrink-0" /> {g.city}, {g.country}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 flex items-center gap-1 ${
+                                    g.type === 'AIRPORT' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'
+                                  }`}>
+                                    {g.type === 'AIRPORT' ? <Plane className="h-2.5 w-2.5" /> : <ShipIcon className="h-2.5 w-2.5" />}
+                                    {g.type === 'AIRPORT' ? 'AIR' : 'PORT'}
+                                  </span>
                                 </div>
                               ))
                             )}
@@ -354,34 +440,88 @@ export default function Ship() {
 
                   {/* Destination Gateway */}
                   <div className="relative">
-                    <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
-                      Destination port / airport <span className="text-brand-danger">*</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-[13px] font-semibold text-brand-navy">
+                        Destination port / airport <span className="text-brand-danger">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (checkAuthGate()) return
+                          setPortDirectoryTarget('dest')
+                          setShowPortDirectoryModal(true)
+                        }}
+                        className="text-[11px] font-semibold text-brand-marine hover:underline flex items-center gap-1"
+                      >
+                        <Globe className="h-3 w-3" /> Directory
+                      </button>
+                    </div>
                     {destGw ? (
-                      <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-brand-marine bg-brand-marinePale px-3.5 py-2.5">
-                        <span className="font-mono text-xs font-bold text-brand-marine">{destGw.code}</span>
-                        <span className="flex-1 truncate text-[13px] font-medium text-brand-navy">{destGw.name}</span>
+                      <div className="flex items-center gap-2 rounded-[10px] border-[1.5px] border-brand-marine bg-brand-marinePale px-3.5 py-2.5 shadow-xs">
+                        <span className="font-mono text-xs font-bold text-brand-marine bg-white px-2 py-0.5 rounded shadow-2xs">{destGw.code}</span>
+                        <div className="flex-1 truncate">
+                          <span className="truncate text-[13px] font-bold text-brand-navy block">{destGw.name}</span>
+                          <span className="text-[11px] text-brand-slate block truncate">{destGw.city}, {destGw.country}</span>
+                        </div>
                         <button
                           type="button"
                           onClick={() => { setDestGw(null); setDestSearch(''); setShowDestDropdown(false) }}
-                          className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-brand-marine/20 text-brand-marine text-xs font-bold hover:bg-brand-marine hover:text-white transition-colors"
+                          className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-brand-marine/20 text-brand-marine text-xs font-bold hover:bg-brand-marine hover:text-white transition-colors"
                           title="Clear destination"
                         >×</button>
                       </div>
                     ) : (
                       <>
-                        <input
-                          type="text"
-                          value={destSearch}
-                          onChange={(e) => { setDestSearch(e.target.value); setShowDestDropdown(true) }}
-                          onFocus={() => setShowDestDropdown(true)}
-                          className={brandInputStyle}
-                          placeholder="Search destination port or airport..."
-                        />
+                        <div className="relative">
+                          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-brand-slateLight" />
+                          <input
+                            type="text"
+                            value={destSearch}
+                            onChange={(e) => {
+                              if (checkAuthGate()) return
+                              setDestSearch(e.target.value)
+                              setShowDestDropdown(true)
+                            }}
+                            onFocus={() => {
+                              if (checkAuthGate()) return
+                              setShowDestDropdown(true)
+                            }}
+                            className={`${brandInputStyle} pl-10 pr-9`}
+                            placeholder="Search city, port name, UN/LOCODE, IATA..."
+                          />
+                          {destSearch && (
+                            <button
+                              type="button"
+                              onClick={() => { setDestSearch(''); setShowDestDropdown(false) }}
+                              className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-brand-slateLight/20 text-brand-slate text-xs hover:bg-brand-slateLight/40"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
                         {showDestDropdown && (
-                          <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-md2 border border-brand-line bg-white shadow-md2">
+                          <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-brand-line bg-white shadow-xl">
+                            <div className="sticky top-0 bg-brand-cloud/90 backdrop-blur-sm px-3.5 py-1.5 border-b border-brand-line flex items-center justify-between text-[11px] text-brand-slate font-medium">
+                              <span>Matching locations ({destCandidates.length})</span>
+                              <button
+                                type="button"
+                                onClick={() => { setPortDirectoryTarget('dest'); setShowPortDirectoryModal(true); setShowDestDropdown(false); }}
+                                className="text-brand-marine font-semibold hover:underline flex items-center gap-1"
+                              >
+                                <Globe className="h-3 w-3" /> Full Directory
+                              </button>
+                            </div>
                             {destCandidates.length === 0 ? (
-                              <div className="p-3 text-xs text-brand-slate">No matching ports/airports found</div>
+                              <div className="p-4 text-center text-xs text-brand-slate">
+                                <p className="font-semibold text-brand-navy">No matching ports or airports found</p>
+                                <button
+                                  type="button"
+                                  onClick={() => { setPortDirectoryTarget('dest'); setShowPortDirectoryModal(true); setShowDestDropdown(false); }}
+                                  className="mt-2 text-xs text-brand-marine font-semibold underline"
+                                >
+                                  Browse all 180+ global gateways
+                                </button>
+                              </div>
                             ) : (
                               destCandidates.map((g) => (
                                 <div
@@ -391,9 +531,25 @@ export default function Ship() {
                                     setDestSearch(`${g.code} — ${g.name}`)
                                     setShowDestDropdown(false)
                                   }}
-                                  className="cursor-pointer px-4 py-2.5 text-xs hover:bg-brand-cloud border-b border-brand-line/50 last:border-0"
+                                  className="cursor-pointer px-3.5 py-2.5 hover:bg-brand-cloud/70 border-b border-brand-line/40 last:border-0 flex items-center justify-between gap-2 transition-colors"
                                 >
-                                  <span className="font-mono font-semibold text-brand-marine">{g.code}</span> — {g.name} ({g.country})
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="font-mono text-xs font-bold text-brand-marine bg-brand-marinePale px-1.5 py-0.5 rounded flex-shrink-0">
+                                      {g.code}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <div className="truncate text-xs font-semibold text-brand-navy">{g.name}</div>
+                                      <div className="truncate text-[11px] text-brand-slate flex items-center gap-1">
+                                        <MapPin className="h-2.5 w-2.5 flex-shrink-0" /> {g.city}, {g.country}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 flex items-center gap-1 ${
+                                    g.type === 'AIRPORT' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'
+                                  }`}>
+                                    {g.type === 'AIRPORT' ? <Plane className="h-2.5 w-2.5" /> : <ShipIcon className="h-2.5 w-2.5" />}
+                                    {g.type === 'AIRPORT' ? 'AIR' : 'PORT'}
+                                  </span>
                                 </div>
                               ))
                             )}
@@ -1077,6 +1233,29 @@ export default function Ship() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* GLOBAL PORT & AIRPORT DIRECTORY MODAL */}
+      {showPortDirectoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+            <GlobalPortDirectory
+              isModal={true}
+              onClose={() => setShowPortDirectoryModal(false)}
+              onSelectPort={(g, asOrigin) => {
+                const targetIsOrigin = asOrigin !== undefined ? asOrigin : (portDirectoryTarget === 'origin')
+                if (targetIsOrigin) {
+                  setOriginGw(g)
+                  setOriginSearch(`${g.code} — ${g.name}`)
+                } else {
+                  setDestGw(g)
+                  setDestSearch(`${g.code} — ${g.name}`)
+                }
+                setShowPortDirectoryModal(false)
+              }}
+            />
           </div>
         </div>
       )}

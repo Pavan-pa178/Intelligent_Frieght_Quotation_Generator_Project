@@ -46,75 +46,127 @@ COUNTRIES = [
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2. PORTS  (60 real sea ports — UN/LOCODE, GPS, max draft, terminal)
+# 2. PORTS  (85+ real world sea ports — UN/LOCODE, GPS, max draft, terminal)
 # ─────────────────────────────────────────────────────────────────────────────
 PORTS = [
     # India
     {"locode":"INNSA","name":"Jawaharlal Nehru Port (JNPT)","city":"Navi Mumbai","country":"IN","lat":18.9500,"lon":72.9514,"type":"SEA","max_draft_m":14.5,"terminal":"APMT / Gateway Terminals","tier":1,"active":True},
     {"locode":"INMAA","name":"Chennai Port","city":"Chennai","country":"IN","lat":13.0827,"lon":80.2989,"type":"SEA","max_draft_m":13.0,"terminal":"CCTL / QCPL","tier":1,"active":True},
-    {"locode":"INMUN","name":"Mundra Port","city":"Mundra","country":"IN","lat":22.8394,"lon":69.7141,"type":"SEA","max_draft_m":17.0,"terminal":"APMT Mundra","tier":1,"active":True},
+    {"locode":"INMUN","name":"Mundra Port","city":"Mundra","country":"IN","lat":22.8394,"lon":69.7141,"type":"SEA","max_draft_m":17.0,"terminal":"APMT Mundra / AICTPL","tier":1,"active":True},
     {"locode":"INPAV","name":"Pipavav Port (GPPL)","city":"Amreli","country":"IN","lat":20.9167,"lon":71.5000,"type":"SEA","max_draft_m":14.0,"terminal":"GPPL Container Terminal","tier":2,"active":True},
     {"locode":"INVIS","name":"Visakhapatnam Port","city":"Visakhapatnam","country":"IN","lat":17.6868,"lon":83.2185,"type":"SEA","max_draft_m":14.0,"terminal":"APSEZ Vizag","tier":2,"active":True},
     {"locode":"INKTP","name":"Kattupalli Port","city":"Chennai","country":"IN","lat":13.2720,"lon":80.3120,"type":"SEA","max_draft_m":14.0,"terminal":"L&T Kattupalli","tier":2,"active":True},
     {"locode":"INHAL","name":"Haldia Dock Complex","city":"Haldia","country":"IN","lat":22.0607,"lon":88.0703,"type":"SEA","max_draft_m":8.5,"terminal":"Haldia Dock Complex","tier":2,"active":True},
+    {"locode":"INCCU","name":"Kolkata Port (Syama Prasad)","city":"Kolkata","country":"IN","lat":22.5400,"lon":88.3200,"type":"SEA","max_draft_m":8.0,"terminal":"NSD Netaji Subhash Dock","tier":2,"active":True},
     {"locode":"INCOK","name":"Cochin Port (Vallarpadam)","city":"Kochi","country":"IN","lat":9.9653,"lon":76.2719,"type":"SEA","max_draft_m":14.5,"terminal":"ICTT Vallarpadam","tier":2,"active":True},
-    # UAE
+    {"locode":"INTUT","name":"V.O. Chidambaranar Port (Tuticorin)","city":"Thoothukudi","country":"IN","lat":8.7642,"lon":78.1348,"type":"SEA","max_draft_m":14.0,"terminal":"DBGT Tuticorin","tier":2,"active":True},
+    {"locode":"INIXE","name":"New Mangalore Port","city":"Mangalore","country":"IN","lat":12.9234,"lon":74.8190,"type":"SEA","max_draft_m":14.0,"terminal":"NMPT Container Berth","tier":2,"active":True},
+    {"locode":"INMRM","name":"Mormugao Port","city":"Goa","country":"IN","lat":15.4137,"lon":73.8016,"type":"SEA","max_draft_m":13.0,"terminal":"Mormugao Terminal","tier":2,"active":True},
+    {"locode":"INKRP","name":"Krishnapatnam Port","city":"Nellore","country":"IN","lat":14.2500,"lon":80.1200,"type":"SEA","max_draft_m":15.0,"terminal":"APSEZ Krishnapatnam","tier":2,"active":True},
+    {"locode":"INHZR","name":"Hazira Port","city":"Surat","country":"IN","lat":21.1167,"lon":72.6333,"type":"SEA","max_draft_m":14.5,"terminal":"Adani Hazira Port","tier":2,"active":True},
+    # Middle East & GCC
     {"locode":"AEJEA","name":"Jebel Ali Port","city":"Dubai","country":"AE","lat":24.9857,"lon":55.0640,"type":"SEA","max_draft_m":17.0,"terminal":"DP World Jebel Ali (T1/T2/T3)","tier":1,"active":True},
     {"locode":"AEAUH","name":"Abu Dhabi (Khalifa Port)","city":"Abu Dhabi","country":"AE","lat":24.8196,"lon":54.6519,"type":"SEA","max_draft_m":16.0,"terminal":"Abu Dhabi Terminals (ADT)","tier":1,"active":True},
-    # Singapore
-    {"locode":"SGSIN","name":"Port of Singapore (PSA)","city":"Singapore","country":"SG","lat":1.2655,"lon":103.8232,"type":"SEA","max_draft_m":18.0,"terminal":"Tanjong Pagar / Brani / Keppel","tier":1,"active":True},
-    # Netherlands
-    {"locode":"NLRTM","name":"Port of Rotterdam","city":"Rotterdam","country":"NL","lat":51.9500,"lon":4.1400,"type":"SEA","max_draft_m":23.0,"terminal":"ECT / APM Terminals Maasvlakte","tier":1,"active":True},
-    {"locode":"NLAMS","name":"Port of Amsterdam","city":"Amsterdam","country":"NL","lat":52.3770,"lon":4.8952,"type":"SEA","max_draft_m":12.5,"terminal":"North Sea Port Amsterdam","tier":2,"active":True},
-    # Germany
-    {"locode":"DEHAM","name":"Port of Hamburg","city":"Hamburg","country":"DE","lat":53.5389,"lon":9.9900,"type":"SEA","max_draft_m":15.6,"terminal":"HHLA / Eurogate Hamburg","tier":1,"active":True},
-    {"locode":"DEBRV","name":"Port of Bremerhaven","city":"Bremerhaven","country":"DE","lat":53.5500,"lon":8.5833,"type":"SEA","max_draft_m":16.0,"terminal":"BLG / Eurogate Bremerhaven","tier":1,"active":True},
-    # Belgium
-    {"locode":"BEANR","name":"Port of Antwerp-Bruges","city":"Antwerp","country":"BE","lat":51.2993,"lon":4.3814,"type":"SEA","max_draft_m":16.0,"terminal":"PSA Antwerp / MPET","tier":1,"active":True},
-    # China
-    {"locode":"CNSHA","name":"Port of Shanghai (Yangshan)","city":"Shanghai","country":"CN","lat":30.6236,"lon":122.0712,"type":"SEA","max_draft_m":18.0,"terminal":"SIPG Yangshan Deep Water Port","tier":1,"active":True},
-    {"locode":"CNNBO","name":"Port of Ningbo-Zhoushan","city":"Ningbo","country":"CN","lat":29.9233,"lon":121.6274,"type":"SEA","max_draft_m":20.0,"terminal":"NBT / ZPCT","tier":1,"active":True},
-    {"locode":"CNSZX","name":"Port of Shenzhen (Yantian)","city":"Shenzhen","country":"CN","lat":22.5773,"lon":114.2613,"type":"SEA","max_draft_m":17.0,"terminal":"YICT / COSCO Yantian","tier":1,"active":True},
-    {"locode":"CNGGZ","name":"Port of Guangzhou (Nansha)","city":"Guangzhou","country":"CN","lat":22.7260,"lon":113.6183,"type":"SEA","max_draft_m":17.0,"terminal":"GPCT Nansha","tier":1,"active":True},
-    {"locode":"CNTAO","name":"Port of Qingdao","city":"Qingdao","country":"CN","lat":36.0745,"lon":120.3228,"type":"SEA","max_draft_m":15.0,"terminal":"QQCT / QQCTU","tier":1,"active":True},
-    # South Korea
-    {"locode":"KRPUS","name":"Port of Busan (Pusan New Port)","city":"Busan","country":"KR","lat":35.0732,"lon":128.9831,"type":"SEA","max_draft_m":17.0,"terminal":"PNC / BPA / HJNC","tier":1,"active":True},
-    # Japan
-    {"locode":"JPTYO","name":"Port of Tokyo","city":"Tokyo","country":"JP","lat":35.6190,"lon":139.7540,"type":"SEA","max_draft_m":16.0,"terminal":"TCT Oi / Aomi","tier":1,"active":True},
-    {"locode":"JPYOK","name":"Port of Yokohama","city":"Yokohama","country":"JP","lat":35.4479,"lon":139.6421,"type":"SEA","max_draft_m":16.0,"terminal":"Honmoku / Yokohama Daikoku","tier":1,"active":True},
-    # United States
-    {"locode":"USLAX","name":"Port of Los Angeles","city":"Los Angeles","country":"US","lat":33.7364,"lon":-118.2717,"type":"SEA","max_draft_m":16.8,"terminal":"APM Terminals Pier 400","tier":1,"active":True},
-    {"locode":"USNYC","name":"Port of New York & New Jersey","city":"New York","country":"US","lat":40.6650,"lon":-74.1050,"type":"SEA","max_draft_m":15.5,"terminal":"GCT Bayonne / APMT Port Elizabeth","tier":1,"active":True},
-    {"locode":"USSAV","name":"Port of Savannah","city":"Savannah","country":"US","lat":31.9683,"lon":-81.0931,"type":"SEA","max_draft_m":15.2,"terminal":"GPA Garden City Terminal","tier":1,"active":True},
-    # UK
-    {"locode":"GBLGP","name":"Port of Felixstowe","city":"Felixstowe","country":"GB","lat":51.9659,"lon":1.3329,"type":"SEA","max_draft_m":17.0,"terminal":"Felixstowe North / South","tier":1,"active":True},
-    # Australia
-    {"locode":"AUSYD","name":"Port of Sydney (Botany)","city":"Sydney","country":"AU","lat":-33.9693,"lon":151.1975,"type":"SEA","max_draft_m":14.0,"terminal":"Patrick / DP World Botany","tier":1,"active":True},
-    {"locode":"AUMEL","name":"Port of Melbourne","city":"Melbourne","country":"AU","lat":-37.8228,"lon":144.9255,"type":"SEA","max_draft_m":14.5,"terminal":"VICT / DP World Swanson","tier":1,"active":True},
-    # Malaysia
-    {"locode":"MYPKG","name":"Port Klang (Westports)","city":"Port Klang","country":"MY","lat":3.0091,"lon":101.3899,"type":"SEA","max_draft_m":17.0,"terminal":"Westports / Northport","tier":1,"active":True},
-    # Saudi Arabia
-    {"locode":"SAJED","name":"King Abdulaziz Port (Jeddah Islamic Port)","city":"Jeddah","country":"SA","lat":21.5086,"lon":39.1578,"type":"SEA","max_draft_m":17.0,"terminal":"Red Sea Gateway Terminal (RSGT)","tier":1,"active":True},
-    # Egypt
-    {"locode":"EGPSD","name":"Port Said East Port","city":"Port Said","country":"EG","lat":31.2601,"lon":32.3686,"type":"SEA","max_draft_m":16.0,"terminal":"SCCT / El-Dekheila","tier":1,"active":True},
-    # South Africa
-    {"locode":"ZACPT","name":"Port of Cape Town","city":"Cape Town","country":"ZA","lat":-33.9040,"lon":18.4232,"type":"SEA","max_draft_m":12.8,"terminal":"Cape Town Container Terminal (CTCT)","tier":2,"active":True},
-    # Brazil
-    {"locode":"BRSSZ","name":"Port of Santos","city":"Santos","country":"BR","lat":-23.9608,"lon":-46.3342,"type":"SEA","max_draft_m":15.0,"terminal":"Santos Brasil / BTP / APM Santos","tier":1,"active":True},
-    # Turkey
-    {"locode":"TRMRM","name":"Mersin International Port","city":"Mersin","country":"TR","lat":36.7961,"lon":34.5858,"type":"SEA","max_draft_m":16.0,"terminal":"MIP Terminal","tier":1,"active":True},
-    # Oman
+    {"locode":"AEKLF","name":"Khor Fakkan Container Terminal","city":"Sharjah","country":"AE","lat":25.3500,"lon":56.3500,"type":"SEA","max_draft_m":16.0,"terminal":"Gulftainer Khor Fakkan","tier":2,"active":True},
+    {"locode":"SAJED","name":"King Abdulaziz Port (Jeddah Islamic)","city":"Jeddah","country":"SA","lat":21.5086,"lon":39.1578,"type":"SEA","max_draft_m":17.0,"terminal":"Red Sea Gateway Terminal (RSGT)","tier":1,"active":True},
+    {"locode":"SADMN","name":"King Abdulaziz Port (Dammam)","city":"Dammam","country":"SA","lat":26.4444,"lon":50.1989,"type":"SEA","max_draft_m":15.0,"terminal":"SGP Dammam","tier":1,"active":True},
     {"locode":"OMSLL","name":"Port of Salalah","city":"Salalah","country":"OM","lat":16.9413,"lon":54.0139,"type":"SEA","max_draft_m":16.0,"terminal":"Salalah Container Terminal","tier":2,"active":True},
-    # Vietnam
-    {"locode":"VNHPH","name":"Hai Phong Port (Lach Huyen)","city":"Hai Phong","country":"VN","lat":20.8449,"lon":106.6880,"type":"SEA","max_draft_m":14.0,"terminal":"Lach Huyen International Container Terminal","tier":2,"active":True},
-    # Thailand
-    {"locode":"THBKK","name":"Laem Chabang Port","city":"Chonburi","country":"TH","lat":13.0853,"lon":100.8803,"type":"SEA","max_draft_m":16.0,"terminal":"LCMT / LCT","tier":1,"active":True},
-    # Kenya
-    {"locode":"KEMBA","name":"Port of Mombasa","city":"Mombasa","country":"KE","lat":-4.0435,"lon":39.6682,"type":"SEA","max_draft_m":13.5,"terminal":"Kenya Ports Authority (KPA)","tier":2,"active":True},
+    {"locode":"OMSOH","name":"Port of Sohar","city":"Sohar","country":"OM","lat":24.4989,"lon":56.6347,"type":"SEA","max_draft_m":16.0,"terminal":"OICT Sohar","tier":2,"active":True},
+    {"locode":"QAHMD","name":"Hamad Port","city":"Doha","country":"QA","lat":25.0167,"lon":51.6000,"type":"SEA","max_draft_m":17.0,"terminal":"QTerminals Hamad Port","tier":1,"active":True},
+    {"locode":"KWSWK","name":"Port of Shuwaikh","city":"Kuwait City","country":"KW","lat":29.3500,"lon":47.9333,"type":"SEA","max_draft_m":12.5,"terminal":"KPA Shuwaikh","tier":2,"active":True},
+    {"locode":"BHKBS","name":"Khalifa Bin Salman Port","city":"Hidd","country":"BH","lat":26.1833,"lon":50.6833,"type":"SEA","max_draft_m":15.0,"terminal":"APMT Bahrain","tier":2,"active":True},
+    # Singapore & Southeast Asia
+    {"locode":"SGSIN","name":"Port of Singapore (PSA)","city":"Singapore","country":"SG","lat":1.2655,"lon":103.8232,"type":"SEA","max_draft_m":18.0,"terminal":"Tanjong Pagar / Pasir Panjang / Tuas","tier":1,"active":True},
+    {"locode":"MYPKG","name":"Port Klang (Westports & Northport)","city":"Port Klang","country":"MY","lat":3.0091,"lon":101.3899,"type":"SEA","max_draft_m":17.0,"terminal":"Westports / Northport","tier":1,"active":True},
+    {"locode":"MYTPP","name":"Port of Tanjung Pelepas (PTP)","city":"Johor","country":"MY","lat":1.3667,"lon":103.5500,"type":"SEA","max_draft_m":17.5,"terminal":"PTP Container Terminal","tier":1,"active":True},
+    {"locode":"THBKK","name":"Laem Chabang Port","city":"Chonburi","country":"TH","lat":13.0853,"lon":100.8803,"type":"SEA","max_draft_m":16.0,"terminal":"LCMT / LCT / TIPS","tier":1,"active":True},
+    {"locode":"VNHPH","name":"Hai Phong Port (Lach Huyen)","city":"Hai Phong","country":"VN","lat":20.8449,"lon":106.6880,"type":"SEA","max_draft_m":14.0,"terminal":"Lach Huyen International (TC-HICT)","tier":1,"active":True},
+    {"locode":"VNSGN","name":"Ho Chi Minh City (Cat Lai & Cai Mep)","city":"Ho Chi Minh City","country":"VN","lat":10.7500,"lon":106.7833,"type":"SEA","max_draft_m":16.0,"terminal":"Saigon Newport / Cai Mep TCIT","tier":1,"active":True},
+    {"locode":"IDTPP","name":"Tanjung Priok (Jakarta)","city":"Jakarta","country":"ID","lat":-6.1000,"lon":106.8833,"type":"SEA","max_draft_m":14.0,"terminal":"JICT / NPCT1 Jakarta","tier":1,"active":True},
+    {"locode":"PHMNL","name":"Port of Manila (MICT)","city":"Manila","country":"PH","lat":14.5833,"lon":120.9667,"type":"SEA","max_draft_m":14.5,"terminal":"ICTSI MICT Manila","tier":1,"active":True},
+    {"locode":"LKCMB","name":"Port of Colombo","city":"Colombo","country":"LK","lat":6.9500,"lon":79.8500,"type":"SEA","max_draft_m":18.0,"terminal":"CICT / SAGT / JCT Colombo","tier":1,"active":True},
+    {"locode":"BDCGP","name":"Chattogram Port (Chittagong)","city":"Chittagong","country":"BD","lat":22.3167,"lon":91.8000,"type":"SEA","max_draft_m":9.5,"terminal":"CPA Chittagong Container Terminal","tier":2,"active":True},
+    {"locode":"PKKHI","name":"Port of Karachi (KPT & QICT)","city":"Karachi","country":"PK","lat":24.8000,"lon":66.9833,"type":"SEA","max_draft_m":13.0,"terminal":"KICT / SAPT / QICT Port Qasim","tier":1,"active":True},
+    # East Asia (China, Korea, Japan, Taiwan)
+    {"locode":"CNSHA","name":"Port of Shanghai (Yangshan)","city":"Shanghai","country":"CN","lat":30.6236,"lon":122.0712,"type":"SEA","max_draft_m":18.0,"terminal":"SIPG Yangshan Deep Water Port","tier":1,"active":True},
+    {"locode":"CNNBO","name":"Port of Ningbo-Zhoushan","city":"Ningbo","country":"CN","lat":29.9233,"lon":121.6274,"type":"SEA","max_draft_m":20.0,"terminal":"NBT / ZPCT / Meishan","tier":1,"active":True},
+    {"locode":"CNSZX","name":"Port of Shenzhen (Yantian & Shekou)","city":"Shenzhen","country":"CN","lat":22.5773,"lon":114.2613,"type":"SEA","max_draft_m":17.0,"terminal":"YICT / CCT Shekou / Chiwan","tier":1,"active":True},
+    {"locode":"CNGGZ","name":"Port of Guangzhou (Nansha)","city":"Guangzhou","country":"CN","lat":22.7260,"lon":113.6183,"type":"SEA","max_draft_m":17.0,"terminal":"GPCT Nansha Phase 1-4","tier":1,"active":True},
+    {"locode":"CNTAO","name":"Port of Qingdao","city":"Qingdao","country":"CN","lat":36.0745,"lon":120.3228,"type":"SEA","max_draft_m":16.0,"terminal":"QQCT / QQCTU Qianwan","tier":1,"active":True},
+    {"locode":"CNTNJ","name":"Port of Tianjin (Xingang)","city":"Tianjin","country":"CN","lat":38.9833,"lon":117.7500,"type":"SEA","max_draft_m":15.5,"terminal":"TPCT / TACT Tianjin","tier":1,"active":True},
+    {"locode":"CNXMN","name":"Port of Xiamen","city":"Xiamen","country":"CN","lat":24.4833,"lon":118.0833,"type":"SEA","max_draft_m":15.0,"terminal":"Xiamen International Container Terminal","tier":1,"active":True},
+    {"locode":"HKHKG","name":"Port of Hong Kong (Kwai Tsing)","city":"Hong Kong","country":"CN","lat":22.3500,"lon":114.1167,"type":"SEA","max_draft_m":15.5,"terminal":"HIT / Modern Terminals / COSCO-HIT","tier":1,"active":True},
+    {"locode":"KRPUS","name":"Port of Busan (Pusan New Port)","city":"Busan","country":"KR","lat":35.0732,"lon":128.9831,"type":"SEA","max_draft_m":17.0,"terminal":"PNC / BPA / HJNC Busan","tier":1,"active":True},
+    {"locode":"KRINC","name":"Port of Incheon","city":"Incheon","country":"KR","lat":37.4500,"lon":126.6000,"type":"SEA","max_draft_m":14.0,"terminal":"SNCT / HJIT Incheon","tier":2,"active":True},
+    {"locode":"JPTYO","name":"Port of Tokyo","city":"Tokyo","country":"JP","lat":35.6190,"lon":139.7540,"type":"SEA","max_draft_m":16.0,"terminal":"TCT Oi / Aomi Container Terminal","tier":1,"active":True},
+    {"locode":"JPYOK","name":"Port of Yokohama","city":"Yokohama","country":"JP","lat":35.4479,"lon":139.6421,"type":"SEA","max_draft_m":16.0,"terminal":"Honmoku / Daikoku Pier","tier":1,"active":True},
+    {"locode":"JPKOB","name":"Port of Kobe","city":"Kobe","country":"JP","lat":34.6833,"lon":135.2000,"type":"SEA","max_draft_m":15.0,"terminal":"Port Island / Rokko Island","tier":1,"active":True},
+    {"locode":"TWKHH","name":"Port of Kaohsiung","city":"Kaohsiung","country":"TW","lat":22.6167,"lon":120.2833,"type":"SEA","max_draft_m":16.5,"terminal":"Kaohsiung Intercontinental Terminals","tier":1,"active":True},
+    # Europe (Northern, Mediterranean, UK)
+    {"locode":"NLRTM","name":"Port of Rotterdam","city":"Rotterdam","country":"NL","lat":51.9500,"lon":4.1400,"type":"SEA","max_draft_m":23.0,"terminal":"ECT Delta / APMT Maasvlakte II","tier":1,"active":True},
+    {"locode":"NLAMS","name":"Port of Amsterdam","city":"Amsterdam","country":"NL","lat":52.3770,"lon":4.8952,"type":"SEA","max_draft_m":12.5,"terminal":"North Sea Port Amsterdam","tier":2,"active":True},
+    {"locode":"BEANR","name":"Port of Antwerp-Bruges","city":"Antwerp","country":"BE","lat":51.2993,"lon":4.3814,"type":"SEA","max_draft_m":16.0,"terminal":"PSA Antwerp / MPET Deurganckdok","tier":1,"active":True},
+    {"locode":"DEHAM","name":"Port of Hamburg","city":"Hamburg","country":"DE","lat":53.5389,"lon":9.9900,"type":"SEA","max_draft_m":15.6,"terminal":"HHLA Altenwerder / Eurogate","tier":1,"active":True},
+    {"locode":"DEBRV","name":"Port of Bremerhaven","city":"Bremerhaven","country":"DE","lat":53.5500,"lon":8.5833,"type":"SEA","max_draft_m":16.0,"terminal":"Eurogate / NTB Bremerhaven","tier":1,"active":True},
+    {"locode":"GBLGP","name":"Port of Felixstowe","city":"Felixstowe","country":"GB","lat":51.9659,"lon":1.3329,"type":"SEA","max_draft_m":17.0,"terminal":"Felixstowe Trinity / Berths 8&9","tier":1,"active":True},
+    {"locode":"GBSOU","name":"Port of Southampton","city":"Southampton","country":"GB","lat":50.9000,"lon":-1.4000,"type":"SEA","max_draft_m":15.5,"terminal":"DP World Southampton","tier":1,"active":True},
+    {"locode":"GBLON","name":"London Gateway Port","city":"London / Essex","country":"GB","lat":51.5000,"lon":0.4667,"type":"SEA","max_draft_m":17.0,"terminal":"DP World London Gateway","tier":1,"active":True},
+    {"locode":"FRLEH","name":"Port of Le Havre (HAROPA)","city":"Le Havre","country":"FR","lat":49.4833,"lon":0.1167,"type":"SEA","max_draft_m":16.0,"terminal":"HAROPA Port 2000 GMP/TN","tier":1,"active":True},
+    {"locode":"FRMRS","name":"Port of Marseille-Fos","city":"Marseille","country":"FR","lat":43.4000,"lon":4.9000,"type":"SEA","max_draft_m":16.0,"terminal":"Fos 2XL Eurofos / Seayard","tier":1,"active":True},
+    {"locode":"ESVLC","name":"Port of Valencia","city":"Valencia","country":"ES","lat":39.4500,"lon":-0.3167,"type":"SEA","max_draft_m":17.0,"terminal":"CSP Iberian / MSC Valencia Terminal","tier":1,"active":True},
+    {"locode":"ESBCN","name":"Port of Barcelona","city":"Barcelona","country":"ES","lat":41.3500,"lon":2.1667,"type":"SEA","max_draft_m":16.0,"terminal":"BEST Hutchison / APMT Barcelona","tier":1,"active":True},
+    {"locode":"ESALG","name":"Port of Algeciras","city":"Algeciras","country":"ES","lat":36.1333,"lon":-5.4333,"type":"SEA","max_draft_m":17.5,"terminal":"APMT Algeciras / TTI Algeciras","tier":1,"active":True},
+    {"locode":"ITGOA","name":"Port of Genoa","city":"Genoa","country":"IT","lat":44.4000,"lon":8.9000,"type":"SEA","max_draft_m":15.0,"terminal":"PSA Genova Pra / SECH Terminal","tier":1,"active":True},
+    {"locode":"ITGIT","name":"Port of Gioia Tauro","city":"Gioia Tauro","country":"IT","lat":38.4333,"lon":15.9000,"type":"SEA","max_draft_m":18.0,"terminal":"MCT Medcenter Container Terminal","tier":1,"active":True},
+    {"locode":"GRPIR","name":"Port of Piraeus","city":"Athens / Piraeus","country":"GR","lat":37.9500,"lon":23.6333,"type":"SEA","max_draft_m":16.5,"terminal":"Piraeus Container Terminal (COSCO)","tier":1,"active":True},
+    {"locode":"TRMRM","name":"Mersin International Port","city":"Mersin","country":"TR","lat":36.7961,"lon":34.5858,"type":"SEA","max_draft_m":16.0,"terminal":"MIP Terminal","tier":1,"active":True},
+    {"locode":"TRIST","name":"Port of Ambarli (Istanbul)","city":"Istanbul","country":"TR","lat":40.9667,"lon":28.6833,"type":"SEA","max_draft_m":16.0,"terminal":"Marport / Kumport Istanbul","tier":1,"active":True},
+    {"locode":"PLGDN","name":"Baltic Hub (Port of Gdansk)","city":"Gdansk","country":"PL","lat":54.3833,"lon":18.6667,"type":"SEA","max_draft_m":17.0,"terminal":"Baltic Hub T1/T2 Gdansk","tier":1,"active":True},
+    # North America (USA, Canada, Mexico)
+    {"locode":"USLAX","name":"Port of Los Angeles","city":"Los Angeles","country":"US","lat":33.7364,"lon":-118.2717,"type":"SEA","max_draft_m":16.8,"terminal":"APM Terminals Pier 400 / Trapac","tier":1,"active":True},
+    {"locode":"USLGB","name":"Port of Long Beach","city":"Long Beach","country":"US","lat":33.7540,"lon":-118.2160,"type":"SEA","max_draft_m":16.5,"terminal":"Long Beach Container Terminal (LBCT)","tier":1,"active":True},
+    {"locode":"USNYC","name":"Port of New York & New Jersey","city":"New York","country":"US","lat":40.6650,"lon":-74.1050,"type":"SEA","max_draft_m":15.5,"terminal":"GCT Bayonne / APMT Port Elizabeth / Maher","tier":1,"active":True},
+    {"locode":"USSAV","name":"Port of Savannah","city":"Savannah","country":"US","lat":31.9683,"lon":-81.0931,"type":"SEA","max_draft_m":15.2,"terminal":"GPA Garden City Terminal","tier":1,"active":True},
+    {"locode":"USHOU","name":"Port of Houston","city":"Houston","country":"US","lat":29.7500,"lon":-95.2500,"type":"SEA","max_draft_m":14.0,"terminal":"Bayport / Barbours Cut Container Terminal","tier":1,"active":True},
+    {"locode":"USORF","name":"Port of Virginia (Norfolk)","city":"Norfolk","country":"US","lat":36.9000,"lon":-76.3333,"type":"SEA","max_draft_m":16.5,"terminal":"Norfolk International Terminals (NIT)","tier":1,"active":True},
+    {"locode":"USCHS","name":"Port of Charleston","city":"Charleston","country":"US","lat":32.7833,"lon":-79.9333,"type":"SEA","max_draft_m":15.8,"terminal":"Wando Welch / Leatherman Terminal","tier":1,"active":True},
+    {"locode":"USSEA","name":"Port of Seattle / Tacoma (NWSA)","city":"Seattle / Tacoma","country":"US","lat":47.6000,"lon":-122.3333,"type":"SEA","max_draft_m":16.0,"terminal":"NWSA Terminal 5 / Husky / Washington","tier":1,"active":True},
+    {"locode":"USOAK","name":"Port of Oakland","city":"Oakland","country":"US","lat":37.8000,"lon":-122.2833,"type":"SEA","max_draft_m":15.2,"terminal":"Oakland International Container Terminal","tier":1,"active":True},
+    {"locode":"CAVAN","name":"Port of Vancouver","city":"Vancouver","country":"CA","lat":49.2833,"lon":-123.1167,"type":"SEA","max_draft_m":16.0,"terminal":"Deltaport / Centerm Vancouver","tier":1,"active":True},
+    {"locode":"CAPRR","name":"Port of Prince Rupert","city":"Prince Rupert","country":"CA","lat":54.3167,"lon":-130.3333,"type":"SEA","max_draft_m":18.0,"terminal":"Fairview Container Terminal","tier":1,"active":True},
+    {"locode":"CAMTR","name":"Port of Montreal","city":"Montreal","country":"CA","lat":45.5000,"lon":-73.5500,"type":"SEA","max_draft_m":11.3,"terminal":"Cast / Racine / Maisonneuve","tier":1,"active":True},
+    {"locode":"MXZLO","name":"Port of Manzanillo","city":"Manzanillo","country":"MX","lat":19.0500,"lon":-104.3167,"type":"SEA","max_draft_m":15.0,"terminal":"CONTECON / SSA Mexico Manzanillo","tier":1,"active":True},
+    {"locode":"MXLZC","name":"Port of Lazaro Cardenas","city":"Lazaro Cardenas","country":"MX","lat":17.9500,"lon":-102.1833,"type":"SEA","max_draft_m":16.5,"terminal":"APMT Lazaro Cardenas / Hutchison","tier":1,"active":True},
+    # South America
+    {"locode":"BRSSZ","name":"Port of Santos","city":"Santos / Sao Paulo","country":"BR","lat":-23.9608,"lon":-46.3342,"type":"SEA","max_draft_m":15.0,"terminal":"Santos Brasil / BTP / DP World Santos","tier":1,"active":True},
+    {"locode":"BRPNG","name":"Port of Paranagua","city":"Paranagua","country":"BR","lat":-25.5000,"lon":-48.5000,"type":"SEA","max_draft_m":13.5,"terminal":"TCP Terminal de Conteineres","tier":1,"active":True},
+    {"locode":"ARBUE","name":"Port of Buenos Aires","city":"Buenos Aires","country":"AR","lat":-34.6000,"lon":-58.3667,"type":"SEA","max_draft_m":10.5,"terminal":"Terminales Rio de la Plata (TRP) / BACTSSA","tier":1,"active":True},
+    {"locode":"PECLL","name":"Port of Callao","city":"Callao / Lima","country":"PE","lat":-12.0500,"lon":-77.1500,"type":"SEA","max_draft_m":16.0,"terminal":"DP World Callao / APM Terminals Callao","tier":1,"active":True},
+    {"locode":"CLSAI","name":"Port of San Antonio","city":"San Antonio","country":"CL","lat":-33.5833,"lon":-71.6167,"type":"SEA","max_draft_m":15.0,"terminal":"San Antonio Terminal Internacional (STI)","tier":1,"active":True},
+    {"locode":"COCTG","name":"Port of Cartagena","city":"Cartagena","country":"CO","lat":10.4000,"lon":-75.5000,"type":"SEA","max_draft_m":15.5,"terminal":"SPRC / Contecar Cartagena","tier":1,"active":True},
+    # Africa
+    {"locode":"EGPSD","name":"Port Said East Port (Suez Canal Hub)","city":"Port Said","country":"EG","lat":31.2601,"lon":32.3686,"type":"SEA","max_draft_m":16.0,"terminal":"SCCT Suez Canal Container Terminal","tier":1,"active":True},
+    {"locode":"EGALE","name":"Port of Alexandria","city":"Alexandria","country":"EG","lat":31.2000,"lon":29.9000,"type":"SEA","max_draft_m":14.0,"terminal":"Alexandria Container Terminal","tier":1,"active":True},
+    {"locode":"MATNG","name":"Tanger Med Port","city":"Tangier","country":"MA","lat":35.8833,"lon":-5.5000,"type":"SEA","max_draft_m":18.0,"terminal":"APMT Tanger / TC3 / Eurogate Tanger","tier":1,"active":True},
+    {"locode":"ZADUR","name":"Port of Durban","city":"Durban","country":"ZA","lat":-29.8667,"lon":31.0167,"type":"SEA","max_draft_m":12.8,"terminal":"Durban Container Terminal (DCT Pier 1/2)","tier":1,"active":True},
+    {"locode":"ZACPT","name":"Port of Cape Town","city":"Cape Town","country":"ZA","lat":-33.9040,"lon":18.4232,"type":"SEA","max_draft_m":12.8,"terminal":"Cape Town Container Terminal (CTCT)","tier":2,"active":True},
+    {"locode":"KEMBA","name":"Port of Mombasa","city":"Mombasa","country":"KE","lat":-4.0435,"lon":39.6682,"type":"SEA","max_draft_m":13.5,"terminal":"Kenya Ports Authority (KPA Berth 20/21)","tier":1,"active":True},
+    {"locode":"TZDAR","name":"Port of Dar es Salaam","city":"Dar es Salaam","country":"TZ","lat":-6.8333,"lon":39.3000,"type":"SEA","max_draft_m":14.5,"terminal":"DP World Dar es Salaam","tier":2,"active":True},
+    {"locode":"NGAPP","name":"Port of Lagos (Apapa & Tin Can)","city":"Lagos","country":"NG","lat":6.4500,"lon":3.3667,"type":"SEA","max_draft_m":13.0,"terminal":"APMT Apapa / TICT Tin Can Island","tier":1,"active":True},
+    {"locode":"NGLEK","name":"Lekki Deep Sea Port","city":"Lagos","country":"NG","lat":6.4167,"lon":3.9667,"type":"SEA","max_draft_m":16.5,"terminal":"Lekki Port LFTZ (CMA CGM)","tier":1,"active":True},
+    {"locode":"GHAPA","name":"Port of Tema","city":"Tema / Accra","country":"GH","lat":5.6333,"lon":0.0000,"type":"SEA","max_draft_m":16.0,"terminal":"MPS Terminal 3 Tema","tier":1,"active":True},
+    {"locode":"DJJIB","name":"Port of Djibouti (Doraleh)","city":"Djibouti","country":"DJ","lat":11.6000,"lon":43.1500,"type":"SEA","max_draft_m":18.0,"terminal":"Doraleh Container Terminal (SGTD)","tier":1,"active":True},
+    # Australia & Oceania
+    {"locode":"AUSYD","name":"Port of Sydney (Botany)","city":"Sydney","country":"AU","lat":-33.9693,"lon":151.1975,"type":"SEA","max_draft_m":14.0,"terminal":"Patrick / DP World Botany","tier":1,"active":True},
+    {"locode":"AUMEL","name":"Port of Melbourne","city":"Melbourne","country":"AU","lat":-37.8228,"lon":144.9255,"type":"SEA","max_draft_m":14.5,"terminal":"VICT Webb Dock / DP World Swanson","tier":1,"active":True},
+    {"locode":"AUBNE","name":"Port of Brisbane","city":"Brisbane","country":"AU","lat":-27.3833,"lon":153.1667,"type":"SEA","max_draft_m":14.0,"terminal":"Patrick / DP World Brisbane","tier":1,"active":True},
+    {"locode":"AUFRE","name":"Port of Fremantle (Perth)","city":"Fremantle","country":"AU","lat":-32.0500,"lon":115.7500,"type":"SEA","max_draft_m":13.0,"terminal":"Patrick / DP World Fremantle","tier":2,"active":True},
+    {"locode":"NZAKL","name":"Port of Auckland","city":"Auckland","country":"NZ","lat":-36.8333,"lon":174.7833,"type":"SEA","max_draft_m":13.5,"terminal":"Fergusson Container Terminal","tier":1,"active":True},
+    {"locode":"NZTRG","name":"Port of Tauranga","city":"Tauranga","country":"NZ","lat":-37.6667,"lon":176.1833,"type":"SEA","max_draft_m":14.5,"terminal":"Sulphur Point Container Terminal","tier":1,"active":True},
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 3. AIRPORTS  (40 real cargo airports — IATA, GPS, cargo tier)
+# 3. AIRPORTS  (70+ real cargo airports — IATA, GPS, cargo tier)
 # ─────────────────────────────────────────────────────────────────────────────
 AIRPORTS = [
     # India
@@ -124,57 +176,88 @@ AIRPORTS = [
     {"iata":"MAA","icao":"VOMM","name":"Chennai International Airport","city":"Chennai","country":"IN","lat":12.9941,"lon":80.1709,"cargo_tier":2,"customs_open_24h":True,"active":True},
     {"iata":"HYD","icao":"VOHS","name":"Rajiv Gandhi International Airport","city":"Hyderabad","country":"IN","lat":17.2403,"lon":78.4294,"cargo_tier":2,"customs_open_24h":True,"active":True},
     {"iata":"CCU","icao":"VECC","name":"Netaji Subhash Chandra Bose International Airport","city":"Kolkata","country":"IN","lat":22.6520,"lon":88.4463,"cargo_tier":2,"customs_open_24h":True,"active":True},
-    # UAE
+    {"iata":"AMD","icao":"VAAH","name":"Sardar Vallabhbhai Patel International Airport","city":"Ahmedabad","country":"IN","lat":23.0772,"lon":72.6347,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    {"iata":"COK","icao":"VOCI","name":"Cochin International Airport","city":"Kochi","country":"IN","lat":10.1556,"lon":76.3900,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    # Middle East
     {"iata":"DXB","icao":"OMDB","name":"Dubai International Airport","city":"Dubai","country":"AE","lat":25.2532,"lon":55.3657,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"AUH","icao":"OMAA","name":"Abu Dhabi International Airport","city":"Abu Dhabi","country":"AE","lat":24.4330,"lon":54.6511,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"DWC","icao":"OMDW","name":"Al Maktoum International Airport (Dubai South)","city":"Dubai","country":"AE","lat":24.8960,"lon":55.1614,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"AUH","icao":"OMAA","name":"Zayed International Airport (Abu Dhabi)","city":"Abu Dhabi","country":"AE","lat":24.4330,"lon":54.6511,"cargo_tier":1,"customs_open_24h":True,"active":True},
     {"iata":"SHJ","icao":"OMSJ","name":"Sharjah International Airport","city":"Sharjah","country":"AE","lat":25.3286,"lon":55.5174,"cargo_tier":2,"customs_open_24h":True,"active":True},
-    # Singapore
-    {"iata":"SIN","icao":"WSSS","name":"Singapore Changi Airport","city":"Singapore","country":"SG","lat":1.3644,"lon":103.9915,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # Netherlands
-    {"iata":"AMS","icao":"EHAM","name":"Amsterdam Airport Schiphol","city":"Amsterdam","country":"NL","lat":52.3086,"lon":4.7639,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # Germany
-    {"iata":"FRA","icao":"EDDF","name":"Frankfurt Airport","city":"Frankfurt","country":"DE","lat":50.0379,"lon":8.5622,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"CGN","icao":"EDDK","name":"Cologne Bonn Airport","city":"Cologne","country":"DE","lat":50.8659,"lon":7.1427,"cargo_tier":2,"customs_open_24h":True,"active":True},
-    {"iata":"LEJ","icao":"EDDP","name":"Leipzig/Halle Airport","city":"Leipzig","country":"DE","lat":51.4324,"lon":12.2160,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # Belgium
-    {"iata":"BRU","icao":"EBBR","name":"Brussels Airport","city":"Brussels","country":"BE","lat":50.9014,"lon":4.4844,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"LGG","icao":"EBLG","name":"Liège Airport","city":"Liège","country":"BE","lat":50.6374,"lon":5.4432,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # China
-    {"iata":"PVG","icao":"ZSPD","name":"Shanghai Pudong International Airport","city":"Shanghai","country":"CN","lat":31.1443,"lon":121.8083,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"PEK","icao":"ZBAA","name":"Beijing Capital International Airport","city":"Beijing","country":"CN","lat":40.0799,"lon":116.6031,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"HKG","icao":"VHHH","name":"Hong Kong International Airport","city":"Hong Kong","country":"CN","lat":22.3080,"lon":113.9185,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"CAN","icao":"ZGGG","name":"Guangzhou Baiyun International Airport","city":"Guangzhou","country":"CN","lat":23.3924,"lon":113.2988,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # South Korea
-    {"iata":"ICN","icao":"RKSI","name":"Incheon International Airport","city":"Seoul","country":"KR","lat":37.4602,"lon":126.4407,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # Japan
-    {"iata":"NRT","icao":"RJAA","name":"Narita International Airport","city":"Tokyo","country":"JP","lat":35.7647,"lon":140.3864,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"KIX","icao":"RJBB","name":"Kansai International Airport","city":"Osaka","country":"JP","lat":34.4274,"lon":135.2440,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # USA
-    {"iata":"LAX","icao":"KLAX","name":"Los Angeles International Airport","city":"Los Angeles","country":"US","lat":33.9416,"lon":-118.4085,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"JFK","icao":"KJFK","name":"John F. Kennedy International Airport","city":"New York","country":"US","lat":40.6413,"lon":-73.7781,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"ORD","icao":"KORD","name":"O'Hare International Airport","city":"Chicago","country":"US","lat":41.9742,"lon":-87.9073,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"MIA","icao":"KMIA","name":"Miami International Airport","city":"Miami","country":"US","lat":25.7959,"lon":-80.2870,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # UK
-    {"iata":"LHR","icao":"EGLL","name":"London Heathrow Airport","city":"London","country":"GB","lat":51.4700,"lon":-0.4543,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"STN","icao":"EGSS","name":"London Stansted Airport","city":"London","country":"GB","lat":51.8850,"lon":0.2350,"cargo_tier":2,"customs_open_24h":True,"active":True},
-    # Australia
-    {"iata":"SYD","icao":"YSSY","name":"Sydney Kingsford Smith Airport","city":"Sydney","country":"AU","lat":-33.9399,"lon":151.1753,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    {"iata":"MEL","icao":"YMML","name":"Melbourne Airport","city":"Melbourne","country":"AU","lat":-37.6690,"lon":144.8410,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # Saudi Arabia
+    {"iata":"DOH","icao":"OTHH","name":"Hamad International Airport","city":"Doha","country":"QA","lat":25.2731,"lon":51.6081,"cargo_tier":1,"customs_open_24h":True,"active":True},
     {"iata":"RUH","icao":"OERK","name":"King Khalid International Airport","city":"Riyadh","country":"SA","lat":24.9576,"lon":46.6988,"cargo_tier":1,"customs_open_24h":True,"active":True},
     {"iata":"JED","icao":"OEJN","name":"King Abdulaziz International Airport","city":"Jeddah","country":"SA","lat":21.6796,"lon":39.1565,"cargo_tier":2,"customs_open_24h":True,"active":True},
-    # Malaysia
-    {"iata":"KUL","icao":"WMKK","name":"Kuala Lumpur International Airport","city":"Kuala Lumpur","country":"MY","lat":2.7456,"lon":101.7099,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # Thailand
+    {"iata":"BAH","icao":"OBBI","name":"Bahrain International Airport","city":"Manama","country":"BH","lat":26.2708,"lon":50.6336,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    {"iata":"KWI","icao":"OKBK","name":"Kuwait International Airport","city":"Kuwait City","country":"KW","lat":29.2267,"lon":47.9689,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    # East Asia & Southeast Asia
+    {"iata":"SIN","icao":"WSSS","name":"Singapore Changi Airport","city":"Singapore","country":"SG","lat":1.3644,"lon":103.9915,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"HKG","icao":"VHHH","name":"Hong Kong International Airport","city":"Hong Kong","country":"CN","lat":22.3080,"lon":113.9185,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"PVG","icao":"ZSPD","name":"Shanghai Pudong International Airport","city":"Shanghai","country":"CN","lat":31.1443,"lon":121.8083,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"PEK","icao":"ZBAA","name":"Beijing Capital International Airport","city":"Beijing","country":"CN","lat":40.0799,"lon":116.6031,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"CAN","icao":"ZGGG","name":"Guangzhou Baiyun International Airport","city":"Guangzhou","country":"CN","lat":23.3924,"lon":113.2988,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"SZX","icao":"ZGSZ","name":"Shenzhen Bao'an International Airport","city":"Shenzhen","country":"CN","lat":22.6394,"lon":113.8108,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"CGO","icao":"ZHCC","name":"Zhengzhou Xinzheng International Airport","city":"Zhengzhou","country":"CN","lat":34.5197,"lon":113.8408,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"ICN","icao":"RKSI","name":"Incheon International Airport","city":"Seoul","country":"KR","lat":37.4602,"lon":126.4407,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"NRT","icao":"RJAA","name":"Narita International Airport","city":"Tokyo","country":"JP","lat":35.7647,"lon":140.3864,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"HND","icao":"RJTT","name":"Tokyo Haneda Airport","city":"Tokyo","country":"JP","lat":35.5494,"lon":139.7798,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"KIX","icao":"RJBB","name":"Kansai International Airport","city":"Osaka","country":"JP","lat":34.4274,"lon":135.2440,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"TPE","icao":"RCTP","name":"Taiwan Taoyuan International Airport","city":"Taipei","country":"TW","lat":25.0797,"lon":121.2342,"cargo_tier":1,"customs_open_24h":True,"active":True},
     {"iata":"BKK","icao":"VTBS","name":"Suvarnabhumi Airport","city":"Bangkok","country":"TH","lat":13.6811,"lon":100.7475,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # Brazil
-    {"iata":"GRU","icao":"SBGR","name":"São Paulo Guarulhos International Airport","city":"São Paulo","country":"BR","lat":-23.4356,"lon":-46.4731,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # France
+    {"iata":"KUL","icao":"WMKK","name":"Kuala Lumpur International Airport","city":"Kuala Lumpur","country":"MY","lat":2.7456,"lon":101.7099,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"SGN","icao":"VVTS","name":"Tan Son Nhat International Airport","city":"Ho Chi Minh City","country":"VN","lat":10.8188,"lon":106.6519,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"HAN","icao":"VVNB","name":"Noi Bai International Airport","city":"Hanoi","country":"VN","lat":21.2211,"lon":105.8072,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"CGK","icao":"WIII","name":"Soekarno-Hatta International Airport","city":"Jakarta","country":"ID","lat":-6.1256,"lon":106.6558,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"MNL","icao":"RPLL","name":"Ninoy Aquino International Airport","city":"Manila","country":"PH","lat":14.5086,"lon":121.0194,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    # Europe
+    {"iata":"FRA","icao":"EDDF","name":"Frankfurt Airport","city":"Frankfurt","country":"DE","lat":50.0379,"lon":8.5622,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"LEJ","icao":"EDDP","name":"Leipzig/Halle Airport (DHL Hub)","city":"Leipzig","country":"DE","lat":51.4324,"lon":12.2160,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"CGN","icao":"EDDK","name":"Cologne Bonn Airport (UPS Hub)","city":"Cologne","country":"DE","lat":50.8659,"lon":7.1427,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    {"iata":"AMS","icao":"EHAM","name":"Amsterdam Airport Schiphol","city":"Amsterdam","country":"NL","lat":52.3086,"lon":4.7639,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"LHR","icao":"EGLL","name":"London Heathrow Airport","city":"London","country":"GB","lat":51.4700,"lon":-0.4543,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"STN","icao":"EGSS","name":"London Stansted Airport","city":"London","country":"GB","lat":51.8850,"lon":0.2350,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    {"iata":"EMA","icao":"EGNX","name":"East Midlands Airport (UK Hub)","city":"Derby / Nottingham","country":"GB","lat":52.8311,"lon":-1.3281,"cargo_tier":1,"customs_open_24h":True,"active":True},
     {"iata":"CDG","icao":"LFPG","name":"Paris Charles de Gaulle Airport","city":"Paris","country":"FR","lat":49.0097,"lon":2.5479,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # Turkey
+    {"iata":"BRU","icao":"EBBR","name":"Brussels Airport","city":"Brussels","country":"BE","lat":50.9014,"lon":4.4844,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"LGG","icao":"EBLG","name":"Liège Airport (Euro Hub)","city":"Liège","country":"BE","lat":50.6374,"lon":5.4432,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"MXP","icao":"LIMC","name":"Milan Malpensa Airport","city":"Milan","country":"IT","lat":45.6300,"lon":8.7231,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"MAD","icao":"LEMD","name":"Adolfo Suárez Madrid-Barajas Airport","city":"Madrid","country":"ES","lat":40.4983,"lon":-3.5676,"cargo_tier":1,"customs_open_24h":True,"active":True},
     {"iata":"IST","icao":"LTFM","name":"Istanbul Airport","city":"Istanbul","country":"TR","lat":41.2753,"lon":28.7519,"cargo_tier":1,"customs_open_24h":True,"active":True},
-    # Kenya
-    {"iata":"NBO","icao":"HKJK","name":"Jomo Kenyatta International Airport","city":"Nairobi","country":"KE","lat":-1.3192,"lon":36.9275,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    {"iata":"ZRH","icao":"LSZH","name":"Zurich Airport","city":"Zurich","country":"CH","lat":47.4647,"lon":8.5492,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    {"iata":"VIE","icao":"LOWW","name":"Vienna International Airport","city":"Vienna","country":"AT","lat":48.1103,"lon":16.5697,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    # North America
+    {"iata":"MEM","icao":"KMEM","name":"Memphis International Airport (FedEx Superhub)","city":"Memphis","country":"US","lat":35.0424,"lon":-89.9767,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"SDF","icao":"KSDF","name":"Louisville Muhammad Ali Intl (UPS Worldport)","city":"Louisville","country":"US","lat":38.1744,"lon":-85.7360,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"MIA","icao":"KMIA","name":"Miami International Airport (LATAM Gateway)","city":"Miami","country":"US","lat":25.7959,"lon":-80.2870,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"LAX","icao":"KLAX","name":"Los Angeles International Airport","city":"Los Angeles","country":"US","lat":33.9416,"lon":-118.4085,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"ORD","icao":"KORD","name":"O'Hare International Airport","city":"Chicago","country":"US","lat":41.9742,"lon":-87.9073,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"JFK","icao":"KJFK","name":"John F. Kennedy International Airport","city":"New York","country":"US","lat":40.6413,"lon":-73.7781,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"ATL","icao":"KATL","name":"Hartsfield-Jackson Atlanta International","city":"Atlanta","country":"US","lat":33.6407,"lon":-84.4277,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"DFW","icao":"KDFW","name":"Dallas/Fort Worth International Airport","city":"Dallas","country":"US","lat":32.8998,"lon":-97.0403,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"SFO","icao":"KSFO","name":"San Francisco International Airport","city":"San Francisco","country":"US","lat":37.6213,"lon":-122.3790,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"SEA","icao":"KSEA","name":"Seattle-Tacoma International Airport","city":"Seattle","country":"US","lat":47.4502,"lon":-122.3088,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"YYZ","icao":"CYYZ","name":"Toronto Pearson International Airport","city":"Toronto","country":"CA","lat":43.6777,"lon":-79.6248,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"YVR","icao":"CYVR","name":"Vancouver International Airport","city":"Vancouver","country":"CA","lat":49.1967,"lon":-123.1815,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"MEX","icao":"MMMX","name":"Mexico City International Airport (Benito Juarez)","city":"Mexico City","country":"MX","lat":19.4361,"lon":-99.0719,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"NLU","icao":"MMSM","name":"Felipe Ángeles International Airport (AIFA Cargo)","city":"Mexico City","country":"MX","lat":19.7461,"lon":-99.0147,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    # South America
+    {"iata":"GRU","icao":"SBGR","name":"São Paulo Guarulhos International Airport","city":"São Paulo","country":"BR","lat":-23.4356,"lon":-46.4731,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"VCP","icao":"SBKP","name":"Viracopos International Airport (Campinas)","city":"Campinas / São Paulo","country":"BR","lat":-23.0074,"lon":-47.1345,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"BOG","icao":"SKBO","name":"El Dorado International Airport","city":"Bogotá","country":"CO","lat":4.7016,"lon":-74.1469,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"SCL","icao":"SCEL","name":"Arturo Merino Benítez International Airport","city":"Santiago","country":"CL","lat":-33.3930,"lon":-70.7858,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"EZE","icao":"SAEZ","name":"Ministro Pistarini International Airport (Ezeiza)","city":"Buenos Aires","country":"AR","lat":-34.8222,"lon":-58.5358,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"LIM","icao":"SPJC","name":"Jorge Chávez International Airport","city":"Lima","country":"PE","lat":-12.0219,"lon":-77.1143,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    # Africa
+    {"iata":"JNB","icao":"FAOR","name":"O.R. Tambo International Airport","city":"Johannesburg","country":"ZA","lat":-26.1392,"lon":28.2460,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"NBO","icao":"HKJK","name":"Jomo Kenyatta International Airport","city":"Nairobi","country":"KE","lat":-1.3192,"lon":36.9275,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"ADD","icao":"HAAB","name":"Addis Ababa Bole International Airport (ET Cargo)","city":"Addis Ababa","country":"ET","lat":8.9779,"lon":38.7993,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"CAI","icao":"HECA","name":"Cairo International Airport","city":"Cairo","country":"EG","lat":30.1219,"lon":31.4056,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"LOS","icao":"DNMM","name":"Murtala Muhammed International Airport","city":"Lagos","country":"NG","lat":6.5774,"lon":3.3212,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"CMN","icao":"GMMN","name":"Mohammed V International Airport","city":"Casablanca","country":"MA","lat":33.3675,"lon":-7.5898,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    # Australia & Oceania
+    {"iata":"SYD","icao":"YSSY","name":"Sydney Kingsford Smith Airport","city":"Sydney","country":"AU","lat":-33.9399,"lon":151.1753,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"MEL","icao":"YMML","name":"Melbourne Airport","city":"Melbourne","country":"AU","lat":-37.6690,"lon":144.8410,"cargo_tier":1,"customs_open_24h":True,"active":True},
+    {"iata":"BNE","icao":"YBBN","name":"Brisbane Airport","city":"Brisbane","country":"AU","lat":-27.3842,"lon":153.1175,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    {"iata":"PER","icao":"YPPH","name":"Perth Airport","city":"Perth","country":"AU","lat":-31.9403,"lon":115.9669,"cargo_tier":2,"customs_open_24h":True,"active":True},
+    {"iata":"AKL","icao":"NZAA","name":"Auckland Airport","city":"Auckland","country":"NZ","lat":-37.0082,"lon":174.7850,"cargo_tier":1,"customs_open_24h":True,"active":True},
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────

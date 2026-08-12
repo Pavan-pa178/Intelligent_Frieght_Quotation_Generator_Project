@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Ship, Plane, Truck, Warehouse, ShieldCheck, Package, Check } from 'lucide-react'
 import Reveal from '../components/Reveal'
 import PageBanner from '../components/PageBanner'
+import GlobalPortDirectory from '../components/GlobalPortDirectory'
 
 const SERVICES = [
   { icon: Ship, title: 'Ocean Freight', desc: 'Full and less-than-container-load shipping across every major trade lane.', features: ['FCL & LCL options', '200+ port pairs', 'Reefer & hazmat capable'], key: 'ocean' },
@@ -82,6 +83,23 @@ export default function Services() {
               </tbody>
             </table>
           </Reveal>
+
+          {/* GLOBAL PORT DIRECTORY SECTION */}
+          <div className="mt-20">
+            <Reveal className="mb-8 max-w-[640px]">
+              <div className="mb-4 flex items-center gap-2 font-mono text-[11.5px] font-semibold uppercase tracking-[.16em] text-brand-orange">
+                <span className="h-px w-[22px] bg-brand-orange" /> Global Network
+              </div>
+              <h2 className="text-[28px] md:text-[36px]">Search Worldwide Ports & Air Hubs</h2>
+              <p className="text-sm text-brand-slate mt-2">
+                Browse our real-time master database of 180+ commercial sea ports and international cargo airports across 30+ countries.
+              </p>
+            </Reveal>
+            <Reveal>
+              <GlobalPortDirectory />
+            </Reveal>
+          </div>
+
         </div>
       </section>
     </>
