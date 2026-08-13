@@ -1,9 +1,12 @@
+from datetime import datetime
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import check_password as django_check_password
+from core.mongodb import get_collection
 from .models import UserProfile
 from .serializers import UserSerializer, RegisterSerializer
 
@@ -37,10 +40,9 @@ class LoginView(APIView):
             UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customer', 'company': 'Sharma Textiles'})
             user = user_obj
         else:
-            # Authenticate against Django database
+            # 1. Authenticate against Django ORM
             user = authenticate(username=email, password=password)
             if user is None:
-                # Case-insensitive check by email if username differs
                 try:
                     user_obj = User.objects.get(email__iexact=email)
                     if user_obj.check_password(password):
@@ -48,11 +50,63 @@ class LoginView(APIView):
                 except (User.DoesNotExist, User.MultipleObjectsReturned):
                     user = None
 
+            # 2. If not found in SQLite, check MongoDB Atlas cloud users collection
+            if user is None:
+                try:
+                    mongo_users = get_collection('users')
+                    if mongo_users is not None:
+                        m_user = mongo_users.find_one({'email': email})
+                        if m_user:
+                            pw_hash = m_user.get('password_hash', '')
+                            if pw_hash and (django_check_password(password, pw_hash) or password == m_user.get('raw_password')):
+                                # Restore user to Django
+                                names = (m_user.get('name') or '').split(' ')
+                                fn = names[0] if names else ''
+                                ln = ' '.join(names[1:]) if len(names) > 1 else ''
+                                user_obj, _ = User.objects.get_or_create(
+                                    username=email,
+                                    defaults={'email': email, 'first_name': fn, 'last_name': ln}
+                                )
+                                user_obj.set_password(password)
+                                user_obj.save()
+                                UserProfile.objects.update_or_create(
+                                    user=user_obj,
+                                    defaults={
+                                        'company': m_user.get('company', 'Company'),
+                                        'role': m_user.get('role', 'customer'),
+                                        'phone': m_user.get('phone', '')
+                                    }
+                                )
+                                user = user_obj
+                except Exception as mongo_err:
+                    pass
+
         if user is None:
             return Response({'detail': 'Invalid email or password. Please check your credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Ensure user profile exists
         UserProfile.objects.get_or_create(user=user)
+
+        # Also sync to MongoDB Atlas
+        try:
+            mongo_users = get_collection('users')
+            if mongo_users is not None:
+                prof = getattr(user, 'profile', None)
+                mongo_users.update_one(
+                    {'email': email},
+                    {'$set': {
+                        'email': email,
+                        'name': f"{user.first_name} {user.last_name}".strip(),
+                        'company': prof.company if prof else 'Company',
+                        'phone': prof.phone if prof else '',
+                        'role': prof.role if prof else 'customer',
+                        'password_hash': user.password,
+                        'last_login': datetime.utcnow()
+                    }},
+                    upsert=True
+                )
+        except Exception:
+            pass
 
         refresh = RefreshToken.for_user(user)
         return Response({
@@ -72,6 +126,29 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+
+            # Sync to MongoDB Atlas cloud database
+            try:
+                mongo_users = get_collection('users')
+                if mongo_users is not None:
+                    prof = getattr(user, 'profile', None)
+                    mongo_users.update_one(
+                        {'email': email},
+                        {'$set': {
+                            'email': email,
+                            'name': f"{user.first_name} {user.last_name}".strip(),
+                            'company': prof.company if prof else 'Company',
+                            'phone': prof.phone if prof else '',
+                            'role': prof.role if prof else 'customer',
+                            'password_hash': user.password,
+                            'created_at': datetime.utcnow(),
+                            'active': True
+                        }},
+                        upsert=True
+                    )
+            except Exception:
+                pass
+
             refresh = RefreshToken.for_user(user)
             return Response({
                 'access': str(refresh.access_token),
