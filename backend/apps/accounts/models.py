@@ -3,9 +3,9 @@ from django.contrib.auth.models import User
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    company = models.CharField(max_length=255, default='Sharma Textiles')
-    role = models.CharField(max_length=50, default='Broker')
-    phone = models.CharField(max_length=50, blank=True, default='+91 98765 43210')
+    company = models.CharField(max_length=255, blank=True, default='Independent Shipper')
+    role = models.CharField(max_length=50, default='customer')
+    phone = models.CharField(max_length=50, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
