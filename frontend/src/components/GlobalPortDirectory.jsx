@@ -32,16 +32,30 @@ function getRegionKey(countryCode) {
   return 'OTHER'
 }
 
-export default function GlobalPortDirectory({ onSelectPort, isModal = false, onClose }) {
+export default function GlobalPortDirectory({ onSelectPort, isModal = false, activeMode = 'ALL', onClose }) {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [modeFilter, setModeFilter] = useState('ALL') // 'ALL' | 'PORT' | 'AIRPORT' | 'RAIL_TERMINAL' | 'ROAD_HUB'
+
+  const getInitialModeFilter = () => {
+    if (activeMode === 'OCEAN') return 'PORT'
+    if (activeMode === 'AIR' || activeMode === 'EXPRESS_AIR') return 'AIRPORT'
+    return 'ALL'
+  }
+
+  const [modeFilter, setModeFilter] = useState(getInitialModeFilter())
   const [regionFilter, setRegionFilter] = useState('ALL')
+
+  const isOceanMode = activeMode === 'OCEAN'
+  const isAirMode = activeMode === 'AIR' || activeMode === 'EXPRESS_AIR'
 
   const filteredGateways = useMemo(() => {
     const q = search.toLowerCase().trim()
     return GATEWAYS.filter(g => {
-      // Type match
+      // Mode lock checks if invoked from specific freight mode
+      if (isOceanMode && g.type !== 'PORT') return false
+      if (isAirMode && g.type !== 'AIRPORT') return false
+
+      // Tab filter match
       if (modeFilter !== 'ALL' && g.type !== modeFilter) return false
 
       // Region match
@@ -63,7 +77,7 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, onC
         countryCode === q
       )
     })
-  }, [search, modeFilter, regionFilter])
+  }, [search, modeFilter, regionFilter, isOceanMode, isAirMode])
 
   const portsCount = GATEWAYS.filter(g => g.type === 'PORT').length
   const airportsCount = GATEWAYS.filter(g => g.type === 'AIRPORT').length
@@ -108,9 +122,16 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, onC
               <Globe className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-brand-navy">Global Freight Gateway & Port Directory</h3>
+              <h3 className="text-lg font-bold text-brand-navy">
+                {isOceanMode ? 'Commercial Sea Port Directory' : isAirMode ? 'International Air Cargo Hub Directory' : 'Global Freight Gateway Directory'}
+              </h3>
               <p className="text-xs text-brand-slate">
-                Explore {GATEWAYS.length} multimodal hubs: Sea Ports ({portsCount}), Cargo Airports ({airportsCount}), Rail ICDs ({railCount}), and Road Cross-Dock Hubs ({roadCount}).
+                {isOceanMode 
+                  ? `Search and select from ${portsCount} commercial sea ports worldwide.` 
+                  : isAirMode 
+                    ? `Search and select from ${airportsCount} international air cargo hubs worldwide.`
+                    : `Explore ${GATEWAYS.length} multimodal hubs: Sea Ports (${portsCount}), Cargo Airports (${airportsCount}), Rail ICDs (${railCount}), and Road Cross-Dock Hubs (${roadCount}).`
+                }
               </p>
             </div>
           </div>
@@ -134,7 +155,13 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, onC
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search by port, airport, rail ICD, road hub, UN/LOCODE, city, or country... e.g. JNPT, Dadri, FRA, Bhiwandi"
+              placeholder={
+                isOceanMode 
+                  ? "Search sea port name, city, UN/LOCODE, or country... e.g. JNPT, Rotterdam, Singapore"
+                  : isAirMode 
+                    ? "Search airport name, IATA code, city, or country... e.g. BOM, DXB, Frankfurt, JFK"
+                    : "Search port, airport, rail ICD, road hub, UN/LOCODE, IATA, city... e.g. JNPT, Dadri, FRA, Bhiwandi"
+              }
               className="w-full rounded-xl border border-brand-line pl-10 pr-9 py-2.5 text-xs text-brand-navy bg-white focus:border-brand-marine focus:outline-none shadow-xs"
             />
             {search && (
@@ -147,39 +174,41 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, onC
             )}
           </div>
 
-          {/* Type filters */}
-          <div className="flex flex-wrap items-center rounded-xl border border-brand-line bg-white p-1 text-xs shadow-xs">
-            <button
-              onClick={() => setModeFilter('ALL')}
-              className={`rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'ALL' ? 'bg-brand-navy text-white' : 'text-brand-slate hover:text-brand-navy'}`}
-            >
-              All ({GATEWAYS.length})
-            </button>
-            <button
-              onClick={() => setModeFilter('PORT')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'PORT' ? 'bg-brand-marine text-white' : 'text-brand-slate hover:text-brand-navy'}`}
-            >
-              <Ship className="h-3.5 w-3.5" /> Ports ({portsCount})
-            </button>
-            <button
-              onClick={() => setModeFilter('AIRPORT')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'AIRPORT' ? 'bg-amber-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
-            >
-              <Plane className="h-3.5 w-3.5" /> Airports ({airportsCount})
-            </button>
-            <button
-              onClick={() => setModeFilter('RAIL_TERMINAL')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'RAIL_TERMINAL' ? 'bg-purple-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
-            >
-              <Route className="h-3.5 w-3.5" /> Rail ICDs ({railCount})
-            </button>
-            <button
-              onClick={() => setModeFilter('ROAD_HUB')}
-              className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'ROAD_HUB' ? 'bg-emerald-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
-            >
-              <Truck className="h-3.5 w-3.5" /> Road Hubs ({roadCount})
-            </button>
-          </div>
+          {/* Type filters (only show multi-tabs if not locked to single mode) */}
+          {!isOceanMode && !isAirMode && (
+            <div className="flex flex-wrap items-center rounded-xl border border-brand-line bg-white p-1 text-xs shadow-xs">
+              <button
+                onClick={() => setModeFilter('ALL')}
+                className={`rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'ALL' ? 'bg-brand-navy text-white' : 'text-brand-slate hover:text-brand-navy'}`}
+              >
+                All ({GATEWAYS.length})
+              </button>
+              <button
+                onClick={() => setModeFilter('PORT')}
+                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'PORT' ? 'bg-brand-marine text-white' : 'text-brand-slate hover:text-brand-navy'}`}
+              >
+                <Ship className="h-3.5 w-3.5" /> Ports ({portsCount})
+              </button>
+              <button
+                onClick={() => setModeFilter('AIRPORT')}
+                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'AIRPORT' ? 'bg-amber-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
+              >
+                <Plane className="h-3.5 w-3.5" /> Airports ({airportsCount})
+              </button>
+              <button
+                onClick={() => setModeFilter('RAIL_TERMINAL')}
+                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'RAIL_TERMINAL' ? 'bg-purple-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
+              >
+                <Route className="h-3.5 w-3.5" /> Rail ICDs ({railCount})
+              </button>
+              <button
+                onClick={() => setModeFilter('ROAD_HUB')}
+                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'ROAD_HUB' ? 'bg-emerald-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
+              >
+                <Truck className="h-3.5 w-3.5" /> Road Hubs ({roadCount})
+              </button>
+            </div>
+          )}
 
         </div>
 
