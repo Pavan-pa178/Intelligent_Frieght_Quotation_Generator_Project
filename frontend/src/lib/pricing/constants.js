@@ -195,7 +195,36 @@ export const GATEWAYS = [
   { code: 'MEL', name: 'Melbourne Airport (MEL)', city: 'Melbourne', country: 'Australia', countryCode: 'AU', type: 'AIRPORT', lat: -37.67, lon: 144.84, modes: ['AIR', 'EXPRESS_AIR'] },
   { code: 'BNE', name: 'Brisbane Airport (BNE)', city: 'Brisbane', country: 'Australia', countryCode: 'AU', type: 'AIRPORT', lat: -27.38, lon: 153.12, modes: ['AIR', 'EXPRESS_AIR'] },
   { code: 'PER', name: 'Perth Airport (PER)', city: 'Perth', country: 'Australia', countryCode: 'AU', type: 'AIRPORT', lat: -31.94, lon: 115.97, modes: ['AIR', 'EXPRESS_AIR'] },
-  { code: 'AKL', name: 'Auckland Airport (AKL)', city: 'Auckland', country: 'New Zealand', countryCode: 'NZ', type: 'AIRPORT', lat: -37.01, lon: 174.79, modes: ['AIR', 'EXPRESS_AIR'] }
+  { code: 'AKL', name: 'Auckland Airport (AKL)', city: 'Auckland', country: 'New Zealand', countryCode: 'NZ', type: 'AIRPORT', lat: -37.01, lon: 174.79, modes: ['AIR', 'EXPRESS_AIR'] },
+
+  // --- Inland Rail Terminals & ICDs (Intermodal) ---
+  {"code": "INDAD", "name": "ICD Dadri (Western DFC Mega Rail Terminal)", "city": "Greater Noida (NCR)", "country": "India", "countryCode": "IN", "type": "RAIL_TERMINAL", "lat": 28.55, "lon": 77.55, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "INTKD", "name": "ICD Tughlakabad (Asia's Largest Inland Depot)", "city": "New Delhi", "country": "India", "countryCode": "IN", "type": "RAIL_TERMINAL", "lat": 28.5, "lon": 77.28, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "INWFD", "name": "ICD Whitefield Container Rail Depot", "city": "Bengaluru", "country": "India", "countryCode": "IN", "type": "RAIL_TERMINAL", "lat": 12.99, "lon": 77.75, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "INSND", "name": "ICD Sanand Automotive & Industrial Rail Terminal", "city": "Ahmedabad", "country": "India", "countryCode": "IN", "type": "RAIL_TERMINAL", "lat": 22.98, "lon": 72.38, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "INSNX", "name": "ICD Sanathnagar CONCOR Rail Terminal", "city": "Hyderabad", "country": "India", "countryCode": "IN", "type": "RAIL_TERMINAL", "lat": 17.46, "lon": 78.44, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "INLDH", "name": "ICD Dhandari Kalan (Ludhiana Textile Rail Hub)", "city": "Ludhiana", "country": "India", "countryCode": "IN", "type": "RAIL_TERMINAL", "lat": 30.88, "lon": 75.92, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "INJPR", "name": "ICD Kanakpura Handicrafts & Marble Terminal", "city": "Jaipur", "country": "India", "countryCode": "IN", "type": "RAIL_TERMINAL", "lat": 26.92, "lon": 75.73, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "DEDUI", "name": "Duisburg Intermodal Rail Hub (DIT)", "city": "Duisburg", "country": "Germany", "countryCode": "DE", "type": "RAIL_TERMINAL", "lat": 51.45, "lon": 6.76, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "DEMUC", "name": "Munich Riem Rail Freight Terminal", "city": "Munich", "country": "Germany", "countryCode": "DE", "type": "RAIL_TERMINAL", "lat": 48.14, "lon": 11.68, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "ITMIL", "name": "Milan Busto Arsizio Intermodal Rail Terminal", "city": "Milan", "country": "Italy", "countryCode": "IT", "type": "RAIL_TERMINAL", "lat": 45.6, "lon": 8.85, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "USCHI", "name": "BNSF Logistics Park Chicago / Corwith Intermodal", "city": "Chicago", "country": "USA", "countryCode": "US", "type": "RAIL_TERMINAL", "lat": 41.82, "lon": -87.72, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "USDAL", "name": "Union Pacific Dallas Intermodal Terminal (DIT)", "city": "Dallas", "country": "USA", "countryCode": "US", "type": "RAIL_TERMINAL", "lat": 32.65, "lon": -96.75, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "CATOR", "name": "CN Brampton Intermodal Terminal", "city": "Toronto", "country": "Canada", "countryCode": "CA", "type": "RAIL_TERMINAL", "lat": 43.72, "lon": -79.7, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "CNYIW", "name": "Yiwu West Railway Freight Station (Silk Road)", "city": "Yiwu", "country": "China", "countryCode": "CN", "type": "RAIL_TERMINAL", "lat": 29.31, "lon": 120.07, "modes": ["RAIL", "MULTIMODAL"]},
+  {"code": "CNCKG", "name": "Chongqing Tuanjiecun Intermodal Rail Hub", "city": "Chongqing", "country": "China", "countryCode": "CN", "type": "RAIL_TERMINAL", "lat": 29.56, "lon": 106.55, "modes": ["RAIL", "MULTIMODAL"]},
+
+  // --- Road Freight Logistics & Cross-Dock Hubs ---
+  {"code": "INBHW", "name": "Bhiwandi National Distribution Park", "city": "Thane / Mumbai", "country": "India", "countryCode": "IN", "type": "ROAD_HUB", "lat": 19.3, "lon": 73.06, "modes": ["GROUND"]},
+  {"code": "INGGN", "name": "Gurgaon / Bilaspur Express Logistics Corridor", "city": "Gurgaon (NCR)", "country": "India", "countryCode": "IN", "type": "ROAD_HUB", "lat": 28.32, "lon": 76.9, "modes": ["GROUND"]},
+  {"code": "INBLR_RD", "name": "Nelamangala Highway Logistics Hub", "city": "Bengaluru", "country": "India", "countryCode": "IN", "type": "ROAD_HUB", "lat": 13.1, "lon": 77.38, "modes": ["GROUND"]},
+  {"code": "INSPR", "name": "Sriperumbudur Auto Logistics Hub", "city": "Chennai", "country": "India", "countryCode": "IN", "type": "ROAD_HUB", "lat": 12.97, "lon": 79.94, "modes": ["GROUND"]},
+  {"code": "AEJAF", "name": "Dubai South Logistics District (DWC Cross-Dock)", "city": "Dubai", "country": "UAE", "countryCode": "AE", "type": "ROAD_HUB", "lat": 24.89, "lon": 55.15, "modes": ["GROUND"]},
+  {"code": "SARUH_RD", "name": "Riyadh Dry Port & Road Freight Terminal", "city": "Riyadh", "country": "Saudi Arabia", "countryCode": "SA", "type": "ROAD_HUB", "lat": 24.64, "lon": 46.77, "modes": ["GROUND"]},
+  {"code": "NLRTM_DP", "name": "Rotterdam Distripark Maasvlakte Road Logistics", "city": "Rotterdam", "country": "Netherlands", "countryCode": "NL", "type": "ROAD_HUB", "lat": 51.96, "lon": 4.02, "modes": ["GROUND"]},
+  {"code": "DEFRA_RD", "name": "Frankfurt CargoCity South Trucking Center", "city": "Frankfurt", "country": "Germany", "countryCode": "DE", "type": "ROAD_HUB", "lat": 50.02, "lon": 8.58, "modes": ["GROUND"]},
+  {"code": "USMEM_RD", "name": "Memphis World Cargo & Logistics Center", "city": "Memphis", "country": "USA", "countryCode": "US", "type": "ROAD_HUB", "lat": 35.05, "lon": -89.97, "modes": ["GROUND", "EXPRESS_AIR"]},
+  {"code": "USONT", "name": "Ontario Inland Empire Trucking Distribution Center", "city": "Ontario / San Bernardino", "country": "USA", "countryCode": "US", "type": "ROAD_HUB", "lat": 34.06, "lon": -117.65, "modes": ["GROUND"]}
 ]
 
 // Volumetric divisors by mode
