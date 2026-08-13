@@ -1,7 +1,7 @@
 import { seedShipments, seedQuotes, routeAnalytics, demoUser, adminUser, agentUser, RATES } from './mockData'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-export const MOCK_MODE = !API_BASE
+export const MOCK_MODE = false
 
 const TOKEN_KEY = 'portline_access_token'
 const QUOTES_STORAGE_KEY = 'portline_saved_quotes'
