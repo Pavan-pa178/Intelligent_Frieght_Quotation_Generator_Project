@@ -1,3 +1,6 @@
+null = None
+true = True
+false = False
 """
 Real-world Master Database Seed for PortLine Freight Engine.
 Contains comprehensive master data across Ocean, Standard Air, Express Air, Ground Trucking, and Rail Intermodal.
@@ -16,8 +19,8 @@ COUNTRIES = [
         "region": "South Asia",
         "currency": "INR",
         "dial_code": "+91",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "AE",
@@ -26,7 +29,7 @@ COUNTRIES = [
         "currency": "AED",
         "dial_code": "+971",
         "customs_union": "GCC",
-        "active": true
+        "active": True
     },
     {
         "code": "SG",
@@ -34,8 +37,8 @@ COUNTRIES = [
         "region": "Southeast Asia",
         "currency": "SGD",
         "dial_code": "+65",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "NL",
@@ -44,7 +47,7 @@ COUNTRIES = [
         "currency": "EUR",
         "dial_code": "+31",
         "customs_union": "EU",
-        "active": true
+        "active": True
     },
     {
         "code": "DE",
@@ -53,7 +56,7 @@ COUNTRIES = [
         "currency": "EUR",
         "dial_code": "+49",
         "customs_union": "EU",
-        "active": true
+        "active": True
     },
     {
         "code": "GB",
@@ -61,8 +64,8 @@ COUNTRIES = [
         "region": "Europe",
         "currency": "GBP",
         "dial_code": "+44",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "US",
@@ -71,7 +74,7 @@ COUNTRIES = [
         "currency": "USD",
         "dial_code": "+1",
         "customs_union": "USMCA",
-        "active": true
+        "active": True
     },
     {
         "code": "CN",
@@ -79,8 +82,8 @@ COUNTRIES = [
         "region": "East Asia",
         "currency": "CNY",
         "dial_code": "+86",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "JP",
@@ -88,8 +91,8 @@ COUNTRIES = [
         "region": "East Asia",
         "currency": "JPY",
         "dial_code": "+81",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "KR",
@@ -97,8 +100,8 @@ COUNTRIES = [
         "region": "East Asia",
         "currency": "KRW",
         "dial_code": "+82",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "AU",
@@ -106,8 +109,8 @@ COUNTRIES = [
         "region": "Oceania",
         "currency": "AUD",
         "dial_code": "+61",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "SA",
@@ -116,7 +119,7 @@ COUNTRIES = [
         "currency": "SAR",
         "dial_code": "+966",
         "customs_union": "GCC",
-        "active": true
+        "active": True
     },
     {
         "code": "EG",
@@ -124,8 +127,8 @@ COUNTRIES = [
         "region": "Africa",
         "currency": "EGP",
         "dial_code": "+20",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "ZA",
@@ -133,8 +136,8 @@ COUNTRIES = [
         "region": "Africa",
         "currency": "ZAR",
         "dial_code": "+27",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "NG",
@@ -143,7 +146,7 @@ COUNTRIES = [
         "currency": "NGN",
         "dial_code": "+234",
         "customs_union": "ECOWAS",
-        "active": true
+        "active": True
     },
     {
         "code": "BR",
@@ -152,7 +155,7 @@ COUNTRIES = [
         "currency": "BRL",
         "dial_code": "+55",
         "customs_union": "MERCOSUR",
-        "active": true
+        "active": True
     },
     {
         "code": "MX",
@@ -161,7 +164,7 @@ COUNTRIES = [
         "currency": "MXN",
         "dial_code": "+52",
         "customs_union": "USMCA",
-        "active": true
+        "active": True
     },
     {
         "code": "CA",
@@ -170,7 +173,7 @@ COUNTRIES = [
         "currency": "CAD",
         "dial_code": "+1",
         "customs_union": "USMCA",
-        "active": true
+        "active": True
     },
     {
         "code": "FR",
@@ -179,7 +182,7 @@ COUNTRIES = [
         "currency": "EUR",
         "dial_code": "+33",
         "customs_union": "EU",
-        "active": true
+        "active": True
     },
     {
         "code": "BE",
@@ -188,7 +191,7 @@ COUNTRIES = [
         "currency": "EUR",
         "dial_code": "+32",
         "customs_union": "EU",
-        "active": true
+        "active": True
     },
     {
         "code": "IT",
@@ -197,7 +200,7 @@ COUNTRIES = [
         "currency": "EUR",
         "dial_code": "+39",
         "customs_union": "EU",
-        "active": true
+        "active": True
     },
     {
         "code": "ES",
@@ -206,7 +209,7 @@ COUNTRIES = [
         "currency": "EUR",
         "dial_code": "+34",
         "customs_union": "EU",
-        "active": true
+        "active": True
     },
     {
         "code": "MY",
@@ -215,7 +218,7 @@ COUNTRIES = [
         "currency": "MYR",
         "dial_code": "+60",
         "customs_union": "ASEAN",
-        "active": true
+        "active": True
     },
     {
         "code": "TH",
@@ -224,7 +227,7 @@ COUNTRIES = [
         "currency": "THB",
         "dial_code": "+66",
         "customs_union": "ASEAN",
-        "active": true
+        "active": True
     },
     {
         "code": "VN",
@@ -233,7 +236,7 @@ COUNTRIES = [
         "currency": "VND",
         "dial_code": "+84",
         "customs_union": "ASEAN",
-        "active": true
+        "active": True
     },
     {
         "code": "PK",
@@ -241,8 +244,8 @@ COUNTRIES = [
         "region": "South Asia",
         "currency": "PKR",
         "dial_code": "+92",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "BD",
@@ -250,8 +253,8 @@ COUNTRIES = [
         "region": "South Asia",
         "currency": "BDT",
         "dial_code": "+880",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "TR",
@@ -259,8 +262,8 @@ COUNTRIES = [
         "region": "Middle East / Europe",
         "currency": "TRY",
         "dial_code": "+90",
-        "customs_union": null,
-        "active": true
+        "customs_union": None,
+        "active": True
     },
     {
         "code": "KE",
@@ -269,7 +272,7 @@ COUNTRIES = [
         "currency": "KES",
         "dial_code": "+254",
         "customs_union": "EAC",
-        "active": true
+        "active": True
     },
     {
         "code": "OM",
@@ -278,7 +281,7 @@ COUNTRIES = [
         "currency": "OMR",
         "dial_code": "+968",
         "customs_union": "GCC",
-        "active": true
+        "active": True
     }
 ]
 
@@ -294,7 +297,7 @@ PORTS = [
         "max_draft_m": 14.5,
         "terminal": "APMT / Gateway Terminals",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "INMAA",
@@ -307,7 +310,7 @@ PORTS = [
         "max_draft_m": 13.0,
         "terminal": "CCTL / QCPL",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "INMUN",
@@ -320,7 +323,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "APMT Mundra / AICTPL",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "INPAV",
@@ -333,7 +336,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "GPPL Container Terminal",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "INVIS",
@@ -346,7 +349,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "APSEZ Vizag",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "INKTP",
@@ -359,7 +362,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "L&T Kattupalli",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "INHAL",
@@ -372,7 +375,7 @@ PORTS = [
         "max_draft_m": 8.5,
         "terminal": "Haldia Dock Complex",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "INCCU",
@@ -385,7 +388,7 @@ PORTS = [
         "max_draft_m": 8.0,
         "terminal": "NSD Netaji Subhash Dock",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "INCOK",
@@ -398,7 +401,7 @@ PORTS = [
         "max_draft_m": 14.5,
         "terminal": "ICTT Vallarpadam",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "INTUT",
@@ -411,7 +414,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "DBGT Tuticorin",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "INIXE",
@@ -424,7 +427,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "NMPT Container Berth",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "INMRM",
@@ -437,7 +440,7 @@ PORTS = [
         "max_draft_m": 13.0,
         "terminal": "Mormugao Terminal",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "INKRP",
@@ -450,7 +453,7 @@ PORTS = [
         "max_draft_m": 15.0,
         "terminal": "APSEZ Krishnapatnam",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "INHZR",
@@ -463,7 +466,7 @@ PORTS = [
         "max_draft_m": 14.5,
         "terminal": "Adani Hazira Port",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "AEJEA",
@@ -476,7 +479,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "DP World Jebel Ali (T1/T2/T3)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "AEAUH",
@@ -489,7 +492,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "Abu Dhabi Terminals (ADT)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "AEKLF",
@@ -502,7 +505,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "Gulftainer Khor Fakkan",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "SAJED",
@@ -515,7 +518,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "Red Sea Gateway Terminal (RSGT)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "SADMN",
@@ -528,7 +531,7 @@ PORTS = [
         "max_draft_m": 15.0,
         "terminal": "SGP Dammam",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "OMSLL",
@@ -541,7 +544,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "Salalah Container Terminal",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "OMSOH",
@@ -554,7 +557,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "OICT Sohar",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "QAHMD",
@@ -567,7 +570,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "QTerminals Hamad Port",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "KWSWK",
@@ -580,7 +583,7 @@ PORTS = [
         "max_draft_m": 12.5,
         "terminal": "KPA Shuwaikh",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "BHKBS",
@@ -593,7 +596,7 @@ PORTS = [
         "max_draft_m": 15.0,
         "terminal": "APMT Bahrain",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "SGSIN",
@@ -606,7 +609,7 @@ PORTS = [
         "max_draft_m": 18.0,
         "terminal": "Tanjong Pagar / Pasir Panjang / Tuas",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "MYPKG",
@@ -619,7 +622,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "Westports / Northport",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "MYTPP",
@@ -632,7 +635,7 @@ PORTS = [
         "max_draft_m": 17.5,
         "terminal": "PTP Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "THBKK",
@@ -645,7 +648,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "LCMT / LCT / TIPS",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "VNHPH",
@@ -658,7 +661,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "Lach Huyen International (TC-HICT)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "VNSGN",
@@ -671,7 +674,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "Saigon Newport / Cai Mep TCIT",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "IDTPP",
@@ -684,7 +687,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "JICT / NPCT1 Jakarta",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "PHMNL",
@@ -697,7 +700,7 @@ PORTS = [
         "max_draft_m": 14.5,
         "terminal": "ICTSI MICT Manila",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "LKCMB",
@@ -710,7 +713,7 @@ PORTS = [
         "max_draft_m": 18.0,
         "terminal": "CICT / SAGT / JCT Colombo",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "BDCGP",
@@ -723,7 +726,7 @@ PORTS = [
         "max_draft_m": 9.5,
         "terminal": "CPA Chittagong Container Terminal",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "PKKHI",
@@ -736,7 +739,7 @@ PORTS = [
         "max_draft_m": 13.0,
         "terminal": "KICT / SAPT / QICT Port Qasim",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CNSHA",
@@ -749,7 +752,7 @@ PORTS = [
         "max_draft_m": 18.0,
         "terminal": "SIPG Yangshan Deep Water Port",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CNNBO",
@@ -762,7 +765,7 @@ PORTS = [
         "max_draft_m": 20.0,
         "terminal": "NBT / ZPCT / Meishan",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CNSZX",
@@ -775,7 +778,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "YICT / CCT Shekou / Chiwan",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CNGGZ",
@@ -788,7 +791,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "GPCT Nansha Phase 1-4",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CNTAO",
@@ -801,7 +804,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "QQCT / QQCTU Qianwan",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CNTNJ",
@@ -814,7 +817,7 @@ PORTS = [
         "max_draft_m": 15.5,
         "terminal": "TPCT / TACT Tianjin",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CNXMN",
@@ -827,7 +830,7 @@ PORTS = [
         "max_draft_m": 15.0,
         "terminal": "Xiamen International Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "HKHKG",
@@ -840,7 +843,7 @@ PORTS = [
         "max_draft_m": 15.5,
         "terminal": "HIT / Modern Terminals / COSCO-HIT",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "KRPUS",
@@ -853,7 +856,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "PNC / BPA / HJNC Busan",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "KRINC",
@@ -866,7 +869,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "SNCT / HJIT Incheon",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "JPTYO",
@@ -879,7 +882,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "TCT Oi / Aomi Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "JPYOK",
@@ -892,7 +895,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "Honmoku / Daikoku Pier",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "JPKOB",
@@ -905,7 +908,7 @@ PORTS = [
         "max_draft_m": 15.0,
         "terminal": "Port Island / Rokko Island",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "TWKHH",
@@ -918,7 +921,7 @@ PORTS = [
         "max_draft_m": 16.5,
         "terminal": "Kaohsiung Intercontinental Terminals",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "NLRTM",
@@ -931,7 +934,7 @@ PORTS = [
         "max_draft_m": 23.0,
         "terminal": "ECT Delta / APMT Maasvlakte II",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "NLAMS",
@@ -944,7 +947,7 @@ PORTS = [
         "max_draft_m": 12.5,
         "terminal": "North Sea Port Amsterdam",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "BEANR",
@@ -957,7 +960,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "PSA Antwerp / MPET Deurganckdok",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "DEHAM",
@@ -970,7 +973,7 @@ PORTS = [
         "max_draft_m": 15.6,
         "terminal": "HHLA Altenwerder / Eurogate",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "DEBRV",
@@ -983,7 +986,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "Eurogate / NTB Bremerhaven",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "GBLGP",
@@ -996,7 +999,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "Felixstowe Trinity / Berths 8&9",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "GBSOU",
@@ -1009,7 +1012,7 @@ PORTS = [
         "max_draft_m": 15.5,
         "terminal": "DP World Southampton",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "GBLON",
@@ -1022,7 +1025,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "DP World London Gateway",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "FRLEH",
@@ -1035,7 +1038,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "HAROPA Port 2000 GMP/TN",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "FRMRS",
@@ -1048,7 +1051,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "Fos 2XL Eurofos / Seayard",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "ESVLC",
@@ -1061,7 +1064,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "CSP Iberian / MSC Valencia Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "ESBCN",
@@ -1074,7 +1077,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "BEST Hutchison / APMT Barcelona",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "ESALG",
@@ -1087,7 +1090,7 @@ PORTS = [
         "max_draft_m": 17.5,
         "terminal": "APMT Algeciras / TTI Algeciras",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "ITGOA",
@@ -1100,7 +1103,7 @@ PORTS = [
         "max_draft_m": 15.0,
         "terminal": "PSA Genova Pra / SECH Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "ITGIT",
@@ -1113,7 +1116,7 @@ PORTS = [
         "max_draft_m": 18.0,
         "terminal": "MCT Medcenter Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "GRPIR",
@@ -1126,7 +1129,7 @@ PORTS = [
         "max_draft_m": 16.5,
         "terminal": "Piraeus Container Terminal (COSCO)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "TRMRM",
@@ -1139,7 +1142,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "MIP Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "TRIST",
@@ -1152,7 +1155,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "Marport / Kumport Istanbul",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "PLGDN",
@@ -1165,7 +1168,7 @@ PORTS = [
         "max_draft_m": 17.0,
         "terminal": "Baltic Hub T1/T2 Gdansk",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "USLAX",
@@ -1178,7 +1181,7 @@ PORTS = [
         "max_draft_m": 16.8,
         "terminal": "APM Terminals Pier 400 / Trapac",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "USLGB",
@@ -1191,7 +1194,7 @@ PORTS = [
         "max_draft_m": 16.5,
         "terminal": "Long Beach Container Terminal (LBCT)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "USNYC",
@@ -1204,7 +1207,7 @@ PORTS = [
         "max_draft_m": 15.5,
         "terminal": "GCT Bayonne / APMT Port Elizabeth / Maher",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "USSAV",
@@ -1217,7 +1220,7 @@ PORTS = [
         "max_draft_m": 15.2,
         "terminal": "GPA Garden City Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "USHOU",
@@ -1230,7 +1233,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "Bayport / Barbours Cut Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "USORF",
@@ -1243,7 +1246,7 @@ PORTS = [
         "max_draft_m": 16.5,
         "terminal": "Norfolk International Terminals (NIT)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "USCHS",
@@ -1256,7 +1259,7 @@ PORTS = [
         "max_draft_m": 15.8,
         "terminal": "Wando Welch / Leatherman Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "USSEA",
@@ -1269,7 +1272,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "NWSA Terminal 5 / Husky / Washington",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "USOAK",
@@ -1282,7 +1285,7 @@ PORTS = [
         "max_draft_m": 15.2,
         "terminal": "Oakland International Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CAVAN",
@@ -1295,7 +1298,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "Deltaport / Centerm Vancouver",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CAPRR",
@@ -1308,7 +1311,7 @@ PORTS = [
         "max_draft_m": 18.0,
         "terminal": "Fairview Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CAMTR",
@@ -1321,7 +1324,7 @@ PORTS = [
         "max_draft_m": 11.3,
         "terminal": "Cast / Racine / Maisonneuve",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "MXZLO",
@@ -1334,7 +1337,7 @@ PORTS = [
         "max_draft_m": 15.0,
         "terminal": "CONTECON / SSA Mexico Manzanillo",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "MXLZC",
@@ -1347,7 +1350,7 @@ PORTS = [
         "max_draft_m": 16.5,
         "terminal": "APMT Lazaro Cardenas / Hutchison",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "BRSSZ",
@@ -1360,7 +1363,7 @@ PORTS = [
         "max_draft_m": 15.0,
         "terminal": "Santos Brasil / BTP / DP World Santos",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "BRPNG",
@@ -1373,7 +1376,7 @@ PORTS = [
         "max_draft_m": 13.5,
         "terminal": "TCP Terminal de Conteineres",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "ARBUE",
@@ -1386,7 +1389,7 @@ PORTS = [
         "max_draft_m": 10.5,
         "terminal": "Terminales Rio de la Plata (TRP) / BACTSSA",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "PECLL",
@@ -1399,7 +1402,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "DP World Callao / APM Terminals Callao",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "CLSAI",
@@ -1412,7 +1415,7 @@ PORTS = [
         "max_draft_m": 15.0,
         "terminal": "San Antonio Terminal Internacional (STI)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "COCTG",
@@ -1425,7 +1428,7 @@ PORTS = [
         "max_draft_m": 15.5,
         "terminal": "SPRC / Contecar Cartagena",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "EGPSD",
@@ -1438,7 +1441,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "SCCT Suez Canal Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "EGALE",
@@ -1451,7 +1454,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "Alexandria Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "MATNG",
@@ -1464,7 +1467,7 @@ PORTS = [
         "max_draft_m": 18.0,
         "terminal": "APMT Tanger / TC3 / Eurogate Tanger",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "ZADUR",
@@ -1477,7 +1480,7 @@ PORTS = [
         "max_draft_m": 12.8,
         "terminal": "Durban Container Terminal (DCT Pier 1/2)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "ZACPT",
@@ -1490,7 +1493,7 @@ PORTS = [
         "max_draft_m": 12.8,
         "terminal": "Cape Town Container Terminal (CTCT)",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "KEMBA",
@@ -1503,7 +1506,7 @@ PORTS = [
         "max_draft_m": 13.5,
         "terminal": "Kenya Ports Authority (KPA Berth 20/21)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "TZDAR",
@@ -1516,7 +1519,7 @@ PORTS = [
         "max_draft_m": 14.5,
         "terminal": "DP World Dar es Salaam",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "NGAPP",
@@ -1529,7 +1532,7 @@ PORTS = [
         "max_draft_m": 13.0,
         "terminal": "APMT Apapa / TICT Tin Can Island",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "NGLEK",
@@ -1542,7 +1545,7 @@ PORTS = [
         "max_draft_m": 16.5,
         "terminal": "Lekki Port LFTZ (CMA CGM)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "GHAPA",
@@ -1555,7 +1558,7 @@ PORTS = [
         "max_draft_m": 16.0,
         "terminal": "MPS Terminal 3 Tema",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "DJJIB",
@@ -1568,7 +1571,7 @@ PORTS = [
         "max_draft_m": 18.0,
         "terminal": "Doraleh Container Terminal (SGTD)",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "AUSYD",
@@ -1581,7 +1584,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "Patrick / DP World Botany",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "AUMEL",
@@ -1594,7 +1597,7 @@ PORTS = [
         "max_draft_m": 14.5,
         "terminal": "VICT Webb Dock / DP World Swanson",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "AUBNE",
@@ -1607,7 +1610,7 @@ PORTS = [
         "max_draft_m": 14.0,
         "terminal": "Patrick / DP World Brisbane",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "AUFRE",
@@ -1620,7 +1623,7 @@ PORTS = [
         "max_draft_m": 13.0,
         "terminal": "Patrick / DP World Fremantle",
         "tier": 2,
-        "active": true
+        "active": True
     },
     {
         "locode": "NZAKL",
@@ -1633,7 +1636,7 @@ PORTS = [
         "max_draft_m": 13.5,
         "terminal": "Fergusson Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     },
     {
         "locode": "NZTRG",
@@ -1646,7 +1649,7 @@ PORTS = [
         "max_draft_m": 14.5,
         "terminal": "Sulphur Point Container Terminal",
         "tier": 1,
-        "active": true
+        "active": True
     }
 ]
 
@@ -1660,8 +1663,8 @@ AIRPORTS = [
         "lat": 19.0896,
         "lon": 72.8656,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "DEL",
@@ -1672,8 +1675,8 @@ AIRPORTS = [
         "lat": 28.5665,
         "lon": 77.1031,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "BLR",
@@ -1684,8 +1687,8 @@ AIRPORTS = [
         "lat": 13.1986,
         "lon": 77.7066,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "MAA",
@@ -1696,8 +1699,8 @@ AIRPORTS = [
         "lat": 12.9941,
         "lon": 80.1709,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "HYD",
@@ -1708,8 +1711,8 @@ AIRPORTS = [
         "lat": 17.2403,
         "lon": 78.4294,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "CCU",
@@ -1720,8 +1723,8 @@ AIRPORTS = [
         "lat": 22.652,
         "lon": 88.4463,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "AMD",
@@ -1732,8 +1735,8 @@ AIRPORTS = [
         "lat": 23.0772,
         "lon": 72.6347,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "COK",
@@ -1744,8 +1747,8 @@ AIRPORTS = [
         "lat": 10.1556,
         "lon": 76.39,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "DXB",
@@ -1756,8 +1759,8 @@ AIRPORTS = [
         "lat": 25.2532,
         "lon": 55.3657,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "DWC",
@@ -1768,8 +1771,8 @@ AIRPORTS = [
         "lat": 24.896,
         "lon": 55.1614,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "AUH",
@@ -1780,8 +1783,8 @@ AIRPORTS = [
         "lat": 24.433,
         "lon": 54.6511,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "SHJ",
@@ -1792,8 +1795,8 @@ AIRPORTS = [
         "lat": 25.3286,
         "lon": 55.5174,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "DOH",
@@ -1804,8 +1807,8 @@ AIRPORTS = [
         "lat": 25.2731,
         "lon": 51.6081,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "RUH",
@@ -1816,8 +1819,8 @@ AIRPORTS = [
         "lat": 24.9576,
         "lon": 46.6988,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "JED",
@@ -1828,8 +1831,8 @@ AIRPORTS = [
         "lat": 21.6796,
         "lon": 39.1565,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "BAH",
@@ -1840,8 +1843,8 @@ AIRPORTS = [
         "lat": 26.2708,
         "lon": 50.6336,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "KWI",
@@ -1852,8 +1855,8 @@ AIRPORTS = [
         "lat": 29.2267,
         "lon": 47.9689,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "SIN",
@@ -1864,8 +1867,8 @@ AIRPORTS = [
         "lat": 1.3644,
         "lon": 103.9915,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "HKG",
@@ -1876,8 +1879,8 @@ AIRPORTS = [
         "lat": 22.308,
         "lon": 113.9185,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "PVG",
@@ -1888,8 +1891,8 @@ AIRPORTS = [
         "lat": 31.1443,
         "lon": 121.8083,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "PEK",
@@ -1900,8 +1903,8 @@ AIRPORTS = [
         "lat": 40.0799,
         "lon": 116.6031,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "CAN",
@@ -1912,8 +1915,8 @@ AIRPORTS = [
         "lat": 23.3924,
         "lon": 113.2988,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "SZX",
@@ -1924,8 +1927,8 @@ AIRPORTS = [
         "lat": 22.6394,
         "lon": 113.8108,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "CGO",
@@ -1936,8 +1939,8 @@ AIRPORTS = [
         "lat": 34.5197,
         "lon": 113.8408,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "ICN",
@@ -1948,8 +1951,8 @@ AIRPORTS = [
         "lat": 37.4602,
         "lon": 126.4407,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "NRT",
@@ -1960,8 +1963,8 @@ AIRPORTS = [
         "lat": 35.7647,
         "lon": 140.3864,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "HND",
@@ -1972,8 +1975,8 @@ AIRPORTS = [
         "lat": 35.5494,
         "lon": 139.7798,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "KIX",
@@ -1984,8 +1987,8 @@ AIRPORTS = [
         "lat": 34.4274,
         "lon": 135.244,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "TPE",
@@ -1996,8 +1999,8 @@ AIRPORTS = [
         "lat": 25.0797,
         "lon": 121.2342,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "BKK",
@@ -2008,8 +2011,8 @@ AIRPORTS = [
         "lat": 13.6811,
         "lon": 100.7475,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "KUL",
@@ -2020,8 +2023,8 @@ AIRPORTS = [
         "lat": 2.7456,
         "lon": 101.7099,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "SGN",
@@ -2032,8 +2035,8 @@ AIRPORTS = [
         "lat": 10.8188,
         "lon": 106.6519,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "HAN",
@@ -2044,8 +2047,8 @@ AIRPORTS = [
         "lat": 21.2211,
         "lon": 105.8072,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "CGK",
@@ -2056,8 +2059,8 @@ AIRPORTS = [
         "lat": -6.1256,
         "lon": 106.6558,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "MNL",
@@ -2068,8 +2071,8 @@ AIRPORTS = [
         "lat": 14.5086,
         "lon": 121.0194,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "FRA",
@@ -2080,8 +2083,8 @@ AIRPORTS = [
         "lat": 50.0379,
         "lon": 8.5622,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "LEJ",
@@ -2092,8 +2095,8 @@ AIRPORTS = [
         "lat": 51.4324,
         "lon": 12.216,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "CGN",
@@ -2104,8 +2107,8 @@ AIRPORTS = [
         "lat": 50.8659,
         "lon": 7.1427,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "AMS",
@@ -2116,8 +2119,8 @@ AIRPORTS = [
         "lat": 52.3086,
         "lon": 4.7639,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "LHR",
@@ -2128,8 +2131,8 @@ AIRPORTS = [
         "lat": 51.47,
         "lon": -0.4543,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "STN",
@@ -2140,8 +2143,8 @@ AIRPORTS = [
         "lat": 51.885,
         "lon": 0.235,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "EMA",
@@ -2152,8 +2155,8 @@ AIRPORTS = [
         "lat": 52.8311,
         "lon": -1.3281,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "CDG",
@@ -2164,8 +2167,8 @@ AIRPORTS = [
         "lat": 49.0097,
         "lon": 2.5479,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "BRU",
@@ -2176,8 +2179,8 @@ AIRPORTS = [
         "lat": 50.9014,
         "lon": 4.4844,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "LGG",
@@ -2188,8 +2191,8 @@ AIRPORTS = [
         "lat": 50.6374,
         "lon": 5.4432,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "MXP",
@@ -2200,8 +2203,8 @@ AIRPORTS = [
         "lat": 45.63,
         "lon": 8.7231,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "MAD",
@@ -2212,8 +2215,8 @@ AIRPORTS = [
         "lat": 40.4983,
         "lon": -3.5676,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "IST",
@@ -2224,8 +2227,8 @@ AIRPORTS = [
         "lat": 41.2753,
         "lon": 28.7519,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "ZRH",
@@ -2236,8 +2239,8 @@ AIRPORTS = [
         "lat": 47.4647,
         "lon": 8.5492,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "VIE",
@@ -2248,8 +2251,8 @@ AIRPORTS = [
         "lat": 48.1103,
         "lon": 16.5697,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "MEM",
@@ -2260,8 +2263,8 @@ AIRPORTS = [
         "lat": 35.0424,
         "lon": -89.9767,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "SDF",
@@ -2272,8 +2275,8 @@ AIRPORTS = [
         "lat": 38.1744,
         "lon": -85.736,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "MIA",
@@ -2284,8 +2287,8 @@ AIRPORTS = [
         "lat": 25.7959,
         "lon": -80.287,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "LAX",
@@ -2296,8 +2299,8 @@ AIRPORTS = [
         "lat": 33.9416,
         "lon": -118.4085,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "ORD",
@@ -2308,8 +2311,8 @@ AIRPORTS = [
         "lat": 41.9742,
         "lon": -87.9073,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "JFK",
@@ -2320,8 +2323,8 @@ AIRPORTS = [
         "lat": 40.6413,
         "lon": -73.7781,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "ATL",
@@ -2332,8 +2335,8 @@ AIRPORTS = [
         "lat": 33.6407,
         "lon": -84.4277,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "DFW",
@@ -2344,8 +2347,8 @@ AIRPORTS = [
         "lat": 32.8998,
         "lon": -97.0403,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "SFO",
@@ -2356,8 +2359,8 @@ AIRPORTS = [
         "lat": 37.6213,
         "lon": -122.379,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "SEA",
@@ -2368,8 +2371,8 @@ AIRPORTS = [
         "lat": 47.4502,
         "lon": -122.3088,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "YYZ",
@@ -2380,8 +2383,8 @@ AIRPORTS = [
         "lat": 43.6777,
         "lon": -79.6248,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "YVR",
@@ -2392,8 +2395,8 @@ AIRPORTS = [
         "lat": 49.1967,
         "lon": -123.1815,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "MEX",
@@ -2404,8 +2407,8 @@ AIRPORTS = [
         "lat": 19.4361,
         "lon": -99.0719,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "NLU",
@@ -2416,8 +2419,8 @@ AIRPORTS = [
         "lat": 19.7461,
         "lon": -99.0147,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "GRU",
@@ -2428,8 +2431,8 @@ AIRPORTS = [
         "lat": -23.4356,
         "lon": -46.4731,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "VCP",
@@ -2440,8 +2443,8 @@ AIRPORTS = [
         "lat": -23.0074,
         "lon": -47.1345,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "BOG",
@@ -2452,8 +2455,8 @@ AIRPORTS = [
         "lat": 4.7016,
         "lon": -74.1469,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "SCL",
@@ -2464,8 +2467,8 @@ AIRPORTS = [
         "lat": -33.393,
         "lon": -70.7858,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "EZE",
@@ -2476,8 +2479,8 @@ AIRPORTS = [
         "lat": -34.8222,
         "lon": -58.5358,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "LIM",
@@ -2488,8 +2491,8 @@ AIRPORTS = [
         "lat": -12.0219,
         "lon": -77.1143,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "JNB",
@@ -2500,8 +2503,8 @@ AIRPORTS = [
         "lat": -26.1392,
         "lon": 28.246,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "NBO",
@@ -2512,8 +2515,8 @@ AIRPORTS = [
         "lat": -1.3192,
         "lon": 36.9275,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "ADD",
@@ -2524,8 +2527,8 @@ AIRPORTS = [
         "lat": 8.9779,
         "lon": 38.7993,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "CAI",
@@ -2536,8 +2539,8 @@ AIRPORTS = [
         "lat": 30.1219,
         "lon": 31.4056,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "LOS",
@@ -2548,8 +2551,8 @@ AIRPORTS = [
         "lat": 6.5774,
         "lon": 3.3212,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "CMN",
@@ -2560,8 +2563,8 @@ AIRPORTS = [
         "lat": 33.3675,
         "lon": -7.5898,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "SYD",
@@ -2572,8 +2575,8 @@ AIRPORTS = [
         "lat": -33.9399,
         "lon": 151.1753,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "MEL",
@@ -2584,8 +2587,8 @@ AIRPORTS = [
         "lat": -37.669,
         "lon": 144.841,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "BNE",
@@ -2596,8 +2599,8 @@ AIRPORTS = [
         "lat": -27.3842,
         "lon": 153.1175,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "PER",
@@ -2608,8 +2611,8 @@ AIRPORTS = [
         "lat": -31.9403,
         "lon": 115.9669,
         "cargo_tier": 2,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     },
     {
         "iata": "AKL",
@@ -2620,8 +2623,8 @@ AIRPORTS = [
         "lat": -37.0082,
         "lon": 174.785,
         "cargo_tier": 1,
-        "customs_open_24h": true,
-        "active": true
+        "customs_open_24h": True,
+        "active": True
     }
 ]
 
@@ -2635,8 +2638,8 @@ TRADE_LANES = [
         "transit_days_min": 4,
         "transit_days_max": 7,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-AEAUH-OCEAN",
@@ -2647,8 +2650,8 @@ TRADE_LANES = [
         "transit_days_min": 5,
         "transit_days_max": 8,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INMUN-AEJEA-OCEAN",
@@ -2659,8 +2662,8 @@ TRADE_LANES = [
         "transit_days_min": 4,
         "transit_days_max": 6,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INMAA-AEJEA-OCEAN",
@@ -2671,8 +2674,8 @@ TRADE_LANES = [
         "transit_days_min": 6,
         "transit_days_max": 9,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INMUN-SAJED-OCEAN",
@@ -2684,7 +2687,7 @@ TRADE_LANES = [
         "transit_days_max": 10,
         "canals_crossed": [],
         "risk_zone": "RED_SEA",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "INNSA-NLRTM-OCEAN",
@@ -2697,8 +2700,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "SUEZ"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-DEHAM-OCEAN",
@@ -2711,8 +2714,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "SUEZ"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-BEANR-OCEAN",
@@ -2725,8 +2728,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "SUEZ"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-GBLGP-OCEAN",
@@ -2739,8 +2742,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "SUEZ"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INMUN-NLRTM-OCEAN",
@@ -2753,8 +2756,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "SUEZ"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-SGSIN-OCEAN",
@@ -2767,8 +2770,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "MALACCA"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-CNSHA-OCEAN",
@@ -2781,8 +2784,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "MALACCA"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-KRPUS-OCEAN",
@@ -2795,8 +2798,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "MALACCA"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INMAA-SGSIN-OCEAN",
@@ -2807,8 +2810,8 @@ TRADE_LANES = [
         "transit_days_min": 7,
         "transit_days_max": 10,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-USLAX-OCEAN",
@@ -2821,8 +2824,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "MALACCA"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-USNYC-OCEAN",
@@ -2835,8 +2838,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "SUEZ"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-USSAV-OCEAN",
@@ -2849,8 +2852,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "SUEZ"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "INNSA-AUSYD-OCEAN",
@@ -2861,8 +2864,8 @@ TRADE_LANES = [
         "transit_days_min": 16,
         "transit_days_max": 21,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "CNSHA-NLRTM-OCEAN",
@@ -2876,8 +2879,8 @@ TRADE_LANES = [
             "SUEZ",
             "MALACCA"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "CNSHA-DEHAM-OCEAN",
@@ -2891,8 +2894,8 @@ TRADE_LANES = [
             "SUEZ",
             "MALACCA"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "CNSHA-USLAX-OCEAN",
@@ -2903,8 +2906,8 @@ TRADE_LANES = [
         "transit_days_min": 13,
         "transit_days_max": 18,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "CNSHA-USNYC-OCEAN",
@@ -2918,8 +2921,8 @@ TRADE_LANES = [
             "SUEZ",
             "MALACCA"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "SGSIN-NLRTM-OCEAN",
@@ -2933,8 +2936,8 @@ TRADE_LANES = [
             "SUEZ",
             "MALACCA"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "AEJEA-NLRTM-OCEAN",
@@ -2947,8 +2950,8 @@ TRADE_LANES = [
         "canals_crossed": [
             "SUEZ"
         ],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "BOM-DXB-AIR",
@@ -2959,8 +2962,8 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "BOM-LHR-AIR",
@@ -2971,8 +2974,8 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 3,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "BOM-FRA-AIR",
@@ -2983,8 +2986,8 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 3,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "BOM-JFK-AIR",
@@ -2995,8 +2998,8 @@ TRADE_LANES = [
         "transit_days_min": 2,
         "transit_days_max": 4,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "DEL-DXB-AIR",
@@ -3007,8 +3010,8 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "DEL-LHR-AIR",
@@ -3019,8 +3022,8 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 3,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "DEL-FRA-AIR",
@@ -3031,8 +3034,8 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "DEL-SIN-AIR",
@@ -3043,8 +3046,8 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "BLR-DXB-AIR",
@@ -3055,8 +3058,8 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "MAA-SIN-AIR",
@@ -3067,8 +3070,8 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "PVG-FRA-AIR",
@@ -3079,8 +3082,8 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 3,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "PVG-LAX-AIR",
@@ -3091,8 +3094,8 @@ TRADE_LANES = [
         "transit_days_min": 2,
         "transit_days_max": 3,
         "canals_crossed": [],
-        "risk_zone": null,
-        "active": true
+        "risk_zone": None,
+        "active": True
     },
     {
         "lane_code": "BOM-DXB-EXP",
@@ -3103,9 +3106,9 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 1,
         "canals_crossed": [],
-        "risk_zone": null,
+        "risk_zone": None,
         "service_tier": "Next Flight Out",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "DEL-LHR-EXP",
@@ -3116,9 +3119,9 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
+        "risk_zone": None,
         "service_tier": "Express Priority",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "DEL-FRA-EXP",
@@ -3129,9 +3132,9 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
+        "risk_zone": None,
         "service_tier": "Express Priority",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "BLR-SIN-EXP",
@@ -3142,9 +3145,9 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 1,
         "canals_crossed": [],
-        "risk_zone": null,
+        "risk_zone": None,
         "service_tier": "Next Flight Out",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "PVG-MEM-EXP",
@@ -3155,9 +3158,9 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
+        "risk_zone": None,
         "service_tier": "World Hub Express",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "HKG-LEJ-EXP",
@@ -3168,9 +3171,9 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
+        "risk_zone": None,
         "service_tier": "European Hub Express",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "FRA-JFK-EXP",
@@ -3181,9 +3184,9 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
+        "risk_zone": None,
         "service_tier": "Transatlantic Priority",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "NRT-LAX-EXP",
@@ -3194,9 +3197,9 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "canals_crossed": [],
-        "risk_zone": null,
+        "risk_zone": None,
         "service_tier": "Transpacific Priority",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "DEL-MUM-ROAD",
@@ -3207,7 +3210,7 @@ TRADE_LANES = [
         "transit_days_min": 3,
         "transit_days_max": 4,
         "route_type": "National Highway NH48",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "DEL-BLR-ROAD",
@@ -3218,7 +3221,7 @@ TRADE_LANES = [
         "transit_days_min": 4,
         "transit_days_max": 6,
         "route_type": "Golden Quadrilateral",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "MUM-MAA-ROAD",
@@ -3229,7 +3232,7 @@ TRADE_LANES = [
         "transit_days_min": 3,
         "transit_days_max": 4,
         "route_type": "South Industrial Corridor",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "DXB-RUH-ROAD",
@@ -3240,7 +3243,7 @@ TRADE_LANES = [
         "transit_days_min": 2,
         "transit_days_max": 3,
         "route_type": "Gulf Highway Trans-Border",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "RTM-FRA-ROAD",
@@ -3251,7 +3254,7 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "route_type": "European Motorway E35",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "LAX-PHX-ROAD",
@@ -3262,7 +3265,7 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 1,
         "route_type": "Interstate I-10 Express",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "DADRI-JNPT-RAIL",
@@ -3273,7 +3276,7 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "route_type": "Western Dedicated Freight Corridor (WDFC)",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "TKD-MUN-RAIL",
@@ -3284,7 +3287,7 @@ TRADE_LANES = [
         "transit_days_min": 2,
         "transit_days_max": 3,
         "route_type": "ICD Tughlakabad - Mundra Double Stack Rail",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "WFD-MAA-RAIL",
@@ -3295,7 +3298,7 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 1,
         "route_type": "ICD Whitefield - Chennai Port Rail",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "RTM-DUI-RAIL",
@@ -3306,7 +3309,7 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 1,
         "route_type": "Betuweroute European Intermodal Rail",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "HAM-MUC-RAIL",
@@ -3317,7 +3320,7 @@ TRADE_LANES = [
         "transit_days_min": 1,
         "transit_days_max": 2,
         "route_type": "German North-South Rail Freight Corridor",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "LAX-CHI-RAIL",
@@ -3328,7 +3331,7 @@ TRADE_LANES = [
         "transit_days_min": 3,
         "transit_days_max": 5,
         "route_type": "BNSF/UP Transcontinental Double-Stack Rail",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "VAN-TOR-RAIL",
@@ -3339,7 +3342,7 @@ TRADE_LANES = [
         "transit_days_min": 4,
         "transit_days_max": 6,
         "route_type": "CN Rail Trans-Canada Intermodal",
-        "active": true
+        "active": True
     },
     {
         "lane_code": "YIWU-DUI-RAIL",
@@ -3350,7 +3353,7 @@ TRADE_LANES = [
         "transit_days_min": 14,
         "transit_days_max": 18,
         "route_type": "China-Europe Express (New Silk Road Rail)",
-        "active": true
+        "active": True
     }
 ]
 
@@ -3362,7 +3365,7 @@ CARRIERS = [
         "alliance": "2M",
         "reliability_score": 91,
         "tracking_url": "https://www.maersk.com/tracking/",
-        "active": true
+        "active": True
     },
     {
         "scac": "MSCU",
@@ -3371,7 +3374,7 @@ CARRIERS = [
         "alliance": "2M",
         "reliability_score": 87,
         "tracking_url": "https://www.msc.com/track-a-shipment",
-        "active": true
+        "active": True
     },
     {
         "scac": "CMDU",
@@ -3380,7 +3383,7 @@ CARRIERS = [
         "alliance": "OCEAN Alliance",
         "reliability_score": 88,
         "tracking_url": "https://www.cma-cgm.com/ebusiness/tracking",
-        "active": true
+        "active": True
     },
     {
         "scac": "COSU",
@@ -3389,7 +3392,7 @@ CARRIERS = [
         "alliance": "OCEAN Alliance",
         "reliability_score": 84,
         "tracking_url": "https://elines.coscoshipping.com/ebusiness/cargoTracking",
-        "active": true
+        "active": True
     },
     {
         "scac": "EGLV",
@@ -3398,7 +3401,7 @@ CARRIERS = [
         "alliance": "OCEAN Alliance",
         "reliability_score": 82,
         "tracking_url": "https://www.evergreen-line.com/eservice/index.jsp",
-        "active": true
+        "active": True
     },
     {
         "scac": "HLCU",
@@ -3407,7 +3410,7 @@ CARRIERS = [
         "alliance": "THE Alliance",
         "reliability_score": 90,
         "tracking_url": "https://www.hapag-lloyd.com/en/online-business/track/track-by-booking-solution.html",
-        "active": true
+        "active": True
     },
     {
         "scac": "ONEY",
@@ -3416,7 +3419,7 @@ CARRIERS = [
         "alliance": "THE Alliance",
         "reliability_score": 83,
         "tracking_url": "https://www.one-line.com/en/our-services/eservices/cargo-tracking.html",
-        "active": true
+        "active": True
     },
     {
         "scac": "YANGM",
@@ -3425,7 +3428,7 @@ CARRIERS = [
         "alliance": "THE Alliance",
         "reliability_score": 80,
         "tracking_url": "https://www.yangming.com/e_service/Track_Trace/track_trace_cargo.aspx",
-        "active": true
+        "active": True
     },
     {
         "scac": "HDMU",
@@ -3434,7 +3437,7 @@ CARRIERS = [
         "alliance": "THE Alliance",
         "reliability_score": 81,
         "tracking_url": "https://www.hmm21.com/cms/business/ebiz/trackTrace/index.jsp",
-        "active": true
+        "active": True
     },
     {
         "scac": "ZIMU",
@@ -3443,7 +3446,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 78,
         "tracking_url": "https://www.zim.com/tools/track-a-shipment",
-        "active": true
+        "active": True
     },
     {
         "scac": "ANNU",
@@ -3452,7 +3455,7 @@ CARRIERS = [
         "alliance": "OCEAN Alliance",
         "reliability_score": 76,
         "tracking_url": "https://www.anl.com.au",
-        "active": true
+        "active": True
     },
     {
         "scac": "WHLC",
@@ -3461,7 +3464,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 74,
         "tracking_url": "https://www.wanhai.com/views/Service/TrackYourShipment.xhtml",
-        "active": true
+        "active": True
     },
     {
         "scac": "SMLM",
@@ -3470,7 +3473,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 69,
         "tracking_url": "https://www.simatech.ae",
-        "active": true
+        "active": True
     },
     {
         "scac": "TBIL",
@@ -3479,7 +3482,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 71,
         "tracking_url": "https://www.x-pressfeeders.com",
-        "active": true
+        "active": True
     },
     {
         "scac": "IQAX",
@@ -3488,7 +3491,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 72,
         "tracking_url": "https://www.pilship.com",
-        "active": true
+        "active": True
     },
     {
         "scac": "ARKU",
@@ -3497,7 +3500,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 68,
         "tracking_url": "https://www.arkas.com",
-        "active": true
+        "active": True
     },
     {
         "scac": "IRSL",
@@ -3506,7 +3509,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 55,
         "tracking_url": "https://www.irisl.net",
-        "active": false
+        "active": False
     },
     {
         "scac": "IQAX2",
@@ -3515,7 +3518,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 66,
         "tracking_url": "https://www.rohlig.com",
-        "active": true
+        "active": True
     },
     {
         "scac": "SAGL",
@@ -3524,7 +3527,7 @@ CARRIERS = [
         "alliance": "2M",
         "reliability_score": 80,
         "tracking_url": "https://www.safmarine.com",
-        "active": true
+        "active": True
     },
     {
         "scac": "SVDR",
@@ -3533,7 +3536,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 63,
         "tracking_url": "https://www.silverstarshipping.com",
-        "active": true
+        "active": True
     },
     {
         "scac": "EK",
@@ -3543,7 +3546,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 95,
         "tracking_url": "https://www.skycargo.com/english/tracking.aspx",
-        "active": true
+        "active": True
     },
     {
         "scac": "QR",
@@ -3553,7 +3556,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 93,
         "tracking_url": "https://www.qrcargo.com/s/track-your-shipment",
-        "active": true
+        "active": True
     },
     {
         "scac": "AI",
@@ -3563,7 +3566,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 80,
         "tracking_url": "https://cargo.airindia.com/eCargo/",
-        "active": true
+        "active": True
     },
     {
         "scac": "LH",
@@ -3573,7 +3576,7 @@ CARRIERS = [
         "alliance": "Star Alliance",
         "reliability_score": 91,
         "tracking_url": "https://lufthansa-cargo.com/tracking",
-        "active": true
+        "active": True
     },
     {
         "scac": "SQ",
@@ -3583,7 +3586,7 @@ CARRIERS = [
         "alliance": "Star Alliance",
         "reliability_score": 92,
         "tracking_url": "https://www.singaporeair.com/en_UK/us/plan-travel/cargo/",
-        "active": true
+        "active": True
     },
     {
         "scac": "CV",
@@ -3593,7 +3596,7 @@ CARRIERS = [
         "alliance": "Independent",
         "reliability_score": 89,
         "tracking_url": "https://www.cargolux.com/en/Cargo-Services/Tracking/",
-        "active": true
+        "active": True
     },
     {
         "scac": "KE",
@@ -3603,7 +3606,7 @@ CARRIERS = [
         "alliance": "SkyTeam",
         "reliability_score": 88,
         "tracking_url": "https://www.koreanair.com/content/koreanair/en/cargo/tracking.html",
-        "active": true
+        "active": True
     },
     {
         "scac": "CX",
@@ -3613,7 +3616,7 @@ CARRIERS = [
         "alliance": "Oneworld",
         "reliability_score": 90,
         "tracking_url": "https://www.cathaycargo.com/en-us/track/track-shipments.html",
-        "active": true
+        "active": True
     },
     {
         "scac": "TK",
@@ -3623,7 +3626,7 @@ CARRIERS = [
         "alliance": "Star Alliance",
         "reliability_score": 87,
         "tracking_url": "https://www.turkishcargo.com/en/online-services/tracking",
-        "active": true
+        "active": True
     },
     {
         "scac": "AFKL",
@@ -3633,7 +3636,7 @@ CARRIERS = [
         "alliance": "SkyTeam",
         "reliability_score": 89,
         "tracking_url": "https://www.afklcargo.com/WW/en/local/app/index.jsp#/myCargo/track-trace",
-        "active": true
+        "active": True
     },
     {
         "scac": "DHL_EXP",
@@ -3643,7 +3646,7 @@ CARRIERS = [
         "alliance": "Express Integrator",
         "reliability_score": 98,
         "tracking_url": "https://www.dhl.com/en/express/tracking.html",
-        "active": true
+        "active": True
     },
     {
         "scac": "FX_EXP",
@@ -3653,7 +3656,7 @@ CARRIERS = [
         "alliance": "Express Integrator",
         "reliability_score": 97,
         "tracking_url": "https://www.fedex.com/en-in/tracking.html",
-        "active": true
+        "active": True
     },
     {
         "scac": "UPS_EXP",
@@ -3663,7 +3666,7 @@ CARRIERS = [
         "alliance": "Express Integrator",
         "reliability_score": 96,
         "tracking_url": "https://www.ups.com/track",
-        "active": true
+        "active": True
     },
     {
         "scac": "ARMX_EXP",
@@ -3673,7 +3676,7 @@ CARRIERS = [
         "alliance": "Express Integrator",
         "reliability_score": 89,
         "tracking_url": "https://www.aramex.com/express/track-results",
-        "active": true
+        "active": True
     },
     {
         "scac": "BDART",
@@ -3683,7 +3686,7 @@ CARRIERS = [
         "alliance": "Express Integrator",
         "reliability_score": 94,
         "tracking_url": "https://www.bluedart.com/tracking",
-        "active": true
+        "active": True
     },
     {
         "scac": "SFX",
@@ -3693,7 +3696,7 @@ CARRIERS = [
         "alliance": "Express Integrator",
         "reliability_score": 93,
         "tracking_url": "https://www.sf-international.com/us/en/dynamic_function/waybill/",
-        "active": true
+        "active": True
     },
     {
         "scac": "DHL_FRT",
@@ -3702,7 +3705,7 @@ CARRIERS = [
         "alliance": "Global Land Transport",
         "reliability_score": 94,
         "tracking_url": "https://www.dhl.com/global-en/home/our-divisions/freight.html",
-        "active": true
+        "active": True
     },
     {
         "scac": "DSV_RD",
@@ -3711,7 +3714,7 @@ CARRIERS = [
         "alliance": "Global Land Transport",
         "reliability_score": 92,
         "tracking_url": "https://www.dsv.com/en/our-solutions/modes-of-transport/road-transport",
-        "active": true
+        "active": True
     },
     {
         "scac": "SCHN_RD",
@@ -3720,7 +3723,7 @@ CARRIERS = [
         "alliance": "Global Land Transport",
         "reliability_score": 93,
         "tracking_url": "https://www.dbschenker.com/global/business-customers/tracking",
-        "active": true
+        "active": True
     },
     {
         "scac": "TCI_FRT",
@@ -3729,7 +3732,7 @@ CARRIERS = [
         "alliance": "National FTL/LTL Leader",
         "reliability_score": 88,
         "tracking_url": "https://www.tcifreight.com",
-        "active": true
+        "active": True
     },
     {
         "scac": "VRL_LOG",
@@ -3738,7 +3741,7 @@ CARRIERS = [
         "alliance": "National FTL/LTL Leader",
         "reliability_score": 87,
         "tracking_url": "https://www.vrlgroup.in/vrl_consignment_tracking.aspx",
-        "active": true
+        "active": True
     },
     {
         "scac": "GATI_KWE",
@@ -3747,7 +3750,7 @@ CARRIERS = [
         "alliance": "Express Surface Logistics",
         "reliability_score": 86,
         "tracking_url": "https://www.gatikwe.com",
-        "active": true
+        "active": True
     },
     {
         "scac": "DELHIVERY",
@@ -3756,7 +3759,7 @@ CARRIERS = [
         "alliance": "Tech-enabled Surface Logistics",
         "reliability_score": 90,
         "tracking_url": "https://www.delhivery.com/tracking",
-        "active": true
+        "active": True
     },
     {
         "scac": "CONCOR",
@@ -3765,7 +3768,7 @@ CARRIERS = [
         "alliance": "Navratna Rail Intermodal",
         "reliability_score": 92,
         "tracking_url": "https://concorindia.co.in/c_track.asp",
-        "active": true
+        "active": True
     },
     {
         "scac": "DBC_RAIL",
@@ -3774,7 +3777,7 @@ CARRIERS = [
         "alliance": "European Rail Alliance",
         "reliability_score": 91,
         "tracking_url": "https://www.dbcargo.com",
-        "active": true
+        "active": True
     },
     {
         "scac": "UNP_RAIL",
@@ -3783,7 +3786,7 @@ CARRIERS = [
         "alliance": "North American Class I Rail",
         "reliability_score": 89,
         "tracking_url": "https://www.up.com/customers/track/index.htm",
-        "active": true
+        "active": True
     },
     {
         "scac": "BNSF_RAIL",
@@ -3792,7 +3795,7 @@ CARRIERS = [
         "alliance": "North American Class I Rail",
         "reliability_score": 90,
         "tracking_url": "https://www.bnsf.com/tools/track-your-shipment.html",
-        "active": true
+        "active": True
     },
     {
         "scac": "CN_RAIL",
@@ -3801,7 +3804,7 @@ CARRIERS = [
         "alliance": "North American Class I Rail",
         "reliability_score": 88,
         "tracking_url": "https://www.cn.ca/en/customer-centre/tools/track-and-trace/",
-        "active": true
+        "active": True
     },
     {
         "scac": "CR_EXP",
@@ -3810,7 +3813,7 @@ CARRIERS = [
         "alliance": "Eurasian Rail Corridor",
         "reliability_score": 85,
         "tracking_url": "http://www.crexpress.cn",
-        "active": true
+        "active": True
     }
 ]
 
@@ -3819,9 +3822,9 @@ SERVICE_TYPES = [
         "code": "OCEAN_FCL",
         "name": "Ocean FCL (Full Container Load)",
         "mode": "OCEAN",
-        "chargeable_weight_divisor": null,
+        "chargeable_weight_divisor": None,
         "min_chargeable_unit": "container",
-        "active": true
+        "active": True
     },
     {
         "code": "OCEAN_LCL",
@@ -3830,7 +3833,7 @@ SERVICE_TYPES = [
         "chargeable_weight_divisor": 1000,
         "min_chargeable_unit": "kg",
         "min_chargeable_kg": 100,
-        "active": true
+        "active": True
     },
     {
         "code": "AIR_GEN",
@@ -3839,7 +3842,7 @@ SERVICE_TYPES = [
         "chargeable_weight_divisor": 6000,
         "min_chargeable_unit": "kg",
         "min_chargeable_kg": 45,
-        "active": true
+        "active": True
     },
     {
         "code": "AIR_EXPRESS_NFO",
@@ -3848,7 +3851,7 @@ SERVICE_TYPES = [
         "chargeable_weight_divisor": 5000,
         "min_chargeable_unit": "kg",
         "min_chargeable_kg": 0.5,
-        "active": true
+        "active": True
     },
     {
         "code": "AIR_COURIER",
@@ -3857,7 +3860,7 @@ SERVICE_TYPES = [
         "chargeable_weight_divisor": 5000,
         "min_chargeable_unit": "kg",
         "min_chargeable_kg": 0.5,
-        "active": true
+        "active": True
     },
     {
         "code": "AIR_CHARTER",
@@ -3865,7 +3868,7 @@ SERVICE_TYPES = [
         "mode": "AIR_EXPRESS",
         "chargeable_weight_divisor": 6000,
         "min_chargeable_unit": "aircraft",
-        "active": true
+        "active": True
     },
     {
         "code": "GROUND_FTL",
@@ -3873,7 +3876,7 @@ SERVICE_TYPES = [
         "mode": "GROUND",
         "chargeable_weight_divisor": 3000,
         "min_chargeable_unit": "truck",
-        "active": true
+        "active": True
     },
     {
         "code": "GROUND_LTL",
@@ -3882,7 +3885,7 @@ SERVICE_TYPES = [
         "chargeable_weight_divisor": 4000,
         "min_chargeable_unit": "kg",
         "min_chargeable_kg": 20,
-        "active": true
+        "active": True
     },
     {
         "code": "GROUND_EXPRESS_TRK",
@@ -3890,31 +3893,31 @@ SERVICE_TYPES = [
         "mode": "GROUND",
         "chargeable_weight_divisor": 3000,
         "min_chargeable_unit": "truck",
-        "active": true
+        "active": True
     },
     {
         "code": "RAIL_INTERMODAL",
         "name": "Rail Freight \u2013 Intermodal Container Corridor (ICD)",
         "mode": "RAIL",
-        "chargeable_weight_divisor": null,
+        "chargeable_weight_divisor": None,
         "min_chargeable_unit": "container",
-        "active": true
+        "active": True
     },
     {
         "code": "RAIL_BULK_WAGON",
         "name": "Rail Freight \u2013 Bulk Wagonload / Dedicated Rake",
         "mode": "RAIL",
-        "chargeable_weight_divisor": null,
+        "chargeable_weight_divisor": None,
         "min_chargeable_unit": "wagon",
-        "active": true
+        "active": True
     },
     {
         "code": "MULTIMODAL",
         "name": "Multimodal (Sea + Rail / Road Hub-to-Door)",
         "mode": "MULTIMODAL",
-        "chargeable_weight_divisor": null,
+        "chargeable_weight_divisor": None,
         "min_chargeable_unit": "varies",
-        "active": true
+        "active": True
     }
 ]
 
@@ -3930,9 +3933,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 33.2,
         "max_payload_kg": 21800,
         "tare_kg": 2200,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "OCEAN/RAIL",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "42G1",
@@ -3945,9 +3948,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 67.7,
         "max_payload_kg": 26600,
         "tare_kg": 3780,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "OCEAN/RAIL",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "45G1",
@@ -3960,9 +3963,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 76.4,
         "max_payload_kg": 28800,
         "tare_kg": 3900,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "OCEAN/RAIL",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "L5G1",
@@ -3975,9 +3978,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 86.0,
         "max_payload_kg": 27600,
         "tare_kg": 4800,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "OCEAN/RAIL",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "45PW",
@@ -3990,9 +3993,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 89.2,
         "max_payload_kg": 29000,
         "tare_kg": 4920,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "RAIL/SHORTSEA",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "53DOM",
@@ -4005,9 +4008,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 111.0,
         "max_payload_kg": 20400,
         "tare_kg": 5300,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "RAIL/GROUND",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "22R1",
@@ -4020,10 +4023,10 @@ CONTAINER_TYPES = [
         "internal_cbm": 28.3,
         "max_payload_kg": 21000,
         "tare_kg": 2900,
-        "is_reefer": true,
+        "is_reefer": True,
         "temp_range_c": "-30 to +30",
         "category": "OCEAN/RAIL",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "42R1",
@@ -4036,10 +4039,10 @@ CONTAINER_TYPES = [
         "internal_cbm": 63.2,
         "max_payload_kg": 27700,
         "tare_kg": 4660,
-        "is_reefer": true,
+        "is_reefer": True,
         "temp_range_c": "-30 to +30",
         "category": "OCEAN/RAIL",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "22U1",
@@ -4052,9 +4055,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 32.5,
         "max_payload_kg": 21000,
         "tare_kg": 2400,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "OCEAN/RAIL",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "42P3",
@@ -4064,12 +4067,12 @@ CONTAINER_TYPES = [
         "internal_length_m": 12.088,
         "internal_width_m": 2.4,
         "internal_height_m": 1.942,
-        "internal_cbm": null,
+        "internal_cbm": None,
         "max_payload_kg": 40600,
         "tare_kg": 5720,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "OCEAN/RAIL",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "RFLT",
@@ -4078,13 +4081,13 @@ CONTAINER_TYPES = [
         "teu": 3,
         "internal_length_m": 18.288,
         "internal_width_m": 2.438,
-        "internal_height_m": null,
-        "internal_cbm": null,
+        "internal_height_m": None,
+        "internal_cbm": None,
         "max_payload_kg": 61000,
         "tare_kg": 19000,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "RAIL",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "CURT",
@@ -4097,9 +4100,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 100.0,
         "max_payload_kg": 24000,
         "tare_kg": 7200,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "GROUND",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "TRK32",
@@ -4112,9 +4115,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 56.0,
         "max_payload_kg": 15000,
         "tare_kg": 8000,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "GROUND",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "AKE",
@@ -4127,9 +4130,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 4.3,
         "max_payload_kg": 1588,
         "tare_kg": 75,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "EXPRESS_AIR",
-        "active": true
+        "active": True
     },
     {
         "iso_code": "AKH",
@@ -4142,9 +4145,9 @@ CONTAINER_TYPES = [
         "internal_cbm": 3.6,
         "max_payload_kg": 1134,
         "tare_kg": 65,
-        "is_reefer": false,
+        "is_reefer": False,
         "category": "EXPRESS_AIR",
-        "active": true
+        "active": True
     }
 ]
 
@@ -4152,112 +4155,112 @@ CARGO_TYPES = [
     {
         "code": "GEN",
         "name": "General Cargo",
-        "imo_class": null,
-        "requires_temp_control": false,
-        "is_hazmat": false,
+        "imo_class": None,
+        "requires_temp_control": False,
+        "is_hazmat": False,
         "surcharge_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "code": "PERISHABLE",
         "name": "Perishable \u2013 Food & Beverages",
-        "imo_class": null,
-        "requires_temp_control": true,
+        "imo_class": None,
+        "requires_temp_control": True,
         "temp_range_c": "2 to 8",
-        "is_hazmat": false,
+        "is_hazmat": False,
         "surcharge_pct": 12,
-        "active": true
+        "active": True
     },
     {
         "code": "PHARMA",
         "name": "Pharmaceuticals & Life Sciences",
-        "imo_class": null,
-        "requires_temp_control": true,
+        "imo_class": None,
+        "requires_temp_control": True,
         "temp_range_c": "2 to 8",
-        "is_hazmat": false,
+        "is_hazmat": False,
         "surcharge_pct": 15,
-        "active": true
+        "active": True
     },
     {
         "code": "DG2",
         "name": "Hazmat \u2013 DG Class 2 (Gases)",
         "imo_class": "2",
-        "requires_temp_control": false,
-        "is_hazmat": true,
+        "requires_temp_control": False,
+        "is_hazmat": True,
         "surcharge_pct": 20,
-        "active": true
+        "active": True
     },
     {
         "code": "DG3",
         "name": "Hazmat \u2013 DG Class 3 (Flammable Liquids)",
         "imo_class": "3",
-        "requires_temp_control": false,
-        "is_hazmat": true,
+        "requires_temp_control": False,
+        "is_hazmat": True,
         "surcharge_pct": 25,
-        "active": true
+        "active": True
     },
     {
         "code": "DG4",
         "name": "Hazmat \u2013 DG Class 4 (Flammable Solids)",
         "imo_class": "4",
-        "requires_temp_control": false,
-        "is_hazmat": true,
+        "requires_temp_control": False,
+        "is_hazmat": True,
         "surcharge_pct": 20,
-        "active": true
+        "active": True
     },
     {
         "code": "DG6",
         "name": "Hazmat \u2013 DG Class 6 (Toxic Substances)",
         "imo_class": "6",
-        "requires_temp_control": false,
-        "is_hazmat": true,
+        "requires_temp_control": False,
+        "is_hazmat": True,
         "surcharge_pct": 30,
-        "active": true
+        "active": True
     },
     {
         "code": "DG8",
         "name": "Hazmat \u2013 DG Class 8 (Corrosives)",
         "imo_class": "8",
-        "requires_temp_control": false,
-        "is_hazmat": true,
+        "requires_temp_control": False,
+        "is_hazmat": True,
         "surcharge_pct": 22,
-        "active": true
+        "active": True
     },
     {
         "code": "DG9",
         "name": "Hazmat \u2013 DG Class 9 (Misc. Dangerous)",
         "imo_class": "9",
-        "requires_temp_control": false,
-        "is_hazmat": true,
+        "requires_temp_control": False,
+        "is_hazmat": True,
         "surcharge_pct": 10,
-        "active": true
+        "active": True
     },
     {
         "code": "LIION",
         "name": "Lithium Batteries (Cargo only, UN3480/3481)",
         "imo_class": "9",
-        "requires_temp_control": false,
-        "is_hazmat": true,
+        "requires_temp_control": False,
+        "is_hazmat": True,
         "surcharge_pct": 18,
-        "active": true
+        "active": True
     },
     {
         "code": "AUTOPARTS",
         "name": "Automotive Parts & Accessories",
-        "imo_class": null,
-        "requires_temp_control": false,
-        "is_hazmat": false,
+        "imo_class": None,
+        "requires_temp_control": False,
+        "is_hazmat": False,
         "surcharge_pct": 5,
-        "active": true
+        "active": True
     },
     {
         "code": "HEAVY",
         "name": "Heavy Lift / Out-of-Gauge (OOG)",
-        "imo_class": null,
-        "requires_temp_control": false,
-        "is_hazmat": false,
+        "imo_class": None,
+        "requires_temp_control": False,
+        "is_hazmat": False,
         "surcharge_pct": 35,
-        "active": true
+        "active": True
     }
 ]
 
@@ -4268,7 +4271,7 @@ COMMODITIES = [
         "section": "XI",
         "cargo_type": "GEN",
         "typical_duty_pct": 12,
-        "active": true
+        "active": True
     },
     {
         "hs6": "620462",
@@ -4276,7 +4279,7 @@ COMMODITIES = [
         "section": "XI",
         "cargo_type": "GEN",
         "typical_duty_pct": 12,
-        "active": true
+        "active": True
     },
     {
         "hs6": "610910",
@@ -4284,7 +4287,7 @@ COMMODITIES = [
         "section": "XI",
         "cargo_type": "GEN",
         "typical_duty_pct": 12,
-        "active": true
+        "active": True
     },
     {
         "hs6": "870899",
@@ -4292,7 +4295,7 @@ COMMODITIES = [
         "section": "XVII",
         "cargo_type": "AUTOPARTS",
         "typical_duty_pct": 7.5,
-        "active": true
+        "active": True
     },
     {
         "hs6": "870421",
@@ -4300,7 +4303,7 @@ COMMODITIES = [
         "section": "XVII",
         "cargo_type": "AUTOPARTS",
         "typical_duty_pct": 10,
-        "active": true
+        "active": True
     },
     {
         "hs6": "300490",
@@ -4308,7 +4311,7 @@ COMMODITIES = [
         "section": "VI",
         "cargo_type": "PHARMA",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "300210",
@@ -4316,7 +4319,7 @@ COMMODITIES = [
         "section": "VI",
         "cargo_type": "PHARMA",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "851712",
@@ -4324,7 +4327,7 @@ COMMODITIES = [
         "section": "XVI",
         "cargo_type": "GEN",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "854231",
@@ -4332,7 +4335,7 @@ COMMODITIES = [
         "section": "XVI",
         "cargo_type": "GEN",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "847330",
@@ -4340,7 +4343,7 @@ COMMODITIES = [
         "section": "XVI",
         "cargo_type": "GEN",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "190190",
@@ -4348,7 +4351,7 @@ COMMODITIES = [
         "section": "IV",
         "cargo_type": "PERISHABLE",
         "typical_duty_pct": 8,
-        "active": true
+        "active": True
     },
     {
         "hs6": "100190",
@@ -4356,7 +4359,7 @@ COMMODITIES = [
         "section": "II",
         "cargo_type": "GEN",
         "typical_duty_pct": 5,
-        "active": true
+        "active": True
     },
     {
         "hs6": "230120",
@@ -4364,7 +4367,7 @@ COMMODITIES = [
         "section": "II",
         "cargo_type": "GEN",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "270900",
@@ -4372,7 +4375,7 @@ COMMODITIES = [
         "section": "V",
         "cargo_type": "DG3",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "271011",
@@ -4380,7 +4383,7 @@ COMMODITIES = [
         "section": "V",
         "cargo_type": "DG3",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "280920",
@@ -4388,7 +4391,7 @@ COMMODITIES = [
         "section": "VI",
         "cargo_type": "DG8",
         "typical_duty_pct": 5,
-        "active": true
+        "active": True
     },
     {
         "hs6": "850650",
@@ -4396,7 +4399,7 @@ COMMODITIES = [
         "section": "XVI",
         "cargo_type": "LIION",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "850760",
@@ -4404,7 +4407,7 @@ COMMODITIES = [
         "section": "XVI",
         "cargo_type": "LIION",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "940360",
@@ -4412,7 +4415,7 @@ COMMODITIES = [
         "section": "XX",
         "cargo_type": "GEN",
         "typical_duty_pct": 10,
-        "active": true
+        "active": True
     },
     {
         "hs6": "940161",
@@ -4420,7 +4423,7 @@ COMMODITIES = [
         "section": "XX",
         "cargo_type": "GEN",
         "typical_duty_pct": 10,
-        "active": true
+        "active": True
     },
     {
         "hs6": "720839",
@@ -4428,7 +4431,7 @@ COMMODITIES = [
         "section": "XV",
         "cargo_type": "HEAVY",
         "typical_duty_pct": 5,
-        "active": true
+        "active": True
     },
     {
         "hs6": "760110",
@@ -4436,7 +4439,7 @@ COMMODITIES = [
         "section": "XV",
         "cargo_type": "GEN",
         "typical_duty_pct": 2,
-        "active": true
+        "active": True
     },
     {
         "hs6": "520100",
@@ -4444,7 +4447,7 @@ COMMODITIES = [
         "section": "XI",
         "cargo_type": "GEN",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "520811",
@@ -4452,7 +4455,7 @@ COMMODITIES = [
         "section": "XI",
         "cargo_type": "GEN",
         "typical_duty_pct": 10,
-        "active": true
+        "active": True
     },
     {
         "hs6": "390110",
@@ -4460,7 +4463,7 @@ COMMODITIES = [
         "section": "VII",
         "cargo_type": "DG3",
         "typical_duty_pct": 5,
-        "active": true
+        "active": True
     },
     {
         "hs6": "390210",
@@ -4468,7 +4471,7 @@ COMMODITIES = [
         "section": "VII",
         "cargo_type": "GEN",
         "typical_duty_pct": 5,
-        "active": true
+        "active": True
     },
     {
         "hs6": "84713000",
@@ -4476,7 +4479,7 @@ COMMODITIES = [
         "section": "XVI",
         "cargo_type": "GEN",
         "typical_duty_pct": 0,
-        "active": true
+        "active": True
     },
     {
         "hs6": "950300",
@@ -4484,7 +4487,7 @@ COMMODITIES = [
         "section": "XX",
         "cargo_type": "GEN",
         "typical_duty_pct": 12,
-        "active": true
+        "active": True
     },
     {
         "hs6": "560219",
@@ -4492,7 +4495,7 @@ COMMODITIES = [
         "section": "XI",
         "cargo_type": "GEN",
         "typical_duty_pct": 10,
-        "active": true
+        "active": True
     },
     {
         "hs6": "842199",
@@ -4500,7 +4503,7 @@ COMMODITIES = [
         "section": "XVI",
         "cargo_type": "GEN",
         "typical_duty_pct": 5,
-        "active": true
+        "active": True
     }
 ]
 
@@ -4513,9 +4516,9 @@ PACKAGING_TYPES = [
         "width_mm": 800,
         "height_mm": 145,
         "tare_kg": 25,
-        "stackable": true,
+        "stackable": True,
         "max_stack_kg": 4000,
-        "active": true
+        "active": True
     },
     {
         "code": "PLT_STD",
@@ -4525,9 +4528,9 @@ PACKAGING_TYPES = [
         "width_mm": 1000,
         "height_mm": 145,
         "tare_kg": 30,
-        "stackable": true,
+        "stackable": True,
         "max_stack_kg": 4500,
-        "active": true
+        "active": True
     },
     {
         "code": "PLT_US",
@@ -4537,66 +4540,66 @@ PACKAGING_TYPES = [
         "width_mm": 1016,
         "height_mm": 145,
         "tare_kg": 29,
-        "stackable": true,
+        "stackable": True,
         "max_stack_kg": 4500,
-        "active": true
+        "active": True
     },
     {
         "code": "CTN",
         "name": "Corrugated Carton Box (Master Carton)",
         "standard": "ASTM D4169",
-        "length_mm": null,
-        "width_mm": null,
-        "height_mm": null,
+        "length_mm": None,
+        "width_mm": None,
+        "height_mm": None,
         "tare_kg": 0.8,
-        "stackable": true,
+        "stackable": True,
         "max_stack_kg": 600,
-        "active": true
+        "active": True
     },
     {
         "code": "CRATE",
         "name": "Wooden Crate (ISPM-15 Heat Treated)",
         "standard": "ISPM 15",
-        "length_mm": null,
-        "width_mm": null,
-        "height_mm": null,
-        "tare_kg": null,
-        "stackable": false,
-        "max_stack_kg": null,
-        "active": true
+        "length_mm": None,
+        "width_mm": None,
+        "height_mm": None,
+        "tare_kg": None,
+        "stackable": False,
+        "max_stack_kg": None,
+        "active": True
     },
     {
         "code": "DRUM_S",
         "name": "Steel Drum (200L / 55 gal)",
         "standard": "UN 1A1",
-        "length_mm": null,
-        "width_mm": null,
+        "length_mm": None,
+        "width_mm": None,
         "height_mm": 880,
         "capacity_litres": 200,
         "tare_kg": 22,
-        "stackable": false,
-        "active": true
+        "stackable": False,
+        "active": True
     },
     {
         "code": "DRUM_P",
         "name": "Plastic Drum (200L)",
         "standard": "UN 1H1",
-        "length_mm": null,
-        "width_mm": null,
+        "length_mm": None,
+        "width_mm": None,
         "height_mm": 870,
         "capacity_litres": 200,
         "tare_kg": 9,
-        "stackable": false,
-        "active": true
+        "stackable": False,
+        "active": True
     },
     {
         "code": "FLEXIBAG",
         "name": "Flexitank (Liquid Bulk in 20GP)",
         "standard": "CoA",
         "capacity_litres": 24000,
-        "tare_kg": null,
-        "stackable": false,
-        "active": true
+        "tare_kg": None,
+        "stackable": False,
+        "active": True
     },
     {
         "code": "EXP_ENV",
@@ -4606,8 +4609,8 @@ PACKAGING_TYPES = [
         "width_mm": 250,
         "height_mm": 10,
         "tare_kg": 0.05,
-        "stackable": true,
-        "active": true
+        "stackable": True,
+        "active": True
     },
     {
         "code": "EXP_BOX_10",
@@ -4617,8 +4620,8 @@ PACKAGING_TYPES = [
         "width_mm": 320,
         "height_mm": 310,
         "tare_kg": 0.6,
-        "stackable": true,
-        "active": true
+        "stackable": True,
+        "active": True
     },
     {
         "code": "EXP_BOX_25",
@@ -4628,8 +4631,8 @@ PACKAGING_TYPES = [
         "width_mm": 440,
         "height_mm": 410,
         "tare_kg": 1.2,
-        "stackable": true,
-        "active": true
+        "stackable": True,
+        "active": True
     }
 ]
 
@@ -4652,7 +4655,7 @@ INCOTERMS = [
         "modes": [
             "ALL"
         ],
-        "active": true
+        "active": True
     },
     {
         "code": "FCA",
@@ -4673,7 +4676,7 @@ INCOTERMS = [
         "modes": [
             "ALL"
         ],
-        "active": true
+        "active": True
     },
     {
         "code": "FAS",
@@ -4694,7 +4697,7 @@ INCOTERMS = [
         "modes": [
             "OCEAN"
         ],
-        "active": true
+        "active": True
     },
     {
         "code": "FOB",
@@ -4715,7 +4718,7 @@ INCOTERMS = [
         "modes": [
             "OCEAN"
         ],
-        "active": true
+        "active": True
     },
     {
         "code": "CFR",
@@ -4736,7 +4739,7 @@ INCOTERMS = [
         "modes": [
             "OCEAN"
         ],
-        "active": true
+        "active": True
     },
     {
         "code": "CIF",
@@ -4758,7 +4761,7 @@ INCOTERMS = [
         "modes": [
             "OCEAN"
         ],
-        "active": true
+        "active": True
     },
     {
         "code": "CPT",
@@ -4778,7 +4781,7 @@ INCOTERMS = [
         "modes": [
             "ALL"
         ],
-        "active": true
+        "active": True
     },
     {
         "code": "CIP",
@@ -4799,7 +4802,7 @@ INCOTERMS = [
         "modes": [
             "ALL"
         ],
-        "active": true
+        "active": True
     },
     {
         "code": "DAP",
@@ -4820,7 +4823,7 @@ INCOTERMS = [
         "modes": [
             "ALL"
         ],
-        "active": true
+        "active": True
     },
     {
         "code": "DPU",
@@ -4841,7 +4844,7 @@ INCOTERMS = [
         "modes": [
             "ALL"
         ],
-        "active": true
+        "active": True
     },
     {
         "code": "DDP",
@@ -4861,7 +4864,7 @@ INCOTERMS = [
         "modes": [
             "ALL"
         ],
-        "active": true
+        "active": True
     }
 ]
 
@@ -4874,8 +4877,8 @@ CHARGE_HEADS = [
             "OCEAN"
         ],
         "uom": "per_container",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "AFR",
@@ -4885,8 +4888,8 @@ CHARGE_HEADS = [
             "AIR"
         ],
         "uom": "per_kg_chargeable",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "AFR_EXP",
@@ -4896,8 +4899,8 @@ CHARGE_HEADS = [
             "AIR_EXPRESS"
         ],
         "uom": "per_kg_chargeable",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "ROAD_LH",
@@ -4907,8 +4910,8 @@ CHARGE_HEADS = [
             "GROUND"
         ],
         "uom": "per_truck_or_kg",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "RAIL_FRT",
@@ -4918,8 +4921,8 @@ CHARGE_HEADS = [
             "RAIL"
         ],
         "uom": "per_container_or_rake",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "THC_O",
@@ -4929,8 +4932,8 @@ CHARGE_HEADS = [
             "OCEAN"
         ],
         "uom": "per_container",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "ORT",
@@ -4940,8 +4943,8 @@ CHARGE_HEADS = [
             "ALL"
         ],
         "uom": "per_truck",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "CUSEXP_O",
@@ -4951,8 +4954,8 @@ CHARGE_HEADS = [
             "ALL"
         ],
         "uom": "per_shipment",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "VGMFEE",
@@ -4962,8 +4965,8 @@ CHARGE_HEADS = [
             "OCEAN_FCL"
         ],
         "uom": "per_container",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "CFS_O",
@@ -4973,8 +4976,8 @@ CHARGE_HEADS = [
             "OCEAN_LCL"
         ],
         "uom": "per_cbm",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "ICD_HANDLING",
@@ -4984,8 +4987,8 @@ CHARGE_HEADS = [
             "RAIL"
         ],
         "uom": "per_container",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "TOLL_FEE",
@@ -4995,8 +4998,8 @@ CHARGE_HEADS = [
             "GROUND"
         ],
         "uom": "per_trip",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "DETENTION_TRK",
@@ -5006,8 +5009,8 @@ CHARGE_HEADS = [
             "GROUND"
         ],
         "uom": "per_hour",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "EXP_NFO",
@@ -5017,8 +5020,8 @@ CHARGE_HEADS = [
             "AIR_EXPRESS"
         ],
         "uom": "per_shipment",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "EXP_BONDED",
@@ -5028,8 +5031,8 @@ CHARGE_HEADS = [
             "AIR_EXPRESS"
         ],
         "uom": "per_shipment",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "BAF",
@@ -5039,8 +5042,8 @@ CHARGE_HEADS = [
             "OCEAN"
         ],
         "uom": "per_container",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "CAF",
@@ -5050,8 +5053,8 @@ CHARGE_HEADS = [
             "OCEAN"
         ],
         "uom": "per_container",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "PSS",
@@ -5061,8 +5064,8 @@ CHARGE_HEADS = [
             "OCEAN"
         ],
         "uom": "per_container",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "WRS",
@@ -5073,8 +5076,8 @@ CHARGE_HEADS = [
             "AIR"
         ],
         "uom": "per_container",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "CLS",
@@ -5084,8 +5087,8 @@ CHARGE_HEADS = [
             "OCEAN"
         ],
         "uom": "per_container",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "REDSEA",
@@ -5095,8 +5098,8 @@ CHARGE_HEADS = [
             "OCEAN"
         ],
         "uom": "per_container",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "DGS",
@@ -5106,8 +5109,8 @@ CHARGE_HEADS = [
             "ALL"
         ],
         "uom": "per_container",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "REEFER",
@@ -5117,8 +5120,8 @@ CHARGE_HEADS = [
             "OCEAN_FCL"
         ],
         "uom": "per_container_day",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "THC_D",
@@ -5128,8 +5131,8 @@ CHARGE_HEADS = [
             "OCEAN"
         ],
         "uom": "per_container",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "DRT",
@@ -5139,8 +5142,8 @@ CHARGE_HEADS = [
             "ALL"
         ],
         "uom": "per_truck",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "CUSEXP_D",
@@ -5150,8 +5153,8 @@ CHARGE_HEADS = [
             "ALL"
         ],
         "uom": "per_shipment",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "CFS_D",
@@ -5161,8 +5164,8 @@ CHARGE_HEADS = [
             "OCEAN_LCL"
         ],
         "uom": "per_cbm",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "DOC",
@@ -5172,8 +5175,8 @@ CHARGE_HEADS = [
             "ALL"
         ],
         "uom": "per_BL",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "SURCHS",
@@ -5184,8 +5187,8 @@ CHARGE_HEADS = [
             "RAIL"
         ],
         "uom": "per_container",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     },
     {
         "code": "INS",
@@ -5195,8 +5198,8 @@ CHARGE_HEADS = [
             "ALL"
         ],
         "uom": "pct_of_cargo_value",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "FUEL_AIR",
@@ -5207,8 +5210,8 @@ CHARGE_HEADS = [
             "AIR_EXPRESS"
         ],
         "uom": "per_kg_chargeable",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "SECURAIR",
@@ -5219,8 +5222,8 @@ CHARGE_HEADS = [
             "AIR_EXPRESS"
         ],
         "uom": "per_kg_chargeable",
-        "taxable": false,
-        "active": true
+        "taxable": False,
+        "active": True
     },
     {
         "code": "XRAY",
@@ -5231,8 +5234,8 @@ CHARGE_HEADS = [
             "AIR_EXPRESS"
         ],
         "uom": "per_shipment",
-        "taxable": true,
-        "active": true
+        "taxable": True,
+        "active": True
     }
 ]
 
@@ -5242,84 +5245,84 @@ CURRENCIES = [
         "name": "US Dollar",
         "symbol": "$",
         "decimals": 2,
-        "active": true
+        "active": True
     },
     {
         "code": "INR",
         "name": "Indian Rupee",
         "symbol": "\u20b9",
         "decimals": 2,
-        "active": true
+        "active": True
     },
     {
         "code": "EUR",
         "name": "Euro",
         "symbol": "\u20ac",
         "decimals": 2,
-        "active": true
+        "active": True
     },
     {
         "code": "AED",
         "name": "UAE Dirham",
         "symbol": "AED",
         "decimals": 2,
-        "active": true
+        "active": True
     },
     {
         "code": "GBP",
         "name": "British Pound Sterling",
         "symbol": "\u00a3",
         "decimals": 2,
-        "active": true
+        "active": True
     },
     {
         "code": "SGD",
         "name": "Singapore Dollar",
         "symbol": "S$",
         "decimals": 2,
-        "active": true
+        "active": True
     },
     {
         "code": "CNY",
         "name": "Chinese Yuan (Renminbi)",
         "symbol": "\u00a5",
         "decimals": 2,
-        "active": true
+        "active": True
     },
     {
         "code": "JPY",
         "name": "Japanese Yen",
         "symbol": "\u00a5",
         "decimals": 0,
-        "active": true
+        "active": True
     },
     {
         "code": "AUD",
         "name": "Australian Dollar",
         "symbol": "A$",
         "decimals": 2,
-        "active": true
+        "active": True
     },
     {
         "code": "SAR",
         "name": "Saudi Riyal",
         "symbol": "SR",
         "decimals": 2,
-        "active": true
+        "active": True
     },
     {
         "code": "BRL",
         "name": "Brazilian Real",
         "symbol": "R$",
         "decimals": 2,
-        "active": true
+        "active": True
     },
     {
         "code": "CAD",
         "name": "Canadian Dollar",
         "symbol": "CA$",
         "decimals": 2,
-        "active": true
+        "active": True
     }
 ]
 
@@ -5330,7 +5333,7 @@ EXCHANGE_RATES = [
         "rate": 84.0,
         "effective_date": "2025-12-01",
         "source": "RBI",
-        "active": true
+        "active": True
     },
     {
         "from_ccy": "USD",
@@ -5338,7 +5341,7 @@ EXCHANGE_RATES = [
         "rate": 0.918,
         "effective_date": "2025-12-01",
         "source": "ECB",
-        "active": true
+        "active": True
     },
     {
         "from_ccy": "USD",
@@ -5346,7 +5349,7 @@ EXCHANGE_RATES = [
         "rate": 3.671,
         "effective_date": "2025-12-01",
         "source": "UAE Central Bank",
-        "active": true
+        "active": True
     },
     {
         "from_ccy": "USD",
@@ -5354,7 +5357,7 @@ EXCHANGE_RATES = [
         "rate": 0.795,
         "effective_date": "2025-12-01",
         "source": "Bank of England",
-        "active": true
+        "active": True
     },
     {
         "from_ccy": "USD",
@@ -5362,7 +5365,7 @@ EXCHANGE_RATES = [
         "rate": 1.338,
         "effective_date": "2025-12-01",
         "source": "MAS",
-        "active": true
+        "active": True
     },
     {
         "from_ccy": "USD",
@@ -5370,7 +5373,7 @@ EXCHANGE_RATES = [
         "rate": 7.247,
         "effective_date": "2025-12-01",
         "source": "PBOC",
-        "active": true
+        "active": True
     },
     {
         "from_ccy": "USD",
@@ -5378,7 +5381,7 @@ EXCHANGE_RATES = [
         "rate": 151.5,
         "effective_date": "2025-12-01",
         "source": "Bank of Japan",
-        "active": true
+        "active": True
     },
     {
         "from_ccy": "USD",
@@ -5386,7 +5389,7 @@ EXCHANGE_RATES = [
         "rate": 1.542,
         "effective_date": "2025-12-01",
         "source": "RBA",
-        "active": true
+        "active": True
     },
     {
         "from_ccy": "USD",
@@ -5394,7 +5397,7 @@ EXCHANGE_RATES = [
         "rate": 3.75,
         "effective_date": "2025-12-01",
         "source": "SAMA",
-        "active": true
+        "active": True
     },
     {
         "from_ccy": "USD",
@@ -5402,7 +5405,7 @@ EXCHANGE_RATES = [
         "rate": 4.935,
         "effective_date": "2025-12-01",
         "source": "BCB",
-        "active": true
+        "active": True
     },
     {
         "from_ccy": "USD",
@@ -5410,7 +5413,7 @@ EXCHANGE_RATES = [
         "rate": 1.359,
         "effective_date": "2025-12-01",
         "source": "Bank of Canada",
-        "active": true
+        "active": True
     }
 ]
 
@@ -5471,7 +5474,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "STANDARD",
-        "active": true
+        "active": True
     },
     {
         "card_id": "RC-2026-HLCU-INEU-001",
@@ -5529,7 +5532,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "STANDARD",
-        "active": true
+        "active": True
     },
     {
         "card_id": "RC-2026-CMDU-INFE-001",
@@ -5578,7 +5581,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "STANDARD",
-        "active": true
+        "active": True
     },
     {
         "card_id": "RC-2026-EK-INME-AIR-001",
@@ -5612,7 +5615,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "STANDARD",
-        "active": true
+        "active": True
     },
     {
         "card_id": "RC-2026-LH-INEU-AIR-001",
@@ -5646,7 +5649,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "STANDARD",
-        "active": true
+        "active": True
     },
     {
         "card_id": "RC-2026-DHLE-EXP-PRIORITY-001",
@@ -5701,7 +5704,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "PRIORITY_EXPRESS",
-        "active": true
+        "active": True
     },
     {
         "card_id": "RC-2026-FDX-EXP-WORLD-001",
@@ -5735,7 +5738,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "PRIORITY_EXPRESS",
-        "active": true
+        "active": True
     },
     {
         "card_id": "RC-2026-CONCOR-WDFC-RAIL-001",
@@ -5796,7 +5799,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "STANDARD_RAIL",
-        "active": true
+        "active": True
     },
     {
         "card_id": "RC-2026-DBC-EUROPE-RAIL-001",
@@ -5833,7 +5836,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "STANDARD_RAIL",
-        "active": true
+        "active": True
     },
     {
         "card_id": "RC-2026-TCI-FTL-ROAD-001",
@@ -5867,7 +5870,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "STANDARD_ROAD",
-        "active": true
+        "active": True
     },
     {
         "card_id": "RC-2026-DHLF-EUROPE-ROAD-001",
@@ -5901,7 +5904,7 @@ RATE_CARDS = [
             }
         ],
         "tier": "STANDARD_ROAD",
-        "active": true
+        "active": True
     }
 ]
 
@@ -5921,7 +5924,7 @@ SURCHARGE_RULES = [
         "amount_usd_40hc": 350,
         "valid_from": "2026-01-01",
         "valid_to": "2026-03-31",
-        "active": true
+        "active": True
     },
     {
         "code": "SUR-WAR-REDSEA-2026",
@@ -5938,7 +5941,7 @@ SURCHARGE_RULES = [
         "amount_usd_40hc": 700,
         "valid_from": "2026-01-01",
         "valid_to": "2026-12-31",
-        "active": true
+        "active": True
     },
     {
         "code": "SUR-CONG-JNPT-2026",
@@ -5954,7 +5957,7 @@ SURCHARGE_RULES = [
         "amount_usd_40hc": 120,
         "valid_from": "2026-06-01",
         "valid_to": "2026-09-30",
-        "active": true
+        "active": True
     },
     {
         "code": "SUR-DG-HAZ-GEN",
@@ -5970,7 +5973,7 @@ SURCHARGE_RULES = [
         "amount_usd_40hc": 550,
         "valid_from": "2026-01-01",
         "valid_to": "2026-12-31",
-        "active": true
+        "active": True
     },
     {
         "code": "SUR-LIION-2026",
@@ -5984,7 +5987,7 @@ SURCHARGE_RULES = [
         "amount_per_kg_usd": 0.35,
         "valid_from": "2026-01-01",
         "valid_to": "2026-12-31",
-        "active": true
+        "active": True
     },
     {
         "code": "SUR-REEFER-POWER",
@@ -5998,7 +6001,7 @@ SURCHARGE_RULES = [
         "amount_usd_per_day": 22,
         "valid_from": "2026-01-01",
         "valid_to": "2026-12-31",
-        "active": true
+        "active": True
     },
     {
         "code": "SUR-GRI-2026Q2",
@@ -6014,7 +6017,7 @@ SURCHARGE_RULES = [
         "amount_usd_40hc": 500,
         "valid_from": "2026-04-01",
         "valid_to": "2026-06-30",
-        "active": true
+        "active": True
     },
     {
         "code": "SUR-CCF",
@@ -6031,7 +6034,7 @@ SURCHARGE_RULES = [
         "amount_usd_40hc": 75,
         "valid_from": "2026-01-01",
         "valid_to": "2026-12-31",
-        "active": true
+        "active": True
     }
 ]
 
@@ -6044,7 +6047,7 @@ MARGIN_POLICIES = [
         "floor_margin_pct": 8,
         "ceiling_margin_pct": 40,
         "applies_to": "ALL",
-        "active": true
+        "active": True
     },
     {
         "code": "MP-OCEAN-FCL",
@@ -6054,7 +6057,7 @@ MARGIN_POLICIES = [
         "floor_margin_pct": 6,
         "ceiling_margin_pct": 35,
         "applies_to": "OCEAN_FCL",
-        "active": true
+        "active": True
     },
     {
         "code": "MP-AIR",
@@ -6064,7 +6067,7 @@ MARGIN_POLICIES = [
         "floor_margin_pct": 10,
         "ceiling_margin_pct": 45,
         "applies_to": "AIR_GEN",
-        "active": true
+        "active": True
     },
     {
         "code": "MP-TIER-GOLD",
@@ -6074,7 +6077,7 @@ MARGIN_POLICIES = [
         "floor_margin_pct": 5,
         "ceiling_margin_pct": 30,
         "applies_to_customer_tier": "GOLD",
-        "active": true
+        "active": True
     },
     {
         "code": "MP-TIER-ENTERPRISE",
@@ -6084,7 +6087,7 @@ MARGIN_POLICIES = [
         "floor_margin_pct": 3,
         "ceiling_margin_pct": 22,
         "applies_to_customer_tier": "ENTERPRISE",
-        "active": true
+        "active": True
     }
 ]
 
@@ -6100,7 +6103,7 @@ CUSTOMS_TARIFFS = [
             "BL",
             "COO"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "620342",
@@ -6113,7 +6116,7 @@ CUSTOMS_TARIFFS = [
             "BL",
             "COO"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "620342",
@@ -6126,7 +6129,7 @@ CUSTOMS_TARIFFS = [
             "Packing List",
             "BL"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "870899",
@@ -6138,7 +6141,7 @@ CUSTOMS_TARIFFS = [
             "Packing List",
             "BL"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "870899",
@@ -6151,7 +6154,7 @@ CUSTOMS_TARIFFS = [
             "BL",
             "ISF"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "300490",
@@ -6164,7 +6167,7 @@ CUSTOMS_TARIFFS = [
             "CDSCO NOC",
             "MSDS"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "300490",
@@ -6176,7 +6179,7 @@ CUSTOMS_TARIFFS = [
             "BL",
             "MOH Approval"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "851712",
@@ -6188,7 +6191,7 @@ CUSTOMS_TARIFFS = [
             "BL",
             "BIS License"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "851712",
@@ -6200,7 +6203,7 @@ CUSTOMS_TARIFFS = [
             "BL",
             "CE Declaration"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "270900",
@@ -6213,7 +6216,7 @@ CUSTOMS_TARIFFS = [
             "Q88",
             "COO"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "850760",
@@ -6226,7 +6229,7 @@ CUSTOMS_TARIFFS = [
             "MSDS",
             "IEC"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "850760",
@@ -6238,7 +6241,7 @@ CUSTOMS_TARIFFS = [
             "BL",
             "CPSC Compliance"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "940360",
@@ -6250,7 +6253,7 @@ CUSTOMS_TARIFFS = [
             "BL",
             "COO"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "940360",
@@ -6262,7 +6265,7 @@ CUSTOMS_TARIFFS = [
             "BL",
             "EUR1 or GSP Form A"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "720839",
@@ -6275,7 +6278,7 @@ CUSTOMS_TARIFFS = [
             "Mill TC",
             "COO"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "100190",
@@ -6288,7 +6291,7 @@ CUSTOMS_TARIFFS = [
             "Phytosanitary Cert",
             "COO"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "390110",
@@ -6301,7 +6304,7 @@ CUSTOMS_TARIFFS = [
             "MSDS",
             "COO"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "520100",
@@ -6313,7 +6316,7 @@ CUSTOMS_TARIFFS = [
             "BL",
             "Phytosanitary Cert"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "300210",
@@ -6326,7 +6329,7 @@ CUSTOMS_TARIFFS = [
             "FDA Prior Notice",
             "COO"
         ],
-        "active": true
+        "active": True
     },
     {
         "hs6": "950300",
@@ -6339,7 +6342,7 @@ CUSTOMS_TARIFFS = [
             "COO",
             "ACCC Declaration"
         ],
-        "active": true
+        "active": True
     }
 ]
 
@@ -6351,8 +6354,8 @@ DOCUMENT_TYPES = [
             "ALL"
         ],
         "issuer": "Seller",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     },
     {
         "code": "PL",
@@ -6361,8 +6364,8 @@ DOCUMENT_TYPES = [
             "ALL"
         ],
         "issuer": "Seller",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     },
     {
         "code": "BL",
@@ -6371,8 +6374,8 @@ DOCUMENT_TYPES = [
             "OCEAN"
         ],
         "issuer": "Carrier",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     },
     {
         "code": "SEAWAY",
@@ -6381,8 +6384,8 @@ DOCUMENT_TYPES = [
             "OCEAN"
         ],
         "issuer": "Carrier",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     },
     {
         "code": "AWB",
@@ -6391,8 +6394,8 @@ DOCUMENT_TYPES = [
             "AIR"
         ],
         "issuer": "Carrier",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     },
     {
         "code": "COO",
@@ -6401,8 +6404,8 @@ DOCUMENT_TYPES = [
             "CUSTOMS"
         ],
         "issuer": "Chamber of Commerce",
-        "digital_accepted": false,
-        "active": true
+        "digital_accepted": False,
+        "active": True
     },
     {
         "code": "EUR1",
@@ -6411,8 +6414,8 @@ DOCUMENT_TYPES = [
             "EU_IMPORT"
         ],
         "issuer": "Customs Authority",
-        "digital_accepted": false,
-        "active": true
+        "digital_accepted": False,
+        "active": True
     },
     {
         "code": "MSDS",
@@ -6422,8 +6425,8 @@ DOCUMENT_TYPES = [
             "CHEMICALS"
         ],
         "issuer": "Manufacturer",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     },
     {
         "code": "PHYTO",
@@ -6432,8 +6435,8 @@ DOCUMENT_TYPES = [
             "AGRICULTURAL"
         ],
         "issuer": "Plant Quarantine Authority",
-        "digital_accepted": false,
-        "active": true
+        "digital_accepted": False,
+        "active": True
     },
     {
         "code": "FUMIG",
@@ -6442,8 +6445,8 @@ DOCUMENT_TYPES = [
             "WOOD_PACKAGING"
         ],
         "issuer": "Accredited Fumigator",
-        "digital_accepted": false,
-        "active": true
+        "digital_accepted": False,
+        "active": True
     },
     {
         "code": "COA",
@@ -6453,8 +6456,8 @@ DOCUMENT_TYPES = [
             "CHEMICALS"
         ],
         "issuer": "Testing Lab",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     },
     {
         "code": "ISF",
@@ -6463,8 +6466,8 @@ DOCUMENT_TYPES = [
             "US_IMPORT_OCEAN"
         ],
         "issuer": "Importer",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     },
     {
         "code": "ENS",
@@ -6473,8 +6476,8 @@ DOCUMENT_TYPES = [
             "EU_IMPORT"
         ],
         "issuer": "Carrier/Forwarder",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     },
     {
         "code": "VGM",
@@ -6483,8 +6486,8 @@ DOCUMENT_TYPES = [
             "OCEAN_FCL"
         ],
         "issuer": "Shipper",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     },
     {
         "code": "DGD",
@@ -6493,8 +6496,8 @@ DOCUMENT_TYPES = [
             "HAZMAT"
         ],
         "issuer": "Shipper",
-        "digital_accepted": true,
-        "active": true
+        "digital_accepted": True,
+        "active": True
     }
 ]
 
@@ -6505,8 +6508,8 @@ CUSTOMER_TIERS = [
         "quote_sla_hours": 24,
         "max_discount_pct": 5,
         "credit_days": 0,
-        "priority_support": false,
-        "active": true
+        "priority_support": False,
+        "active": True
     },
     {
         "code": "SILVER",
@@ -6514,8 +6517,8 @@ CUSTOMER_TIERS = [
         "quote_sla_hours": 12,
         "max_discount_pct": 10,
         "credit_days": 15,
-        "priority_support": false,
-        "active": true
+        "priority_support": False,
+        "active": True
     },
     {
         "code": "GOLD",
@@ -6523,8 +6526,8 @@ CUSTOMER_TIERS = [
         "quote_sla_hours": 6,
         "max_discount_pct": 18,
         "credit_days": 30,
-        "priority_support": true,
-        "active": true
+        "priority_support": True,
+        "active": True
     },
     {
         "code": "PLATINUM",
@@ -6532,8 +6535,8 @@ CUSTOMER_TIERS = [
         "quote_sla_hours": 4,
         "max_discount_pct": 25,
         "credit_days": 45,
-        "priority_support": true,
-        "active": true
+        "priority_support": True,
+        "active": True
     },
     {
         "code": "ENTERPRISE",
@@ -6541,8 +6544,8 @@ CUSTOMER_TIERS = [
         "quote_sla_hours": 2,
         "max_discount_pct": 35,
         "credit_days": 60,
-        "priority_support": true,
-        "active": true
+        "priority_support": True,
+        "active": True
     }
 ]
 
