@@ -313,7 +313,7 @@ export default function Ship() {
                   <div className="relative">
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-[13px] font-semibold text-brand-navy">
-                        Origin port / airport <span className="text-brand-danger">*</span>
+                        {mode === 'OCEAN' ? 'Origin sea port' : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? 'Origin air cargo hub' : 'Origin port / airport / rail ICD / road hub'} <span className="text-brand-danger">*</span>
                       </label>
                       <button
                         type="button"
@@ -359,7 +359,13 @@ export default function Ship() {
                             }}
                             onClick={() => checkAuthGate()}
                             className={`${brandInputStyle} pl-10 pr-9`}
-                            placeholder="Search city, port name, UN/LOCODE, IATA..."
+                            placeholder={
+                              mode === 'OCEAN' 
+                                ? "Search sea port name, city, UN/LOCODE... (e.g. JNPT, Rotterdam, Singapore)"
+                                : (mode === 'AIR' || mode === 'EXPRESS_AIR')
+                                  ? "Search air cargo hub, IATA code, city... (e.g. BOM, DXB, FRA, JFK)"
+                                  : "Search city, port, airport, rail ICD, or road hub... (e.g. Dadri, Bhiwandi, JNPT)"
+                            }
                           />
                           {originSearch && (
                             <button
@@ -374,7 +380,9 @@ export default function Ship() {
                         {showOriginDropdown && (
                           <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-brand-line bg-white shadow-xl">
                             <div className="sticky top-0 bg-brand-cloud/90 backdrop-blur-sm px-3.5 py-1.5 border-b border-brand-line flex items-center justify-between text-[11px] text-brand-slate font-medium">
-                              <span>Matching locations ({originCandidates.length})</span>
+                              <span>
+                                {mode === 'OCEAN' ? `Matching sea ports (${originCandidates.length})` : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? `Matching air cargo hubs (${originCandidates.length})` : `Matching gateways (${originCandidates.length})`}
+                              </span>
                               <button
                                 type="button"
                                 onClick={() => { setPortDirectoryTarget('origin'); setShowPortDirectoryModal(true); setShowOriginDropdown(false); }}
@@ -385,13 +393,15 @@ export default function Ship() {
                             </div>
                             {originCandidates.length === 0 ? (
                               <div className="p-4 text-center text-xs text-brand-slate">
-                                <p className="font-semibold text-brand-navy">No matching ports or airports found</p>
+                                <p className="font-semibold text-brand-navy">
+                                  {mode === 'OCEAN' ? 'No matching sea ports found' : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? 'No matching air cargo hubs found' : 'No matching locations found'}
+                                </p>
                                 <button
                                   type="button"
                                   onClick={() => { setPortDirectoryTarget('origin'); setShowPortDirectoryModal(true); setShowOriginDropdown(false); }}
                                   className="mt-2 text-xs text-brand-marine font-semibold underline"
                                 >
-                                  Browse all 180+ global gateways
+                                  Browse full directory
                                 </button>
                               </div>
                             ) : (
@@ -418,10 +428,16 @@ export default function Ship() {
                                     </div>
                                   </div>
                                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 flex items-center gap-1 ${
-                                    g.type === 'AIRPORT' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'
+                                    g.type === 'AIRPORT' 
+                                      ? 'bg-amber-50 text-amber-700' 
+                                      : g.type === 'RAIL_TERMINAL'
+                                        ? 'bg-purple-50 text-purple-700'
+                                        : g.type === 'ROAD_HUB'
+                                          ? 'bg-emerald-50 text-emerald-700'
+                                          : 'bg-blue-50 text-blue-700'
                                   }`}>
-                                    {g.type === 'AIRPORT' ? <Plane className="h-2.5 w-2.5" /> : <ShipIcon className="h-2.5 w-2.5" />}
-                                    {g.type === 'AIRPORT' ? 'AIR' : 'PORT'}
+                                    {g.type === 'AIRPORT' ? <Plane className="h-2.5 w-2.5" /> : g.type === 'RAIL_TERMINAL' ? <Route className="h-2.5 w-2.5" /> : g.type === 'ROAD_HUB' ? <Truck className="h-2.5 w-2.5" /> : <ShipIcon className="h-2.5 w-2.5" />}
+                                    {g.type === 'AIRPORT' ? 'AIR' : g.type === 'RAIL_TERMINAL' ? 'RAIL ICD' : g.type === 'ROAD_HUB' ? 'ROAD' : 'PORT'}
                                   </span>
                                 </div>
                               ))
@@ -449,7 +465,7 @@ export default function Ship() {
                   <div className="relative">
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-[13px] font-semibold text-brand-navy">
-                        Destination port / airport <span className="text-brand-danger">*</span>
+                        {mode === 'OCEAN' ? 'Destination sea port' : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? 'Destination air cargo hub' : 'Destination port / airport / rail ICD / road hub'} <span className="text-brand-danger">*</span>
                       </label>
                       <button
                         type="button"
@@ -494,7 +510,13 @@ export default function Ship() {
                               setShowDestDropdown(true)
                             }}
                             className={`${brandInputStyle} pl-10 pr-9`}
-                            placeholder="Search city, port name, UN/LOCODE, IATA..."
+                            placeholder={
+                              mode === 'OCEAN' 
+                                ? "Search sea port name, city, UN/LOCODE... (e.g. Jebel Ali, Singapore, Hamburg)"
+                                : (mode === 'AIR' || mode === 'EXPRESS_AIR')
+                                  ? "Search destination airport, IATA, city... (e.g. DXB, LHR, JFK, PVG)"
+                                  : "Search city, port, airport, rail ICD, or road hub... (e.g. Duisburg, Chicago, Dallas)"
+                            }
                           />
                           {destSearch && (
                             <button
@@ -509,7 +531,9 @@ export default function Ship() {
                         {showDestDropdown && (
                           <div className="absolute z-30 top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-xl border border-brand-line bg-white shadow-xl">
                             <div className="sticky top-0 bg-brand-cloud/90 backdrop-blur-sm px-3.5 py-1.5 border-b border-brand-line flex items-center justify-between text-[11px] text-brand-slate font-medium">
-                              <span>Matching locations ({destCandidates.length})</span>
+                              <span>
+                                {mode === 'OCEAN' ? `Matching sea ports (${destCandidates.length})` : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? `Matching air cargo hubs (${destCandidates.length})` : `Matching gateways (${destCandidates.length})`}
+                              </span>
                               <button
                                 type="button"
                                 onClick={() => { setPortDirectoryTarget('dest'); setShowPortDirectoryModal(true); setShowDestDropdown(false); }}
@@ -520,13 +544,15 @@ export default function Ship() {
                             </div>
                             {destCandidates.length === 0 ? (
                               <div className="p-4 text-center text-xs text-brand-slate">
-                                <p className="font-semibold text-brand-navy">No matching ports or airports found</p>
+                                <p className="font-semibold text-brand-navy">
+                                  {mode === 'OCEAN' ? 'No matching sea ports found' : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? 'No matching air cargo hubs found' : 'No matching locations found'}
+                                </p>
                                 <button
                                   type="button"
                                   onClick={() => { setPortDirectoryTarget('dest'); setShowPortDirectoryModal(true); setShowDestDropdown(false); }}
                                   className="mt-2 text-xs text-brand-marine font-semibold underline"
                                 >
-                                  Browse all 180+ global gateways
+                                  Browse full directory
                                 </button>
                               </div>
                             ) : (
@@ -552,10 +578,16 @@ export default function Ship() {
                                     </div>
                                   </div>
                                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 flex items-center gap-1 ${
-                                    g.type === 'AIRPORT' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'
+                                    g.type === 'AIRPORT' 
+                                      ? 'bg-amber-50 text-amber-700' 
+                                      : g.type === 'RAIL_TERMINAL'
+                                        ? 'bg-purple-50 text-purple-700'
+                                        : g.type === 'ROAD_HUB'
+                                          ? 'bg-emerald-50 text-emerald-700'
+                                          : 'bg-blue-50 text-blue-700'
                                   }`}>
-                                    {g.type === 'AIRPORT' ? <Plane className="h-2.5 w-2.5" /> : <ShipIcon className="h-2.5 w-2.5" />}
-                                    {g.type === 'AIRPORT' ? 'AIR' : 'PORT'}
+                                    {g.type === 'AIRPORT' ? <Plane className="h-2.5 w-2.5" /> : g.type === 'RAIL_TERMINAL' ? <Route className="h-2.5 w-2.5" /> : g.type === 'ROAD_HUB' ? <Truck className="h-2.5 w-2.5" /> : <ShipIcon className="h-2.5 w-2.5" />}
+                                    {g.type === 'AIRPORT' ? 'AIR' : g.type === 'RAIL_TERMINAL' ? 'RAIL ICD' : g.type === 'ROAD_HUB' ? 'ROAD' : 'PORT'}
                                   </span>
                                 </div>
                               ))
@@ -644,23 +676,36 @@ export default function Ship() {
                           key={chip.key}
                           type="button"
                           onClick={() => {
-                            setMode(chip.key)
-                            if (chip.key === 'OCEAN') {
+                            const newMode = chip.key
+                            setMode(newMode)
+                            if (newMode === 'OCEAN') {
                               setLoadType('FCL')
                               setSubService('FCL')
+                              if (originGw && originGw.type !== 'PORT') {
+                                setOriginGw(null)
+                                setOriginSearch('')
+                              }
+                              if (destGw && destGw.type !== 'PORT') {
+                                setDestGw(null)
+                                setDestSearch('')
+                              }
                               setCargo([newCargoItem(true)])
-                            } else if (chip.key === 'GROUND_RAIL') {
+                            } else if (newMode === 'GROUND_RAIL') {
                               setSubService('FTL')
                               setLoadType('FCL')
                               setCargo([{ ...newCargoItem(true), package_type: 'CONTAINER', container_type: '32FT_MXL' }])
-                            } else if (chip.key === 'EXPRESS_AIR') {
-                              setSubService('NFO')
+                            } else if (newMode === 'EXPRESS_AIR' || newMode === 'AIR') {
+                              setSubService(newMode === 'EXPRESS_AIR' ? 'NFO' : 'AIR_STANDARD')
                               setLoadType('LCL')
-                              setCargo([{ ...newCargoItem(false), package_type: 'BOX', weight_per_unit_kg: '10' }])
-                            } else if (chip.key === 'AIR') {
-                              setSubService('AIR_STANDARD')
-                              setLoadType('LCL')
-                              setCargo([{ ...newCargoItem(false), package_type: 'CARTON', weight_per_unit_kg: '25' }])
+                              if (originGw && originGw.type !== 'AIRPORT') {
+                                setOriginGw(null)
+                                setOriginSearch('')
+                              }
+                              if (destGw && destGw.type !== 'AIRPORT') {
+                                setDestGw(null)
+                                setDestSearch('')
+                              }
+                              setCargo([{ ...newCargoItem(false), package_type: newMode === 'EXPRESS_AIR' ? 'BOX' : 'CARTON', weight_per_unit_kg: '15' }])
                             }
                           }}
                           className={`flex items-center gap-2 rounded-full border-[1.5px] px-[18px] py-2.5 text-[13.5px] font-semibold transition-colors ${
@@ -1479,6 +1524,7 @@ export default function Ship() {
           <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
             <GlobalPortDirectory
               isModal={true}
+              activeMode={mode}
               onClose={() => setShowPortDirectoryModal(false)}
               onSelectPort={(g, asOrigin) => {
                 const targetIsOrigin = asOrigin !== undefined ? asOrigin : (portDirectoryTarget === 'origin')
