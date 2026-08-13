@@ -6554,19 +6554,21 @@ export function getLocalMasterCollection(key) {
 
   try {
     const version = localStorage.getItem('portline_master_version')
-    if (version !== '2026.08.v3') {
+    if (version !== '2026.08.v4') {
       // Invalidate old legacy cache from previous sessions
-      Object.keys(localStorage).forEach(k => {
-        if (k.startsWith('portline_master_')) localStorage.removeItem(k)
-      })
-      localStorage.setItem('portline_master_version', '2026.08.v3')
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('portline_master_')) localStorage.removeItem(k)
+        })
+      } catch {}
+      localStorage.setItem('portline_master_version', '2026.08.v4')
       return seedItems
     }
 
     const stored = localStorage.getItem(`portline_master_${key}`)
     if (stored) {
       const parsed = JSON.parse(stored)
-      if (Array.isArray(parsed) && parsed.length >= seedItems.length) return parsed
+      if (Array.isArray(parsed) && parsed.length >= seedItems.length && parsed.length > 0) return parsed
     }
   } catch {}
   return seedItems
