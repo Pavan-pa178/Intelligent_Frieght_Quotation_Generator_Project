@@ -95,6 +95,7 @@ export default function Ship() {
 
   // 2. Service type state
   const [mode, setMode] = useState(params.get('service')?.toUpperCase() || 'OCEAN')
+  const [subService, setSubService] = useState('FCL')
   const [loadType, setLoadType] = useState('FCL')
   const [incoterm, setIncoterm] = useState('FOB')
 
@@ -219,7 +220,13 @@ export default function Ship() {
       laneCode: `${originGw.code} → ${destGw.code}`,
       laneName: `${originGw.city} → ${destGw.city}`,
       region: `${originGw.country}–${destGw.country}`,
-      mode: mode === 'OCEAN' ? `Ocean ${loadType}` : mode === 'AIR' ? 'Air Freight' : mode === 'EXPRESS_AIR' ? 'Express Air' : 'Ground & Rail',
+      mode: mode === 'OCEAN' 
+        ? `Ocean ${loadType}` 
+        : mode === 'GROUND_RAIL' 
+          ? (subService === 'FTL' ? 'Ground FTL' : subService === 'LTL' ? 'Ground LTL' : subService === 'RAIL_INTERMODAL' ? 'Rail Intermodal' : 'Rail Bulk')
+          : mode === 'EXPRESS_AIR' 
+            ? (subService === 'NFO' ? 'Express Air (NFO)' : subService === 'CHARTER' ? 'Air Charter' : 'Express Courier')
+            : (subService === 'AIR_PRIORITY' ? 'Air Priority' : subService === 'AIR_PERISHABLE' ? 'Air Pharma/Cold Chain' : 'Air Freight'),
       modeKey: mode.toLowerCase(),
       basis: estimate.unitsLabel,
       transit: estimate.transitRange,
@@ -638,8 +645,22 @@ export default function Ship() {
                           type="button"
                           onClick={() => {
                             setMode(chip.key)
-                            if (chip.key !== 'OCEAN') {
+                            if (chip.key === 'OCEAN') {
+                              setLoadType('FCL')
+                              setSubService('FCL')
+                              setCargo([newCargoItem(true)])
+                            } else if (chip.key === 'GROUND_RAIL') {
+                              setSubService('FTL')
+                              setLoadType('FCL')
+                              setCargo([{ ...newCargoItem(true), package_type: 'CONTAINER', container_type: '32FT_MXL' }])
+                            } else if (chip.key === 'EXPRESS_AIR') {
+                              setSubService('NFO')
                               setLoadType('LCL')
+                              setCargo([{ ...newCargoItem(false), package_type: 'BOX', weight_per_unit_kg: '10' }])
+                            } else if (chip.key === 'AIR') {
+                              setSubService('AIR_STANDARD')
+                              setLoadType('LCL')
+                              setCargo([{ ...newCargoItem(false), package_type: 'CARTON', weight_per_unit_kg: '25' }])
                             }
                           }}
                           className={`flex items-center gap-2 rounded-full border-[1.5px] px-[18px] py-2.5 text-[13.5px] font-semibold transition-colors ${
@@ -655,25 +676,28 @@ export default function Ship() {
                   </div>
                 </div>
 
-                {/* Ocean freight parameters */}
-                {mode === 'OCEAN' && (
-                  <div className="rounded-md2 border border-brand-line bg-brand-cloud p-5">
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                      <div>
-                        <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
-                          Load type <span className="text-brand-danger">*</span>
-                        </label>
-                        <div className="flex gap-2">
+                {/* Sub-Service Option & Incoterm */}
+                <div className="rounded-md2 border border-brand-line bg-brand-cloud p-5">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
+                        Service type <span className="text-brand-danger">*</span>
+                      </label>
+
+                      {/* Ocean Options */}
+                      {mode === 'OCEAN' && (
+                        <div className="grid grid-cols-2 gap-2">
                           <button
                             type="button"
                             onClick={() => {
                               setLoadType('FCL')
+                              setSubService('FCL')
                               setCargo([newCargoItem(true)])
                             }}
-                            className={`flex-1 py-2.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                            className={`py-2.5 px-3 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
                               loadType === 'FCL'
                                 ? 'border-brand-marine bg-brand-marinePale text-brand-marine font-bold shadow-xs'
-                                : 'border-brand-line bg-white text-brand-slate'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
                             }`}
                           >
                             FCL — Full container
@@ -682,40 +706,210 @@ export default function Ship() {
                             type="button"
                             onClick={() => {
                               setLoadType('LCL')
+                              setSubService('LCL')
                               setCargo([newCargoItem(false)])
                             }}
-                            className={`flex-1 py-2.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                            className={`py-2.5 px-3 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
                               loadType === 'LCL'
                                 ? 'border-brand-marine bg-brand-marinePale text-brand-marine font-bold shadow-xs'
-                                : 'border-brand-line bg-white text-brand-slate'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
                             }`}
                           >
                             LCL — Consolidated
                           </button>
                         </div>
-                      </div>
+                      )}
 
-                      <div>
-                        <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
-                          Incoterm <span className="text-brand-danger">*</span>
-                        </label>
-                        <select
-                          value={incoterm}
-                          onChange={(e) => setIncoterm(e.target.value)}
-                          className={brandInputStyle}
-                        >
-                          <option value="FOB">FOB — Free On Board</option>
-                          <option value="EXW">EXW — Ex Works</option>
-                          <option value="FCA">FCA — Free Carrier</option>
-                          <option value="CIF">CIF — Cost Insurance Freight</option>
-                          <option value="CFR">CFR — Cost and Freight</option>
-                          <option value="DAP">DAP — Delivered At Place</option>
-                          <option value="DDP">DDP — Delivered Duty Paid</option>
-                        </select>
-                      </div>
+                      {/* Ground & Rail Options */}
+                      {mode === 'GROUND_RAIL' && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubService('FTL')
+                              setLoadType('FCL')
+                              setCargo([{ ...newCargoItem(true), package_type: 'CONTAINER', container_type: '32FT_MXL' }])
+                            }}
+                            className={`py-2.5 px-2.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                              subService === 'FTL'
+                                ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold shadow-xs'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
+                            }`}
+                          >
+                            FTL — Full Truckload
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubService('LTL')
+                              setLoadType('LCL')
+                              setCargo([newCargoItem(false)])
+                            }}
+                            className={`py-2.5 px-2.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                              subService === 'LTL'
+                                ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold shadow-xs'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
+                            }`}
+                          >
+                            LTL — Part Load / Pallets
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubService('RAIL_INTERMODAL')
+                              setLoadType('FCL')
+                              setCargo([{ ...newCargoItem(true), package_type: 'CONTAINER', container_type: '40HC' }])
+                            }}
+                            className={`py-2.5 px-2.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                              subService === 'RAIL_INTERMODAL'
+                                ? 'border-purple-600 bg-purple-50 text-purple-800 font-bold shadow-xs'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
+                            }`}
+                          >
+                            Rail Intermodal (ICD)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubService('RAIL_BULK')
+                              setLoadType('LCL')
+                              setCargo([newCargoItem(false)])
+                            }}
+                            className={`py-2.5 px-2.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                              subService === 'RAIL_BULK'
+                                ? 'border-purple-600 bg-purple-50 text-purple-800 font-bold shadow-xs'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
+                            }`}
+                          >
+                            Rail Bulk / Rake
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Express Air Options */}
+                      {mode === 'EXPRESS_AIR' && (
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubService('NFO')
+                              setLoadType('LCL')
+                              setCargo([newCargoItem(false)])
+                            }}
+                            className={`py-2 px-1.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                              subService === 'NFO'
+                                ? 'border-amber-600 bg-amber-50 text-amber-800 font-bold shadow-xs'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
+                            }`}
+                          >
+                            Next Flight Out (24h)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubService('COURIER')
+                              setLoadType('LCL')
+                              setCargo([newCargoItem(false)])
+                            }}
+                            className={`py-2 px-1.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                              subService === 'COURIER'
+                                ? 'border-amber-600 bg-amber-50 text-amber-800 font-bold shadow-xs'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
+                            }`}
+                          >
+                            Express Courier
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubService('CHARTER')
+                              setLoadType('FCL')
+                              setCargo([newCargoItem(true)])
+                            }}
+                            className={`py-2 px-1.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                              subService === 'CHARTER'
+                                ? 'border-amber-600 bg-amber-50 text-amber-800 font-bold shadow-xs'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
+                            }`}
+                          >
+                            Air Charter
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Air Freight Options */}
+                      {mode === 'AIR' && (
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubService('AIR_STANDARD')
+                              setLoadType('LCL')
+                              setCargo([newCargoItem(false)])
+                            }}
+                            className={`py-2 px-1.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                              subService === 'AIR_STANDARD'
+                                ? 'border-blue-600 bg-blue-50 text-blue-800 font-bold shadow-xs'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
+                            }`}
+                          >
+                            Standard Cargo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubService('AIR_PRIORITY')
+                              setLoadType('LCL')
+                              setCargo([newCargoItem(false)])
+                            }}
+                            className={`py-2 px-1.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                              subService === 'AIR_PRIORITY'
+                                ? 'border-blue-600 bg-blue-50 text-blue-800 font-bold shadow-xs'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
+                            }`}
+                          >
+                            Direct Priority
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubService('AIR_PERISHABLE')
+                              setLoadType('LCL')
+                              setIsTempControlled(true)
+                              setCargo([newCargoItem(false)])
+                            }}
+                            className={`py-2 px-1.5 text-center text-xs font-semibold rounded-[10px] border-[1.5px] transition-all ${
+                              subService === 'AIR_PERISHABLE'
+                                ? 'border-blue-600 bg-blue-50 text-blue-800 font-bold shadow-xs'
+                                : 'border-brand-line bg-white text-brand-slate hover:bg-brand-cloud'
+                            }`}
+                          >
+                            Pharma / Cold Chain
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
+                        Incoterm <span className="text-brand-danger">*</span>
+                      </label>
+                      <select
+                        value={incoterm}
+                        onChange={(e) => setIncoterm(e.target.value)}
+                        className={brandInputStyle}
+                      >
+                        <option value="FOB">FOB — Free On Board</option>
+                        <option value="EXW">EXW — Ex Works</option>
+                        <option value="FCA">FCA — Free Carrier</option>
+                        <option value="CIF">CIF — Cost Insurance Freight</option>
+                        <option value="CFR">CFR — Cost and Freight</option>
+                        <option value="DAP">DAP — Delivered At Place</option>
+                        <option value="DDP">DDP — Delivered Duty Paid</option>
+                      </select>
                     </div>
                   </div>
-                )}
+                </div>
               </FormSection>
 
               {/* STEP 3: SHIPMENT DETAILS */}
@@ -741,7 +935,7 @@ export default function Ship() {
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
                         <div>
                           <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
-                            Package type <span className="text-brand-danger">*</span>
+                            {mode === 'GROUND_RAIL' && subService === 'FTL' ? 'Truck / Vehicle type' : 'Package type'} <span className="text-brand-danger">*</span>
                           </label>
                           <select
                             value={item.package_type}
@@ -756,33 +950,75 @@ export default function Ship() {
                             }}
                             className={brandInputStyle}
                           >
-                            <option value="CONTAINER">Container</option>
-                            <option value="PALLET">Pallet</option>
-                            <option value="CARTON">Carton</option>
-                            <option value="CRATE">Crate</option>
-                            <option value="DRUM">Drum</option>
-                            <option value="BAG">Bag</option>
-                            <option value="LOOSE">Loose Cargo</option>
+                            {mode === 'GROUND_RAIL' && subService === 'FTL' ? (
+                              <>
+                                <option value="CONTAINER">Dedicated Truck Body / Semi Trailer</option>
+                              </>
+                            ) : mode === 'AIR' || mode === 'EXPRESS_AIR' ? (
+                              <>
+                                <option value="BOX">Express Box (1–15 kg)</option>
+                                <option value="CARTON">Master Export Carton</option>
+                                <option value="PALLET">Air Cargo Skid / Pallet</option>
+                                <option value="CONTAINER">Air ULD Container (LD3 / AKE)</option>
+                                <option value="CRATE">Wooden Crate</option>
+                                <option value="LOOSE">Loose Cargo</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="CONTAINER">Container</option>
+                                <option value="PALLET">Pallet</option>
+                                <option value="CARTON">Carton</option>
+                                <option value="CRATE">Crate</option>
+                                <option value="DRUM">Drum</option>
+                                <option value="BAG">Bag</option>
+                                <option value="LOOSE">Loose Cargo</option>
+                              </>
+                            )}
                           </select>
                         </div>
 
                         {item.package_type === 'CONTAINER' && (
                           <div>
                             <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
-                              Container type <span className="text-brand-danger">*</span>
+                              {mode === 'GROUND_RAIL' ? (subService === 'FTL' ? 'Truck Configuration' : 'Rail Equipment') : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? 'Aviation ULD Spec' : 'Container type'} <span className="text-brand-danger">*</span>
                             </label>
                             <select
                               value={item.container_type}
                               onChange={(e) => updateCargo(item.id, 'container_type', e.target.value)}
                               className={brandInputStyle}
                             >
-                              <option value="40HC">40HC — 40ft High Cube</option>
-                              <option value="20GP">20GP — 20ft General</option>
-                              <option value="40GP">40GP — 40ft General</option>
-                              <option value="40RF">40RF — Reefer</option>
-                              <option value="20RF">20RF — 20ft Reefer</option>
-                              <option value="20OT">20OT — Open Top</option>
-                              <option value="40FR">40FR — Flat Rack</option>
+                              {mode === 'GROUND_RAIL' && subService === 'FTL' ? (
+                                <>
+                                  <option value="32FT_MXL">32ft MXL Closed Container Truck (14 Ton)</option>
+                                  <option value="40FT_TRAILER">40ft High-Bed Semi Trailer (24 Ton)</option>
+                                  <option value="53FT_INTERMODAL">53ft Domestic Intermodal Van (26 Ton)</option>
+                                  <option value="20FT_FLATBED">20ft Flatbed Open Truck (9 Ton)</option>
+                                  <option value="14FT_CITY">14ft City Truck (4 Ton)</option>
+                                </>
+                              ) : mode === 'GROUND_RAIL' && subService === 'RAIL_INTERMODAL' ? (
+                                <>
+                                  <option value="40HC">40HC — 40ft High Cube Intermodal</option>
+                                  <option value="20GP">20GP — 20ft Standard Intermodal</option>
+                                  <option value="45PW">45ft Euro Palletwide Container</option>
+                                  <option value="60FLAT">60ft Rail Flatcar</option>
+                                </>
+                              ) : mode === 'AIR' || mode === 'EXPRESS_AIR' ? (
+                                <>
+                                  <option value="LD3">LD3 (AKE) Aviation ULD Container (1,588 kg cap)</option>
+                                  <option value="LD7">LD7 (PAG) Aviation Main Deck Pallet (6,804 kg cap)</option>
+                                  <option value="AKH">AKH Narrow-Body ULD Container (1,134 kg cap)</option>
+                                </>
+                              ) : (
+                                <>
+                                  <option value="40HC">40HC — 40ft High Cube</option>
+                                  <option value="20GP">20GP — 20ft General</option>
+                                  <option value="40GP">40GP — 40ft General</option>
+                                  <option value="40RF">40RF — Reefer</option>
+                                  <option value="20RF">20RF — 20ft Reefer</option>
+                                  <option value="20OT">20OT — Open Top</option>
+                                  <option value="40FR">40FR — Flat Rack</option>
+                                </>
+                              )}
                             </select>
                           </div>
                         )}
