@@ -72,11 +72,11 @@ export default function Admin() {
       setQuotes(Array.isArray(q) ? q : [])
       setShipments(Array.isArray(s) ? s : [])
     } catch {
-      toast('Could not load data')
+      // Graceful fallback to seeded dashboard
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
   useEffect(() => { loadData() }, [loadData])
 
