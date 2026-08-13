@@ -6547,17 +6547,29 @@ export const FALLBACK_SEED = {
 }
 
 export function getLocalMasterCollection(key) {
-  try {
-    const stored = localStorage.getItem(`portline_master_${key}`)
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    }
-  } catch {}
-  return (FALLBACK_SEED[key] || []).map((item, idx) => ({
+  const seedItems = (FALLBACK_SEED[key] || []).map((item, idx) => ({
     id: item.id || item._id || item.locode || item.iata || item.code || item.card_id || `rec_${idx + 1}`,
     ...item
   }))
+
+  try {
+    const version = localStorage.getItem('portline_master_version')
+    if (version !== '2026.08.v3') {
+      // Invalidate old legacy cache from previous sessions
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('portline_master_')) localStorage.removeItem(k)
+      })
+      localStorage.setItem('portline_master_version', '2026.08.v3')
+      return seedItems
+    }
+
+    const stored = localStorage.getItem(`portline_master_${key}`)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed) && parsed.length >= seedItems.length) return parsed
+    }
+  } catch {}
+  return seedItems
 }
 
 export function saveLocalMasterCollection(key, items) {
