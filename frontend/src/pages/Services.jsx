@@ -84,15 +84,15 @@ export default function Services() {
             </table>
           </Reveal>
 
-          {/* GLOBAL PORT DIRECTORY SECTION */}
+          {/* GLOBAL FREIGHT GATEWAYS DIRECTORY SECTION */}
           <div className="mt-20">
-            <Reveal className="mb-8 max-w-[640px]">
+            <Reveal className="mb-8 max-w-[720px]">
               <div className="mb-4 flex items-center gap-2 font-mono text-[11.5px] font-semibold uppercase tracking-[.16em] text-brand-orange">
                 <span className="h-px w-[22px] bg-brand-orange" /> Global Network
               </div>
-              <h2 className="text-[28px] md:text-[36px]">Search Worldwide Ports & Air Hubs</h2>
+              <h2 className="text-[28px] md:text-[36px]">Search Worldwide Ports, Airports, Rail ICDs & Road Hubs</h2>
               <p className="text-sm text-brand-slate mt-2">
-                Browse our real-time master database of 180+ commercial sea ports and international cargo airports across 30+ countries.
+                Browse our real-time master network of 208+ global gateways spanning commercial sea ports, international air cargo hubs, inland rail ICD terminals, and express cross-dock trucking centers across 30+ countries.
               </p>
             </Reveal>
             <Reveal>
