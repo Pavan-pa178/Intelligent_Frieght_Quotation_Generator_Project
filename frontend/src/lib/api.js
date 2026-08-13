@@ -392,8 +392,7 @@ function saveLocalMasterCollection(name, items) {
 }
 
 export async function fetchMasterOverview() {
-  if (MOCK_MODE) {
-    await delay(30)
+  const getLocalOverview = () => {
     const collections = {}
     let total = 0
     MASTER_COLLECTIONS_META.forEach(m => {
@@ -407,15 +406,26 @@ export async function fetchMasterOverview() {
     })
     return { collections_count: MASTER_COLLECTIONS_META.length, total_records: total, collections }
   }
-  return apiFetch('/api/v1/master/overview/', {
-    headers: { 'X-User-Role': 'admin' }
-  })
+
+  if (MOCK_MODE) {
+    await delay(30)
+    return getLocalOverview()
+  }
+
+  try {
+    const res = await apiFetch('/api/v1/master/overview/', {
+      headers: { 'X-User-Role': 'admin' }
+    })
+    return res || getLocalOverview()
+  } catch (err) {
+    return getLocalOverview()
+  }
 }
 
 export async function fetchMasterCollection(collectionName, params = {}) {
-  const { q = '', active = null, page = 1, limit = 100 } = params
-  if (MOCK_MODE) {
-    await delay(30)
+  const { q = '', active = null, page = 1, limit = 200 } = params
+
+  const getLocalResults = () => {
     let items = getLocalMasterCollection(collectionName)
     if (active !== null) {
       items = items.filter(i => i.active === (active === true || active === 'true'))
@@ -436,15 +446,27 @@ export async function fetchMasterCollection(collectionName, params = {}) {
       items: items.slice((page - 1) * limit, page * limit)
     }
   }
+
+  if (MOCK_MODE) {
+    await delay(30)
+    return getLocalResults()
+  }
+
   const searchParams = new URLSearchParams()
   if (q) searchParams.set('q', q)
   if (active !== null) searchParams.set('active', active)
   if (page) searchParams.set('page', page)
   if (limit) searchParams.set('limit', limit)
   const qs = searchParams.toString() ? `?${searchParams.toString()}` : ''
-  return apiFetch(`/api/v1/master/${collectionName}/${qs}`, {
-    headers: { 'X-User-Role': 'admin' }
-  })
+
+  try {
+    const res = await apiFetch(`/api/v1/master/${collectionName}/${qs}`, {
+      headers: { 'X-User-Role': 'admin' }
+    })
+    return res || getLocalResults()
+  } catch (err) {
+    return getLocalResults()
+  }
 }
 
 export async function createMasterRecord(collectionName, recordData) {
