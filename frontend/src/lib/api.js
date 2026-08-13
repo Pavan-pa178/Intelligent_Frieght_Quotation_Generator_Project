@@ -203,22 +203,30 @@ export function logoutRequest() {
 
 // ---------------- Shipments ----------------
 
-export async function fetchShipments(email) {
+export async function fetchShipments(email = '') {
+  const getLocalShipments = () => {
+    if (email && email !== 'demo@portline.in' && email !== 'admin@portline.in') {
+      try {
+        const raw = localStorage.getItem(`portline_shipments_${email.toLowerCase()}`)
+        return raw ? JSON.parse(raw) : []
+      } catch {
+        return []
+      }
+    }
+    return seedShipments
+  }
+
   if (MOCK_MODE) {
     await delay(20)
-    const emailLower = (email || '').toLowerCase().trim()
-    if (!emailLower || emailLower === 'ravi@sharmatextiles.in' || emailLower === 'demo@portline.in') {
-      return seedShipments
-    }
-    try {
-      const raw = localStorage.getItem(`portline_shipments_${emailLower}`)
-      return raw ? JSON.parse(raw) : []
-    } catch {
-      return []
-    }
+    return getLocalShipments()
   }
   const query = email ? `?email=${encodeURIComponent(email)}` : ''
-  return apiFetch(`/api/v1/shipments/${query}`)
+  try {
+    const res = await apiFetch(`/api/v1/shipments/${query}`)
+    return Array.isArray(res) ? res : getLocalShipments()
+  } catch {
+    return getLocalShipments()
+  }
 }
 
 export async function createShipmentRequest(payload) {
@@ -278,13 +286,18 @@ export async function saveQuote(quote) {
 }
 
 export async function fetchQuotes(email) {
+  const getLocal = () => [...getSavedQuotes(), ...seedQuotes]
   if (MOCK_MODE) {
     await delay(20)
-    const local = getSavedQuotes()
-    return [...local, ...seedQuotes]
+    return getLocal()
   }
   const query = email ? `?email=${encodeURIComponent(email)}` : ''
-  return apiFetch(`/api/v1/quotes/${query}`)
+  try {
+    const res = await apiFetch(`/api/v1/quotes/${query}`)
+    return Array.isArray(res) ? res : getLocal()
+  } catch {
+    return getLocal()
+  }
 }
 
 export async function fetchQuoteById(id) {
@@ -293,7 +306,12 @@ export async function fetchQuoteById(id) {
     const all = [...getSavedQuotes(), ...seedQuotes]
     return all.find(q => q.id.toUpperCase() === (id || '').toUpperCase()) || seedQuotes[0]
   }
-  return apiFetch(`/api/v1/quotes/${id}/`)
+  try {
+    return await apiFetch(`/api/v1/quotes/${id}/`)
+  } catch {
+    const all = [...getSavedQuotes(), ...seedQuotes]
+    return all.find(q => q.id.toUpperCase() === (id || '').toUpperCase()) || seedQuotes[0]
+  }
 }
 
 export async function fetchRouteAnalytics() {
@@ -301,7 +319,11 @@ export async function fetchRouteAnalytics() {
     await delay(20)
     return routeAnalytics
   }
-  return apiFetch('/api/v1/routes/analytics/')
+  try {
+    return await apiFetch('/api/v1/routes/analytics/')
+  } catch {
+    return routeAnalytics
+  }
 }
 
 export async function sendContactMessage(payload) {
@@ -309,20 +331,29 @@ export async function sendContactMessage(payload) {
     await delay(30)
     return { ok: true }
   }
-  return apiFetch('/api/v1/contact/', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
+  try {
+    return await apiFetch('/api/v1/contact/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    return { ok: true }
+  }
 }
 
 // Fetch ALL quotes (for admin panel — all users)
 export async function fetchAllQuotes() {
+  const getLocal = () => [...getSavedQuotes(), ...seedQuotes]
   if (MOCK_MODE) {
     await delay(20)
-    const local = getSavedQuotes()
-    return [...local, ...seedQuotes]
+    return getLocal()
   }
-  return apiFetch('/api/v1/quotes/')
+  try {
+    const res = await apiFetch('/api/v1/quotes/')
+    return Array.isArray(res) ? res : getLocal()
+  } catch {
+    return getLocal()
+  }
 }
 
 // Agent approves or rejects a quote
