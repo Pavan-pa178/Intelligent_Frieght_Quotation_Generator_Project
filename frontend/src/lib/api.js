@@ -23,7 +23,7 @@ function delay(ms = 30) {
 
 async function apiFetch(path, options = {}) {
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 6000)
+  const timeoutId = setTimeout(() => controller.abort(), 4000)
 
   try {
     const res = await fetch(`${API_BASE}${path}`, {
@@ -45,6 +45,9 @@ async function apiFetch(path, options = {}) {
     clearTimeout(timeoutId)
     if (err.name === 'AbortError') {
       throw new Error('Request timed out. Please check your backend connection.')
+    }
+    if (err.name === 'TypeError' || (err.message && err.message.includes('fetch'))) {
+      throw new Error('Failed to connect to backend server. Operating in offline mode.')
     }
     throw err
   }
@@ -88,9 +91,8 @@ export async function loginRequest({ email, password }) {
   const cleanPw = (password || '').trim()
   if (!cleanEmail || !cleanPw) throw new Error('Email and password are required')
 
-  if (MOCK_MODE) {
-    await delay(30)
-
+  // Helper for local mock authentication check
+  const tryLocalAuth = () => {
     // 1. Direct built-in account check
     if (BUILTIN_USERS[cleanEmail]) {
       const target = BUILTIN_USERS[cleanEmail]
@@ -102,7 +104,7 @@ export async function loginRequest({ email, password }) {
       }
     }
 
-    // 2. User accounts saved from signup in localStorage (case-insensitive & whitespace-tolerant)
+    // 2. User accounts saved from signup in localStorage
     const storedUsers = getStoredUsers()
     const foundKey = Object.keys(storedUsers).find(k => k.trim().toLowerCase() === cleanEmail)
     const found = foundKey ? storedUsers[foundKey] : null
@@ -118,15 +120,33 @@ export async function loginRequest({ email, password }) {
       return userObj
     }
 
-    throw new Error('No account found with this email. Please sign up first.')
+    throw new Error('No account found with this email. Please click "Create account" tab to sign up first.')
   }
 
-  const data = await apiFetch('/api/v1/auth/login/', {
-    method: 'POST',
-    body: JSON.stringify({ email: cleanEmail, password: cleanPw }),
-  })
-  setToken(data.access)
-  return data.user
+  if (MOCK_MODE) {
+    await delay(30)
+    return tryLocalAuth()
+  }
+
+  try {
+    const data = await apiFetch('/api/v1/auth/login/', {
+      method: 'POST',
+      body: JSON.stringify({ email: cleanEmail, password: cleanPw }),
+    })
+    setToken(data.access)
+    saveMockUser(cleanEmail, { password: cleanPw, user: data.user })
+    return data.user
+  } catch (err) {
+    // If backend connection fails or times out, fallback seamlessly to stored user / built-in user
+    if (err.message && (err.message.includes('timed out') || err.message.includes('Failed to fetch') || err.message.includes('network') || err.message.includes('connection'))) {
+      try {
+        return tryLocalAuth()
+      } catch (localErr) {
+        throw localErr
+      }
+    }
+    throw err
+  }
 }
 
 export async function signupRequest({ name, company, email, password }) {
@@ -134,9 +154,7 @@ export async function signupRequest({ name, company, email, password }) {
   const cleanPw = (password || '').trim()
   if (!cleanEmail || !cleanPw) throw new Error('Email and password are required')
 
-  if (MOCK_MODE) {
-    await delay(30)
-    
+  const createLocalUser = () => {
     const users = getMockUsers()
     if (users[cleanEmail]) {
       throw new Error('An account with this email address already exists.')
@@ -156,12 +174,26 @@ export async function signupRequest({ name, company, email, password }) {
     return newUser
   }
 
-  const data = await apiFetch('/api/v1/auth/register/', {
-    method: 'POST',
-    body: JSON.stringify({ name: (name || '').trim(), company: (company || '').trim(), email: cleanEmail, password: cleanPw }),
-  })
-  setToken(data.access)
-  return data.user
+  if (MOCK_MODE) {
+    await delay(30)
+    return createLocalUser()
+  }
+
+  try {
+    const data = await apiFetch('/api/v1/auth/register/', {
+      method: 'POST',
+      body: JSON.stringify({ name: (name || '').trim(), company: (company || '').trim(), email: cleanEmail, password: cleanPw }),
+    })
+    setToken(data.access)
+    saveMockUser(cleanEmail, { password: cleanPw, user: data.user })
+    return data.user
+  } catch (err) {
+    // If backend is unreachable or times out, fallback to local registration
+    if (err.message && (err.message.includes('timed out') || err.message.includes('Failed to fetch') || err.message.includes('network') || err.message.includes('connection'))) {
+      return createLocalUser()
+    }
+    throw err
+  }
 }
 
 export function logoutRequest() {
