@@ -1520,8 +1520,8 @@ export default function Ship() {
 
       {/* GLOBAL PORT & AIRPORT DIRECTORY MODAL */}
       {showPortDirectoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4 sm:p-6 md:p-8 animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl">
             <GlobalPortDirectory
               isModal={true}
               activeMode={mode}
