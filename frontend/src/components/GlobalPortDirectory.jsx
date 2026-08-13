@@ -112,20 +112,22 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, act
   }
 
   return (
-    <div className={`rounded-2xl border border-brand-line bg-white shadow-sm overflow-hidden ${isModal ? 'max-w-4xl w-full' : ''}`}>
+    <div className={`flex flex-col bg-white border border-brand-line overflow-hidden ${
+      isModal ? 'w-full max-h-[85vh] rounded-2xl shadow-2xl' : 'w-full rounded-2xl shadow-sm'
+    }`}>
       
       {/* Header */}
-      <div className="border-b border-brand-line bg-brand-cloud/40 p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-4 mb-4">
+      <div className="flex-shrink-0 border-b border-brand-line bg-brand-cloud/40 p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-4 mb-3.5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-navy text-white shadow-xs">
-              <Globe className="h-5 w-5" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-navy text-white shadow-xs flex-shrink-0">
+              <Globe className="h-4.5 w-4.5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-brand-navy">
+              <h3 className="text-base sm:text-lg font-bold text-brand-navy">
                 {isOceanMode ? 'Commercial Sea Port Directory' : isAirMode ? 'International Air Cargo Hub Directory' : 'Global Freight Gateway Directory'}
               </h3>
-              <p className="text-xs text-brand-slate">
+              <p className="text-[11.5px] sm:text-xs text-brand-slate">
                 {isOceanMode 
                   ? `Search and select from ${portsCount} commercial sea ports worldwide.` 
                   : isAirMode 
@@ -138,7 +140,8 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, act
           {isModal && onClose && (
             <button
               onClick={onClose}
-              className="rounded-lg p-1.5 text-brand-slate hover:bg-brand-cloud hover:text-brand-navy transition-colors"
+              className="rounded-lg p-1.5 text-brand-slate hover:bg-brand-cloud hover:text-brand-navy transition-colors flex-shrink-0"
+              title="Close directory"
             >
               <X className="h-5 w-5" />
             </button>
@@ -146,11 +149,11 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, act
         </div>
 
         {/* Search Bar & Filters */}
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
           
           {/* Search box */}
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-brand-slateLight" />
+            <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-brand-slateLight" />
             <input
               type="text"
               value={search}
@@ -162,12 +165,12 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, act
                     ? "Search airport name, IATA code, city, or country... e.g. BOM, DXB, Frankfurt, JFK"
                     : "Search port, airport, rail ICD, road hub, UN/LOCODE, IATA, city... e.g. JNPT, Dadri, FRA, Bhiwandi"
               }
-              className="w-full rounded-xl border border-brand-line pl-10 pr-9 py-2.5 text-xs text-brand-navy bg-white focus:border-brand-marine focus:outline-none shadow-xs"
+              className="w-full rounded-xl border border-brand-line pl-10 pr-9 py-2 text-xs text-brand-navy bg-white focus:border-brand-marine focus:outline-none shadow-xs"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand-slateLight/20 text-brand-slate text-xs hover:bg-brand-slateLight/40"
+                className="absolute right-3 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-slateLight/20 text-brand-slate text-xs hover:bg-brand-slateLight/40"
               >
                 ×
               </button>
@@ -179,31 +182,31 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, act
             <div className="flex flex-wrap items-center rounded-xl border border-brand-line bg-white p-1 text-xs shadow-xs">
               <button
                 onClick={() => setModeFilter('ALL')}
-                className={`rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'ALL' ? 'bg-brand-navy text-white' : 'text-brand-slate hover:text-brand-navy'}`}
+                className={`rounded-lg px-2.5 py-1 font-semibold transition-colors ${modeFilter === 'ALL' ? 'bg-brand-navy text-white' : 'text-brand-slate hover:text-brand-navy'}`}
               >
                 All ({GATEWAYS.length})
               </button>
               <button
                 onClick={() => setModeFilter('PORT')}
-                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'PORT' ? 'bg-brand-marine text-white' : 'text-brand-slate hover:text-brand-navy'}`}
+                className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-semibold transition-colors ${modeFilter === 'PORT' ? 'bg-brand-marine text-white' : 'text-brand-slate hover:text-brand-navy'}`}
               >
                 <Ship className="h-3.5 w-3.5" /> Ports ({portsCount})
               </button>
               <button
                 onClick={() => setModeFilter('AIRPORT')}
-                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'AIRPORT' ? 'bg-amber-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
+                className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-semibold transition-colors ${modeFilter === 'AIRPORT' ? 'bg-amber-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
               >
                 <Plane className="h-3.5 w-3.5" /> Airports ({airportsCount})
               </button>
               <button
                 onClick={() => setModeFilter('RAIL_TERMINAL')}
-                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'RAIL_TERMINAL' ? 'bg-purple-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
+                className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-semibold transition-colors ${modeFilter === 'RAIL_TERMINAL' ? 'bg-purple-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
               >
                 <Route className="h-3.5 w-3.5" /> Rail ICDs ({railCount})
               </button>
               <button
                 onClick={() => setModeFilter('ROAD_HUB')}
-                className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 font-semibold transition-colors ${modeFilter === 'ROAD_HUB' ? 'bg-emerald-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
+                className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-semibold transition-colors ${modeFilter === 'ROAD_HUB' ? 'bg-emerald-600 text-white' : 'text-brand-slate hover:text-brand-navy'}`}
               >
                 <Truck className="h-3.5 w-3.5" /> Road Hubs ({roadCount})
               </button>
@@ -213,7 +216,7 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, act
         </div>
 
         {/* Region Filter Pills */}
-        <div className="mt-3 flex flex-wrap gap-1.5 overflow-x-auto pb-1">
+        <div className="mt-2.5 flex flex-wrap gap-1.5 overflow-x-auto pb-0.5">
           {REGIONS.map(reg => (
             <button
               key={reg.key}
@@ -232,7 +235,7 @@ export default function GlobalPortDirectory({ onSelectPort, isModal = false, act
       </div>
 
       {/* Results List */}
-      <div className="p-4 sm:p-6 max-h-[480px] overflow-y-auto">
+      <div className={`p-4 sm:p-5 overflow-y-auto ${isModal ? 'flex-1 min-h-[300px]' : 'max-h-[500px]'}`}>
         <div className="mb-3 flex items-center justify-between text-xs text-brand-slate">
           <span>Found <strong>{filteredGateways.length}</strong> matching gateways</span>
           {search && <span className="text-brand-marine font-medium">Filtering by "{search}"</span>}
