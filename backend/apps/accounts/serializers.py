@@ -14,17 +14,22 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_name(self, obj):
         full = f"{obj.first_name} {obj.last_name}".strip()
-        return full if full else obj.username.split('@')[0]
+        if full:
+            return full
+        if obj.email:
+            username_part = obj.email.split('@')[0]
+            return ' '.join([p.capitalize() for p in username_part.replace('.', ' ').replace('_', ' ').split()])
+        return 'Shipper'
 
     def get_company(self, obj):
-        if hasattr(obj, 'profile'):
+        if hasattr(obj, 'profile') and obj.profile.company:
             return obj.profile.company
-        return 'Company'
+        return 'Independent Shipper'
 
     def get_role(self, obj):
-        if hasattr(obj, 'profile'):
+        if hasattr(obj, 'profile') and obj.profile.role:
             return obj.profile.role
-        return 'Broker'
+        return 'customer'
 
     def get_phone(self, obj):
         if hasattr(obj, 'profile'):
@@ -42,9 +47,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ('email', 'password', 'name', 'company', 'phone')
 
     def create(self, validated_data):
-        name = validated_data.pop('name', '')
-        company = validated_data.pop('company', 'Company')
-        phone = validated_data.pop('phone', '')
+        name = validated_data.pop('name', '').strip()
+        company = validated_data.pop('company', '').strip() or 'Independent Shipper'
+        phone = validated_data.pop('phone', '').strip()
         email = validated_data['email'].strip().lower()
         password = validated_data['password']
 
@@ -59,5 +64,5 @@ class RegisterSerializer(serializers.ModelSerializer):
             first_name=first_name,
             last_name=last_name
         )
-        UserProfile.objects.create(user=user, company=company, phone=phone)
+        UserProfile.objects.create(user=user, company=company, phone=phone, role='customer')
         return user

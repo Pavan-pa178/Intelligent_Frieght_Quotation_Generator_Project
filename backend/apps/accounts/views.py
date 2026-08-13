@@ -164,12 +164,4 @@ class UserMeView(APIView):
         user = request.user if request.user and request.user.is_authenticated else None
         if user:
             return Response(UserSerializer(user).data)
-        return Response({
-            'id': 'demo_user',
-            'name': 'Ravi Sharma',
-            'email': 'demo@portline.in',
-            'role': 'Broker',
-            'company': 'Sharma Textiles',
-            'customer_id': 'CUST-88412',
-            'permissions': ['CREATE_QUOTE', 'VIEW_ROUTES', 'MANAGE_SHIPMENTS']
-        })
+        return Response({'detail': 'Not authenticated.'}, status=status.HTTP_401_UNAUTHORIZED)
