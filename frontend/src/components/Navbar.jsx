@@ -71,7 +71,7 @@ export default function Navbar() {
                 Admin Panel
               </Link>
             )}
-            {loggedIn && user?.role === 'agent' && (
+            {loggedIn && (user?.role === 'agent' || user?.role === 'broker') && (
               <Link
                 to="/agent"
                 className="hidden md:inline-flex items-center gap-1.5 rounded-[10px] border border-white/20 bg-white/10 px-3.5 py-2 text-[13px] font-semibold text-white hover:bg-white/15 transition-colors"
@@ -114,9 +114,9 @@ export default function Navbar() {
         </div>
       </header>
 
-      {}
+      {/* Mobile Drawer */}
       <div
-        className={`fixed inset-0 z-[950] flex flex-col bg-brand-navy px-6 pb-10 pt-6 transition-transform duration-300 ease-brand md:hidden ${
+        className={`fixed inset-0 z-[950] flex flex-col bg-brand-navy p-8 transition-transform duration-300 md:hidden ${
           mobileOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -139,7 +139,7 @@ export default function Navbar() {
         {loggedIn && user?.role === 'admin' && (
           <Link to="/admin" onClick={() => setMobileOpen(false)} className="border-b border-white/10 py-3.5 font-display text-2xl text-white">Admin Panel</Link>
         )}
-        {loggedIn && user?.role === 'agent' && (
+        {loggedIn && (user?.role === 'agent' || user?.role === 'broker') && (
           <Link to="/agent" onClick={() => setMobileOpen(false)} className="border-b border-white/10 py-3.5 font-display text-2xl text-white">Agent Panel</Link>
         )}
         {loggedIn ? (
