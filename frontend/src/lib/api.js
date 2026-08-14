@@ -201,6 +201,160 @@ export function logoutRequest() {
   return Promise.resolve()
 }
 
+// ---------------- User Management (Admin) ----------------
+
+export async function fetchAllUsers() {
+  let backendUsers = []
+  try {
+    const res = await apiFetch('/api/v1/auth/users/')
+    if (res && Array.isArray(res.data)) {
+      backendUsers = res.data
+    } else if (Array.isArray(res)) {
+      backendUsers = res
+    }
+  } catch (err) {
+    console.warn('Backend users endpoint error, falling back to local store:', err.message)
+  }
+
+  const storedUsers = getStoredUsers()
+  const usersMap = new Map()
+
+  // 1. Built-in defaults
+  Object.values(BUILTIN_USERS).forEach((b, idx) => {
+    const u = b.user
+    const em = u.email.toLowerCase()
+    usersMap.set(em, {
+      id: `USR-00${idx + 1}`,
+      name: u.name,
+      email: em,
+      company: u.company,
+      role: u.role || 'customer',
+      phone: u.phone || '',
+      active: true,
+      since: u.since || 'March 2023',
+      created: u.since || 'System Default'
+    })
+  })
+
+  // 2. Local registered / admin-created users
+  Object.entries(storedUsers).forEach(([em, data], idx) => {
+    const cleanEm = em.toLowerCase()
+    const u = data.user || data
+    usersMap.set(cleanEm, {
+      id: u.id || `USR-01${idx + 5}`,
+      name: u.name || cleanEm.split('@')[0],
+      email: cleanEm,
+      company: u.company || 'Independent Shipper',
+      role: u.role || 'customer',
+      phone: u.phone || '',
+      active: u.active !== false,
+      since: u.since || 'Recent',
+      created: u.created || (u.since ? u.since : 'Registered User')
+    })
+  })
+
+  // 3. Backend synchronized users
+  backendUsers.forEach((bu, idx) => {
+    const em = (bu.email || bu.username || '').toLowerCase()
+    if (em) {
+      const existing = usersMap.get(em) || {}
+      usersMap.set(em, {
+        id: String(bu.id || existing.id || `USR-02${idx + 1}`),
+        name: bu.name || existing.name || em.split('@')[0],
+        email: em,
+        company: bu.company || existing.company || 'Enterprise Shipper',
+        role: bu.role || existing.role || 'customer',
+        phone: bu.phone || existing.phone || '',
+        active: bu.active !== undefined ? bu.active : (existing.active !== false),
+        since: existing.since || (bu.created_at ? new Date(bu.created_at).toLocaleDateString() : 'Active'),
+        created: bu.created_at ? new Date(bu.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : (existing.created || 'Live Synced')
+      })
+    }
+  })
+
+  return Array.from(usersMap.values())
+}
+
+export async function adminCreateUser({ name, company, email, password, role = 'customer', phone = '' }) {
+  const cleanEmail = (email || '').trim().toLowerCase()
+  const cleanPw = (password || '').trim()
+  if (!cleanEmail || !cleanPw) throw new Error('Email and password are required')
+
+  const newUserObj = {
+    id: `USR-${Date.now().toString().slice(-4)}`,
+    name: (name || cleanEmail.split('@')[0]).trim(),
+    company: (company || 'Company').trim(),
+    email: cleanEmail,
+    role: role.toLowerCase(),
+    phone: phone.trim(),
+    active: true,
+    since: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+    created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  // 1. Save locally for instant offline/Vercel persistence
+  saveMockUser(cleanEmail, { password: cleanPw, user: newUserObj })
+
+  // 2. Post to live backend
+  try {
+    await apiFetch('/api/v1/auth/users/', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: newUserObj.name,
+        company: newUserObj.company,
+        email: cleanEmail,
+        password: cleanPw,
+        role: newUserObj.role,
+        phone: newUserObj.phone
+      })
+    })
+  } catch (err) {
+    console.warn('Backend user creation offline fallback:', err.message)
+  }
+
+  return newUserObj
+}
+
+export async function adminUpdateUser(email, patch = {}) {
+  const cleanEmail = (email || '').trim().toLowerCase()
+  const stored = getStoredUsers()
+  if (stored[cleanEmail]) {
+    stored[cleanEmail].user = { ...(stored[cleanEmail].user || stored[cleanEmail]), ...patch }
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(stored))
+  } else if (BUILTIN_USERS[cleanEmail]) {
+    BUILTIN_USERS[cleanEmail].user = { ...BUILTIN_USERS[cleanEmail].user, ...patch }
+    saveMockUser(cleanEmail, { password: BUILTIN_USERS[cleanEmail].password, user: BUILTIN_USERS[cleanEmail].user })
+  }
+
+  try {
+    await apiFetch(`/api/v1/auth/users/${cleanEmail}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch)
+    })
+  } catch (err) {
+    console.warn('Backend patch user error:', err.message)
+  }
+
+  return { success: true }
+}
+
+export async function adminDeleteUser(email) {
+  const cleanEmail = (email || '').trim().toLowerCase()
+  const stored = getStoredUsers()
+  delete stored[cleanEmail]
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(stored))
+
+  try {
+    await apiFetch(`/api/v1/auth/users/${cleanEmail}/`, {
+      method: 'DELETE'
+    })
+  } catch (err) {
+    console.warn('Backend delete user error:', err.message)
+  }
+
+  return { success: true }
+}
+
 // ---------------- Shipments ----------------
 
 export async function fetchShipments(email = '') {
