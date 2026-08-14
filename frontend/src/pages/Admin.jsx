@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   LayoutDashboard, Route, FileText, Package, ChevronRight, CheckCircle2,
   XCircle, Clock, AlertTriangle, DollarSign, Ship, Plane, Truck, RefreshCw,
@@ -83,14 +83,28 @@ const MOCK_ROUTES = [
 export default function Admin() {
   const { user, loggedIn } = useApp()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabFromUrl = searchParams.get('tab')
   const toast = useToast()
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState(tabFromUrl || 'overview')
   const [quotes, setQuotes] = useState([])
   const [shipments, setShipments] = useState([])
   const [usersList, setUsersList] = useState([])
   const [routes, setRoutes] = useState(MOCK_ROUTES)
   const [loading, setLoading] = useState(true)
   const [usersLoading, setUsersLoading] = useState(false)
+
+  // Sync active tab if URL parameter changes
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl)
+    }
+  }, [tabFromUrl])
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab)
+    setSearchParams(newTab === 'overview' ? {} : { tab: newTab })
+  }
 
   // Search & Filter states
   const [quoteSearch, setQuoteSearch] = useState('')
@@ -299,7 +313,7 @@ export default function Admin() {
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => handleTabChange(tab.key)}
                   className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors ${
                     active
                       ? 'bg-brand-navy text-white shadow-xs'
@@ -324,7 +338,7 @@ export default function Admin() {
               {/* Quick Actions */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <button
-                  onClick={() => setActiveTab('users')}
+                  onClick={() => handleTabChange('users')}
                   className="flex items-center gap-4 rounded-xl border border-brand-line bg-white p-5 text-left transition-all hover:border-brand-marine hover:shadow-sm group"
                 >
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -337,7 +351,7 @@ export default function Admin() {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('masterdata')}
+                  onClick={() => handleTabChange('masterdata')}
                   className="flex items-center gap-4 rounded-xl border border-brand-line bg-white p-5 text-left transition-all hover:border-brand-marine hover:shadow-sm group"
                 >
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
@@ -350,7 +364,7 @@ export default function Admin() {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('quotes')}
+                  onClick={() => handleTabChange('quotes')}
                   className="flex items-center gap-4 rounded-xl border border-brand-line bg-white p-5 text-left transition-all hover:border-brand-marine hover:shadow-sm group"
                 >
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors">

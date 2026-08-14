@@ -31,7 +31,17 @@ export default function Login() {
     const nameStr = userObj?.name || userObj?.email || 'User'
     const firstName = nameStr.split(' ')[0] || 'User'
     toast(`Welcome back, ${firstName}!`)
-    navigate(redirectTo)
+
+    const explicitRedirect = searchParams.get('redirect')
+    if (explicitRedirect) {
+      navigate(explicitRedirect)
+    } else if (userObj?.role === 'admin') {
+      navigate('/admin')
+    } else if (userObj?.role === 'agent' || userObj?.role === 'broker') {
+      navigate('/agent')
+    } else {
+      navigate('/portal')
+    }
   }
 
   const handleSignin = async (e) => {
