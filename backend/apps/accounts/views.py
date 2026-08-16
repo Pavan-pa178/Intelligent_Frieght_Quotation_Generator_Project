@@ -11,6 +11,7 @@ from .models import UserProfile
 from .serializers import UserSerializer, RegisterSerializer
 
 class LoginView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -116,6 +117,7 @@ class LoginView(APIView):
         }, status=status.HTTP_200_OK)
 
 class RegisterView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -168,6 +170,7 @@ class UserMeView(APIView):
 
 
 class UserManagementView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
@@ -318,6 +321,7 @@ class UserManagementView(APIView):
 
 
 class UserDetailAdminView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def patch(self, request, user_id):
