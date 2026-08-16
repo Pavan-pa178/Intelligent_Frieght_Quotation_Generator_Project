@@ -25,19 +25,25 @@ async function apiFetch(path, options = {}) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 4000)
 
+  const isAuthEndpoint = path.includes('/auth/login/') || path.includes('/auth/register/')
+  const token = !isAuthEndpoint && !options.skipAuth ? getToken() : null
+
   try {
     const res = await fetch(`${API_BASE}${path}`, {
       ...options,
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers || {}),
       },
     })
     clearTimeout(timeoutId)
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
+      if (res.status === 401 && (body.detail?.includes('token') || body.code === 'token_not_valid')) {
+        clearToken()
+      }
       throw new Error(body.detail || `Request failed (${res.status})`)
     }
     return res.status === 204 ? null : res.json()
@@ -120,7 +126,7 @@ export async function loginRequest({ email, password }) {
       return userObj
     }
 
-    throw new Error('No account found with this email. Please click "Create account" tab to sign up first.')
+    throw new Error('No account found with this email. Please check credentials or sign up.')
   }
 
   if (MOCK_MODE) {
@@ -132,18 +138,23 @@ export async function loginRequest({ email, password }) {
     const data = await apiFetch('/api/v1/auth/login/', {
       method: 'POST',
       body: JSON.stringify({ email: cleanEmail, password: cleanPw }),
+      skipAuth: true,
     })
     setToken(data.access)
     saveMockUser(cleanEmail, { password: cleanPw, user: data.user })
     return data.user
   } catch (err) {
-    // If backend connection fails or times out, fallback seamlessly to stored user / built-in user
-    if (err.message && (err.message.includes('timed out') || err.message.includes('Failed to fetch') || err.message.includes('network') || err.message.includes('connection'))) {
-      try {
-        return tryLocalAuth()
-      } catch (localErr) {
-        throw localErr
-      }
+    // If token error or backend offline/timeout, fallback seamlessly to local auth
+    if (
+      err.message &&
+      (err.message.includes('token') ||
+       err.message.includes('timed out') ||
+       err.message.includes('Failed to fetch') ||
+       err.message.includes('network') ||
+       err.message.includes('connection'))
+    ) {
+      clearToken()
+      return tryLocalAuth()
     }
     throw err
   }
@@ -183,13 +194,15 @@ export async function signupRequest({ name, company, email, password }) {
     const data = await apiFetch('/api/v1/auth/register/', {
       method: 'POST',
       body: JSON.stringify({ name: (name || '').trim(), company: (company || '').trim(), email: cleanEmail, password: cleanPw }),
+      skipAuth: true,
     })
     setToken(data.access)
     saveMockUser(cleanEmail, { password: cleanPw, user: data.user })
     return data.user
   } catch (err) {
-    // If backend is unreachable or times out, fallback to local registration
-    if (err.message && (err.message.includes('timed out') || err.message.includes('Failed to fetch') || err.message.includes('network') || err.message.includes('connection'))) {
+    // If backend is unreachable, times out, or has token error, fallback to local registration
+    if (err.message && (err.message.includes('token') || err.message.includes('timed out') || err.message.includes('Failed to fetch') || err.message.includes('network') || err.message.includes('connection'))) {
+      clearToken()
       return createLocalUser()
     }
     throw err
