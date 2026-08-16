@@ -88,14 +88,18 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             {isAdmin ? (
               <>
-                <div className="hidden sm:flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 py-1.5 pl-1.5 pr-3.5 text-white">
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="hidden sm:flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 py-1.5 pl-1.5 pr-3.5 text-white hover:bg-amber-500/20 transition-colors"
+                  title="Admin Operations Console"
+                >
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500 text-white font-display text-xs font-bold shadow-xs">
                     {user?.name?.charAt(0) || 'A'}
                   </span>
                   <span className="text-[13px] font-semibold text-amber-200">
                     {user?.name?.split(' ')[0] || 'Admin'} <span className="text-[10px] text-amber-400 font-mono">(Admin)</span>
                   </span>
-                </div>
+                </button>
 
                 <button
                   onClick={handleLogout}

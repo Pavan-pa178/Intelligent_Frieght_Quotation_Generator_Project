@@ -19,6 +19,9 @@ import Login from './pages/Login'
 import Admin from './pages/Admin'
 import Agent from './pages/Agent'
 
+import { useNavigate } from 'react-router-dom'
+import { useApp } from './context/AppContext'
+
 function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => {
@@ -27,9 +30,27 @@ function ScrollToTop() {
   return null
 }
 
+function AdminRouteGuard({ children }) {
+  const { loggedIn, user } = useApp()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    // When logged in as Admin, keep navigation strictly on /admin
+    if (loggedIn && user?.role === 'admin' && pathname !== '/admin') {
+      navigate('/admin', { replace: true })
+    }
+  }, [loggedIn, user, pathname, navigate])
+
+  return children
+}
+
 function LayoutChrome({ children }) {
   const { pathname } = useLocation()
+  const { loggedIn, user } = useApp()
   const isAuthPage = pathname === '/login'
+  const isAdmin = loggedIn && user?.role === 'admin'
+  const isAdminPage = pathname.startsWith('/admin')
 
   useEffect(() => {
     document.body.classList.toggle('overflow-hidden', isAuthPage)
@@ -39,8 +60,12 @@ function LayoutChrome({ children }) {
   return (
     <>
       {!isAuthPage && <Navbar />}
-      <main className={isAuthPage ? '' : 'pt-[72px]'}>{children}</main>
-      {!isAuthPage && <Footer />}
+      <main className={isAuthPage ? '' : 'pt-[72px]'}>
+        <AdminRouteGuard>
+          {children}
+        </AdminRouteGuard>
+      </main>
+      {!isAuthPage && !isAdminPage && !isAdmin && <Footer />}
     </>
   )
 }
