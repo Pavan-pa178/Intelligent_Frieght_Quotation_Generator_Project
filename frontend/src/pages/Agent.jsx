@@ -43,7 +43,7 @@ export default function Agent() {
   const [selectedQuote, setSelectedQuote] = useState(null)
   const [newMsg, setNewMsg] = useState('')
 
-  const isAgent = user?.role === 'agent'
+  const isAgent = user?.role === 'agent' || user?.role === 'broker' || user?.role === 'admin'
 
   const loadData = useCallback(async () => {
     setLoading(true)
