@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Route, FileText, Package, ChevronRight, CheckCircle2,
   XCircle, Clock, AlertTriangle, DollarSign, Ship, Plane, Truck, RefreshCw,
   Eye, Database, Users, UserPlus, ShieldCheck, UserCheck, Building, Key,
-  Trash2, Edit3, Filter, Check, X, Lock, Plus, Search, Shield
+  Trash2, Edit3, Filter, Check, X, Lock, Plus, Search, Shield, LogOut
 } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
@@ -81,7 +81,7 @@ const MOCK_ROUTES = [
 ]
 
 export default function Admin() {
-  const { user, loggedIn } = useApp()
+  const { user, loggedIn, logout } = useApp()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab')
@@ -293,6 +293,48 @@ export default function Admin() {
 
       <section className="pt-10 pb-20">
         <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+
+          {/* ADMIN SESSION & LOGOUT BAR */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-line bg-white p-4 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-white font-display text-sm font-bold shadow-xs">
+                {user?.name?.charAt(0) || 'A'}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-sm font-bold text-brand-navy">{user?.name || 'Administrator'}</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10.5px] font-bold text-amber-800 border border-amber-200">
+                    <Shield className="h-3 w-3 text-amber-600" /> Platform Admin
+                  </span>
+                </div>
+                <div className="text-[11px] text-brand-slate font-mono">{user?.email || 'admin@portline.in'} · {user?.company || 'PORTLINE Operations'}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={loadData}
+                className="flex items-center gap-1.5 rounded-xl border border-brand-line bg-brand-cloud/50 px-3.5 py-2 text-xs font-semibold text-brand-slate hover:bg-brand-cloud hover:text-brand-navy transition-colors"
+                title="Refresh All Data"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  logout()
+                  toast('Logged out successfully')
+                  navigate('/login')
+                }}
+                className="flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/80 px-4 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 hover:text-red-800 transition-colors shadow-xs"
+                title="Log out of Admin Console"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Log Out</span>
+              </button>
+            </div>
+          </div>
 
           {/* TOP KPI STRIP */}
           <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">

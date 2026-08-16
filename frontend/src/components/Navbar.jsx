@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { Menu, X, Container } from 'lucide-react'
+import { Menu, X, Container, LogOut } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { useToast } from '../context/ToastContext'
 
 const CUSTOMER_NAV_ITEMS = [
   { to: '/', label: 'Home' },
@@ -11,16 +12,6 @@ const CUSTOMER_NAV_ITEMS = [
   { to: '/tracking', label: 'Tracking' },
   { to: '/portal', label: 'Portal' },
   { to: '/contact', label: 'Contact' },
-]
-
-const ADMIN_NAV_ITEMS = [
-  { to: '/admin', label: 'Admin Console' },
-  { to: '/admin?tab=users', label: 'User Management' },
-  { to: '/admin?tab=masterdata', label: 'Master DB' },
-  { to: '/admin?tab=quotes', label: 'Quotes & Approvals' },
-  { to: '/admin?tab=routes', label: 'Route Lanes' },
-  { to: '/admin?tab=shipments', label: 'Shipments' },
-  { to: '/tracking', label: 'Live Tracking' },
 ]
 
 const AGENT_NAV_ITEMS = [
@@ -36,10 +27,17 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { loggedIn, user, logout } = useApp()
   const navigate = useNavigate()
+  const toast = useToast()
 
   const isAdmin = loggedIn && user?.role === 'admin'
   const isAgent = loggedIn && (user?.role === 'agent' || user?.role === 'broker')
-  const navItems = isAdmin ? ADMIN_NAV_ITEMS : isAgent ? AGENT_NAV_ITEMS : CUSTOMER_NAV_ITEMS
+  const navItems = isAgent ? AGENT_NAV_ITEMS : CUSTOMER_NAV_ITEMS
+
+  const handleLogout = () => {
+    logout()
+    toast('Logged out successfully')
+    navigate('/login')
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -74,60 +72,94 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <ul className="hidden items-center gap-1 md:flex">
-            {navItems.map((item) => (
-              <li key={item.to}>
-                <NavLink to={item.to} className={linkClass} end={item.to === '/' || item.to === '/admin'}>
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+          {/* Center Links — Hidden for Admin to avoid duplicating Admin Panel tabs */}
+          {!isAdmin && (
+            <ul className="hidden items-center gap-1 md:flex">
+              {navItems.map((item) => (
+                <li key={item.to}>
+                  <NavLink to={item.to} className={linkClass} end={item.to === '/'}>
+                    {item.label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          )}
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             {isAdmin ? (
-              <Link
-                to="/admin"
-                className="hidden md:inline-flex items-center gap-1.5 rounded-[10px] border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-[13px] font-semibold text-amber-300 hover:bg-amber-500/20 transition-colors"
-              >
-                Admin Panel
-              </Link>
-            ) : isAgent ? (
-              <Link
-                to="/agent"
-                className="hidden md:inline-flex items-center gap-1.5 rounded-[10px] border border-purple-500/30 bg-purple-500/10 px-3.5 py-2 text-[13px] font-semibold text-purple-300 hover:bg-purple-500/20 transition-colors"
-              >
-                Agent Panel
-              </Link>
-            ) : (
-              <Link
-                to="/ship"
-                className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight px-4 py-2 text-[13.5px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(217,80,10,.55)] transition-transform hover:-translate-y-0.5"
-              >
-                New Enquiry
-              </Link>
-            )}
+              <>
+                <div className="hidden sm:flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 py-1.5 pl-1.5 pr-3.5 text-white">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500 text-white font-display text-xs font-bold shadow-xs">
+                    {user?.name?.charAt(0) || 'A'}
+                  </span>
+                  <span className="text-[13px] font-semibold text-amber-200">
+                    {user?.name?.split(' ')[0] || 'Admin'} <span className="text-[10px] text-amber-400 font-mono">(Admin)</span>
+                  </span>
+                </div>
 
-            {loggedIn ? (
-              <button
-                onClick={() => navigate(isAdmin ? '/admin' : isAgent ? '/agent' : '/portal')}
-                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1.5 pl-1.5 pr-3.5 text-white transition-colors hover:bg-white/10"
-                title={isAdmin ? "Admin Operations Console" : isAgent ? "Broker Review Queue" : "Customer Portal"}
-              >
-                <span className={`flex h-7 w-7 items-center justify-center rounded-full font-display text-xs font-bold ${
-                  isAdmin ? 'bg-amber-500 text-white' : isAgent ? 'bg-purple-600 text-white' : 'bg-gradient-to-br from-brand-orange to-brand-orangeLight'
-                }`}>
-                  {user?.name?.charAt(0) || (isAdmin ? 'A' : 'P')}
-                </span>
-                <span className="text-[13px] font-semibold">
-                  {user?.name?.split(' ')[0] || (isAdmin ? 'Admin' : 'User')}
-                  {isAdmin && <span className="ml-1 text-[10px] text-amber-300 font-mono">(Admin)</span>}
-                </span>
-              </button>
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-1.5 rounded-[10px] border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-[13px] font-semibold text-red-300 hover:bg-red-500/25 hover:text-red-200 transition-colors shadow-xs"
+                  title="Log out of Admin Console"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Log Out</span>
+                </button>
+              </>
+            ) : isAgent ? (
+              <>
+                <Link
+                  to="/agent"
+                  className="hidden md:inline-flex items-center gap-1.5 rounded-[10px] border border-purple-500/30 bg-purple-500/10 px-3.5 py-2 text-[13px] font-semibold text-purple-300 hover:bg-purple-500/20 transition-colors"
+                >
+                  Agent Panel
+                </Link>
+
+                <button
+                  onClick={() => navigate('/agent')}
+                  className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1.5 pl-1.5 pr-3.5 text-white transition-colors hover:bg-white/10"
+                  title="Broker Review Queue"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-600 text-white font-display text-xs font-bold">
+                    {user?.name?.charAt(0) || 'P'}
+                  </span>
+                  <span className="text-[13px] font-semibold">{user?.name?.split(' ')[0] || 'Agent'}</span>
+                </button>
+
+                <button
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-1.5 rounded-[10px] border border-white/20 bg-white/5 px-3 py-2 text-[13px] font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
+                  title="Log out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </>
             ) : (
-              <Link to="/login" className="rounded-lg px-3.5 py-2 text-[13.5px] font-semibold text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
-                Log in
-              </Link>
+              <>
+                <Link
+                  to="/ship"
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight px-4 py-2 text-[13.5px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(217,80,10,.55)] transition-transform hover:-translate-y-0.5"
+                >
+                  New Enquiry
+                </Link>
+
+                {loggedIn ? (
+                  <button
+                    onClick={() => navigate('/portal')}
+                    className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1.5 pl-1.5 pr-3.5 text-white transition-colors hover:bg-white/10"
+                    title="View Customer Portal"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-brand-orange to-brand-orangeLight font-display text-xs font-bold">
+                      {user?.name?.charAt(0) || 'P'}
+                    </span>
+                    <span className="text-[13.5px] font-semibold">{user?.name?.split(' ')[0] || 'Profile'}</span>
+                  </button>
+                ) : (
+                  <Link to="/login" className="rounded-lg px-3.5 py-2 text-[13.5px] font-semibold text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
+                    Log in
+                  </Link>
+                )}
+              </>
             )}
 
             <button
@@ -155,31 +187,51 @@ export default function Navbar() {
             <X className="h-6 w-6" />
           </button>
         </div>
-        {navItems.map((item) => (
-          <Link
-            key={item.to}
-            to={item.to}
-            onClick={() => setMobileOpen(false)}
-            className="border-b border-white/10 py-3.5 font-display text-2xl text-white"
-          >
-            {item.label}
-          </Link>
-        ))}
-        {loggedIn ? (
-          <button
-            onClick={() => { logout(); setMobileOpen(false); navigate('/') }}
-            className="mt-6 rounded-[10px] border border-white/30 py-3.5 text-center font-semibold text-white"
-          >
-            Log out
-          </button>
+
+        {isAdmin ? (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-white">
+              <div className="text-xs text-amber-400 font-mono">Logged in as</div>
+              <div className="font-bold text-sm mt-1">{user?.name || 'Administrator'}</div>
+              <div className="text-xs text-slate-400">{user?.email}</div>
+            </div>
+            <button
+              onClick={() => { handleLogout(); setMobileOpen(false) }}
+              className="w-full mt-4 flex items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-center font-semibold text-white shadow-xs"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Log Out</span>
+            </button>
+          </div>
         ) : (
           <>
-            <Link to="/login" onClick={() => setMobileOpen(false)} className="mt-6 rounded-[10px] border border-white/30 py-3.5 text-center font-semibold text-white">
-              Log in
-            </Link>
-            <Link to="/ship" onClick={() => setMobileOpen(false)} className="mt-3 rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight py-3.5 text-center font-semibold text-white">
-              Get a Quote
-            </Link>
+            {navItems.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setMobileOpen(false)}
+                className="border-b border-white/10 py-3.5 font-display text-2xl text-white"
+              >
+                {item.label}
+              </Link>
+            ))}
+            {loggedIn ? (
+              <button
+                onClick={() => { handleLogout(); setMobileOpen(false) }}
+                className="mt-6 rounded-[10px] border border-white/30 py-3.5 text-center font-semibold text-white"
+              >
+                Log out
+              </button>
+            ) : (
+              <>
+                <Link to="/login" onClick={() => setMobileOpen(false)} className="mt-6 rounded-[10px] border border-white/30 py-3.5 text-center font-semibold text-white">
+                  Log in
+                </Link>
+                <Link to="/ship" onClick={() => setMobileOpen(false)} className="mt-3 rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight py-3.5 text-center font-semibold text-white">
+                  Get a Quote
+                </Link>
+              </>
+            )}
           </>
         )}
       </div>
