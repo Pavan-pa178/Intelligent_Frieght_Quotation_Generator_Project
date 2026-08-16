@@ -160,7 +160,7 @@ export default function QuoteDetail() {
                   <DetailRow label="Customer" val={quote.customer} />
                   <DetailRow label="Commodity" val={d.commodity || 'General Cargo'} />
                   {d.hsCode && <DetailRow label="HS Code" val={d.hsCode} mono />}
-                  <DetailRow label="Gross weight" val={`${(d.grossWeightKg || quote.indicativeTotal).toLocaleString()} kg`} />
+                  <DetailRow label="Gross weight" val={`${(d.grossWeightKg || quote.indicativeTotal || 0).toLocaleString()} kg`} />
                   <DetailRow label="Mode" val={quote.mode} />
                   <DetailRow label="Basis" val={quote.basis} />
                 </div>
@@ -168,7 +168,7 @@ export default function QuoteDetail() {
                 <div className="mt-6 border-t border-brand-line pt-4">
                   <div className="text-[11px] font-semibold text-brand-slate uppercase">Indicative Total</div>
                   <div className="font-display text-2xl font-bold text-brand-navy mt-1">
-                    ₹ {quote.indicativeTotal.toLocaleString('en-IN')}
+                    ₹ {(quote.indicativeTotal || 0).toLocaleString('en-IN')}
                   </div>
                 </div>
               </div>
