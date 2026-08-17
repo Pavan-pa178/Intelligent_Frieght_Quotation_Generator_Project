@@ -13,8 +13,7 @@ const DRAFT_KEY = 'portline_ship_draft_v1'
 
 function getMinDeliveryDate(readyDateStr) {
   if (!readyDateStr) {
-    const d = new Date(Date.now() + 2 * 86400000)
-    return d.toISOString().split('T')[0]
+    return new Date().toISOString().split('T')[0]
   }
   const d = new Date(readyDateStr)
   d.setDate(d.getDate() + 2)
@@ -89,9 +88,9 @@ export default function Ship() {
   const [pickupAddress, setPickupAddress] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
   
-  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
-  const [readyDate, setReadyDate] = useState(tomorrowStr)
-  const [reqDeliveryDate, setReqDeliveryDate] = useState(getMinDeliveryDate(tomorrowStr))
+  const todayStr = new Date().toISOString().split('T')[0]
+  const [readyDate, setReadyDate] = useState(todayStr)
+  const [reqDeliveryDate, setReqDeliveryDate] = useState(todayStr)
 
   // 2. Service type state
   const [mode, setMode] = useState(params.get('service')?.toUpperCase() || 'OCEAN')
@@ -637,12 +636,14 @@ export default function Ship() {
                       onChange={(e) => {
                         const val = e.target.value
                         setReadyDate(val)
-                        const minDel = getMinDeliveryDate(val)
-                        if (!reqDeliveryDate || reqDeliveryDate < minDel) {
+                        if (val) {
+                          const minDel = getMinDeliveryDate(val)
                           setReqDeliveryDate(minDel)
+                        } else {
+                          setReqDeliveryDate(todayStr)
                         }
                       }}
-                      min={new Date().toISOString().split('T')[0]}
+                      min={todayStr}
                       className={brandInputStyle}
                     />
                   </div>
@@ -654,7 +655,7 @@ export default function Ship() {
                       type="date"
                       value={reqDeliveryDate}
                       onChange={(e) => setReqDeliveryDate(e.target.value)}
-                      min={getMinDeliveryDate(readyDate)}
+                      min={readyDate ? getMinDeliveryDate(readyDate) : todayStr}
                       className={brandInputStyle}
                     />
                   </div>
