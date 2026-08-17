@@ -634,9 +634,7 @@ export default function Ship() {
                       onChange={(e) => {
                         const val = e.target.value
                         setReadyDate(val)
-                        if (val) {
-                          setReqDeliveryDate(getMinDeliveryDate(val))
-                        } else {
+                        if (reqDeliveryDate && val && reqDeliveryDate < getMinDeliveryDate(val)) {
                           setReqDeliveryDate('')
                         }
                       }}
@@ -653,8 +651,7 @@ export default function Ship() {
                       value={reqDeliveryDate}
                       onChange={(e) => setReqDeliveryDate(e.target.value)}
                       min={readyDate ? getMinDeliveryDate(readyDate) : todayStr}
-                      disabled={!readyDate}
-                      className={brandInputStyle}
+                                            className={brandInputStyle}
                     />
                   </div>
                 </div>
