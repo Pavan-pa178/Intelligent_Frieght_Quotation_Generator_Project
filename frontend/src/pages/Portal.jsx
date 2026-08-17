@@ -6,7 +6,7 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 
 export default function Portal() {
-  const { loggedIn, user, shipments = [], loginDemo, logout } = useApp()
+  const { loggedIn, user, shipments = [], logout } = useApp()
   const navigate = useNavigate()
   const toast = useToast()
 
@@ -28,9 +28,7 @@ export default function Portal() {
                 <button onClick={() => navigate('/login')} className="rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight px-6 py-3.5 text-[14.5px] font-semibold text-white">
                   Log in
                 </button>
-                <button onClick={() => loginDemo()} className="rounded-[10px] border-[1.5px] border-brand-line bg-white px-6 py-3.5 text-[14.5px] font-semibold shadow-sm2">
-                  Try demo account
-                </button>
+
               </div>
             </div>
           ) : (

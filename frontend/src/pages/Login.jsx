@@ -10,7 +10,7 @@ export default function Login() {
   const redirectTo = searchParams.get('redirect') || '/portal'
   const [tab, setTab] = useState(initialTab)
   const navigate = useNavigate()
-  const { login, loginDemo, signup } = useApp()
+  const { login, signup } = useApp()
   const toast = useToast()
 
   const [siEmail, setSiEmail] = useState('')
@@ -60,11 +60,6 @@ export default function Login() {
     } finally {
       setSiLoading(false)
     }
-  }
-
-  const handleDemo = async () => {
-    const userObj = await loginDemo()
-    afterLogin(userObj)
   }
 
   const handleSignup = async (e) => {
@@ -174,62 +169,6 @@ export default function Login() {
                   {siLoading ? 'Signing in…' : 'Sign in'}
                 </button>
               </form>
-
-              <div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-wider text-brand-slateLight">
-                <div className="h-px flex-1 bg-brand-line" /> or quick demo <div className="h-px flex-1 bg-brand-line" />
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={handleDemo}
-                  className="flex w-full items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-brand-line py-2.5 text-xs font-semibold text-brand-navy hover:bg-brand-cloud transition-colors"
-                >
-                  <User className="h-4 w-4 text-brand-marine" /> Customer Demo (Ravi)
-                </button>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setSiEmail('admin@portline.in')
-                      setSiPassword('admin123')
-                      setSiError('')
-                      setSiLoading(true)
-                      try {
-                        const userObj = await login({ email: 'admin@portline.in', password: 'admin123' })
-                        afterLogin(userObj)
-                      } catch (err) {
-                        setSiError(err.message)
-                      } finally {
-                        setSiLoading(false)
-                      }
-                    }}
-                    className="flex items-center justify-center gap-1.5 rounded-[10px] border border-blue-200 bg-blue-50/70 py-2 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
-                  >
-                    🛡️ Admin Demo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setSiEmail('agent@portline.in')
-                      setSiPassword('agent123')
-                      setSiError('')
-                      setSiLoading(true)
-                      try {
-                        const userObj = await login({ email: 'agent@portline.in', password: 'agent123' })
-                        afterLogin(userObj)
-                      } catch (err) {
-                        setSiError(err.message)
-                      } finally {
-                        setSiLoading(false)
-                      }
-                    }}
-                    className="flex items-center justify-center gap-1.5 rounded-[10px] border border-amber-200 bg-amber-50/70 py-2 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
-                  >
-                    👤 Agent Demo
-                  </button>
-                </div>
-              </div>
             </>
           ) : (
             <>
