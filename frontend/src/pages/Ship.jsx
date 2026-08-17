@@ -12,9 +12,7 @@ import { computeLiveEstimate } from '../lib/pricing/index'
 const DRAFT_KEY = 'portline_ship_draft_v1'
 
 function getMinDeliveryDate(readyDateStr) {
-  if (!readyDateStr) {
-    return new Date().toISOString().split('T')[0]
-  }
+  if (!readyDateStr) return ''
   const d = new Date(readyDateStr)
   d.setDate(d.getDate() + 2)
   return d.toISOString().split('T')[0]
@@ -89,8 +87,8 @@ export default function Ship() {
   const [deliveryAddress, setDeliveryAddress] = useState('')
   
   const todayStr = new Date().toISOString().split('T')[0]
-  const [readyDate, setReadyDate] = useState(todayStr)
-  const [reqDeliveryDate, setReqDeliveryDate] = useState(todayStr)
+  const [readyDate, setReadyDate] = useState('')
+  const [reqDeliveryDate, setReqDeliveryDate] = useState('')
 
   // 2. Service type state
   const [mode, setMode] = useState(params.get('service')?.toUpperCase() || 'OCEAN')
@@ -357,7 +355,7 @@ export default function Ship() {
                               setShowOriginDropdown(true)
                             }}
                             onClick={() => checkAuthGate()}
-                            className={`${brandInputStyle} pl-10 pr-9`}
+                      className={brandInputStyle}
                             placeholder={
                               mode === 'OCEAN' 
                                 ? "Search sea port name, city, UN/LOCODE... (e.g. JNPT, Rotterdam, Singapore)"
@@ -508,7 +506,7 @@ export default function Ship() {
                               if (checkAuthGate()) return
                               setShowDestDropdown(true)
                             }}
-                            className={`${brandInputStyle} pl-10 pr-9`}
+                      className={brandInputStyle}
                             placeholder={
                               mode === 'OCEAN' 
                                 ? "Search sea port name, city, UN/LOCODE... (e.g. Jebel Ali, Singapore, Hamburg)"
@@ -637,10 +635,9 @@ export default function Ship() {
                         const val = e.target.value
                         setReadyDate(val)
                         if (val) {
-                          const minDel = getMinDeliveryDate(val)
-                          setReqDeliveryDate(minDel)
+                          setReqDeliveryDate(getMinDeliveryDate(val))
                         } else {
-                          setReqDeliveryDate(todayStr)
+                          setReqDeliveryDate('')
                         }
                       }}
                       min={todayStr}
@@ -656,6 +653,7 @@ export default function Ship() {
                       value={reqDeliveryDate}
                       onChange={(e) => setReqDeliveryDate(e.target.value)}
                       min={readyDate ? getMinDeliveryDate(readyDate) : todayStr}
+                      disabled={!readyDate}
                       className={brandInputStyle}
                     />
                   </div>
@@ -943,7 +941,7 @@ export default function Ship() {
                       <select
                         value={incoterm}
                         onChange={(e) => setIncoterm(e.target.value)}
-                        className={brandInputStyle}
+                      className={brandInputStyle}
                       >
                         <option value="FOB">FOB — Free On Board</option>
                         <option value="EXW">EXW — Ex Works</option>
@@ -994,7 +992,7 @@ export default function Ship() {
                                 setLoadType('LCL')
                               }
                             }}
-                            className={brandInputStyle}
+                      className={brandInputStyle}
                           >
                             {mode === 'GROUND_RAIL' && subService === 'FTL' ? (
                               <>
@@ -1031,7 +1029,7 @@ export default function Ship() {
                             <select
                               value={item.container_type}
                               onChange={(e) => updateCargo(item.id, 'container_type', e.target.value)}
-                              className={brandInputStyle}
+                      className={brandInputStyle}
                             >
                               {mode === 'GROUND_RAIL' && subService === 'FTL' ? (
                                 <>
@@ -1084,7 +1082,7 @@ export default function Ship() {
                               value={item.container_count}
                               onChange={(e) => updateCargo(item.id, 'container_count', e.target.value)}
                               placeholder="1"
-                              className={brandInputStyle}
+                      className={brandInputStyle}
                             />
                           </div>
                           <div>
@@ -1096,7 +1094,7 @@ export default function Ship() {
                               value={item.gross_weight_kg}
                               onChange={(e) => updateCargo(item.id, 'gross_weight_kg', e.target.value)}
                               placeholder="e.g. 18400"
-                              className={brandInputStyle}
+                      className={brandInputStyle}
                             />
                           </div>
                         </div>
@@ -1110,7 +1108,7 @@ export default function Ship() {
                               value={item.quantity}
                               onChange={(e) => updateCargo(item.id, 'quantity', e.target.value)}
                               placeholder="1"
-                              className={brandInputStyle}
+                      className={brandInputStyle}
                             />
                           </div>
                           <div>
@@ -1120,7 +1118,7 @@ export default function Ship() {
                               value={item.weight_per_unit_kg}
                               onChange={(e) => updateCargo(item.id, 'weight_per_unit_kg', e.target.value)}
                               placeholder="e.g. 250"
-                              className={brandInputStyle}
+                      className={brandInputStyle}
                             />
                           </div>
                           <div>
@@ -1130,19 +1128,19 @@ export default function Ship() {
                                 placeholder="L"
                                 value={item.length_cm}
                                 onChange={(e) => updateCargo(item.id, 'length_cm', e.target.value)}
-                                className={brandInputStyle}
+                      className={brandInputStyle}
                               />
                               <input
                                 placeholder="W"
                                 value={item.width_cm}
                                 onChange={(e) => updateCargo(item.id, 'width_cm', e.target.value)}
-                                className={brandInputStyle}
+                      className={brandInputStyle}
                               />
                               <input
                                 placeholder="H"
                                 value={item.height_cm}
                                 onChange={(e) => updateCargo(item.id, 'height_cm', e.target.value)}
-                                className={brandInputStyle}
+                      className={brandInputStyle}
                               />
                             </div>
                           </div>
@@ -1159,7 +1157,7 @@ export default function Ship() {
                             value={item.commodity_description}
                             onChange={(e) => updateCargo(item.id, 'commodity_description', e.target.value)}
                             placeholder="Detailed product description..."
-                            className={brandInputStyle}
+                      className={brandInputStyle}
                           />
                         </div>
                         <div>
@@ -1171,7 +1169,7 @@ export default function Ship() {
                             value={item.hs_code}
                             onChange={(e) => updateCargo(item.id, 'hs_code', e.target.value)}
                             placeholder="e.g. 5208.11"
-                            className={`${brandInputStyle} font-mono`}
+                      className={brandInputStyle}
                           />
                         </div>
                       </div>
@@ -1227,7 +1225,7 @@ export default function Ship() {
                     value={specialInstructions}
                     onChange={(e) => setSpecialInstructions(e.target.value)}
                     placeholder="e.g. call before delivery"
-                    className={brandInputStyle}
+                      className={brandInputStyle}
                   />
                 </div>
 
@@ -1262,7 +1260,7 @@ export default function Ship() {
                           value={tempMinC}
                           onChange={(e) => setTempMinC(e.target.value)}
                           placeholder="-18"
-                          className={brandInputStyle}
+                      className={brandInputStyle}
                         />
                       </div>
                       <div>
@@ -1274,7 +1272,7 @@ export default function Ship() {
                           value={tempMaxC}
                           onChange={(e) => setTempMaxC(e.target.value)}
                           placeholder="-10"
-                          className={brandInputStyle}
+                      className={brandInputStyle}
                         />
                       </div>
                     </div>
@@ -1292,7 +1290,7 @@ export default function Ship() {
                           placeholder="e.g. UN1234"
                           value={unNumber}
                           onChange={(e) => setUnNumber(e.target.value)}
-                          className={`${brandInputStyle} font-mono`}
+                      className={brandInputStyle}
                         />
                       </div>
                       <div>
@@ -1302,7 +1300,7 @@ export default function Ship() {
                         <select
                           value={imoClass}
                           onChange={(e) => setImoClass(e.target.value)}
-                          className={brandInputStyle}
+                      className={brandInputStyle}
                         >
                           <option value="">Select Class...</option>
                           <option value="3">Class 3 — Flammable</option>
@@ -1404,7 +1402,7 @@ export default function Ship() {
                         value={existingCustomerCode}
                         onChange={(e) => setExistingCustomerCode(e.target.value)}
                         placeholder="e.g. CUST-88412"
-                        className={`${brandInputStyle} font-mono`}
+                      className={brandInputStyle}
                       />
                     </div>
                   )}
