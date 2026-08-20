@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeftRight, Plus, Trash2, Ship as ShipIcon, Plane, Truck, Zap, Route, CheckCircle2, Lock, Search, Globe, MapPin, X } from 'lucide-react'
+import { ArrowLeftRight, Plus, Trash2, Ship as ShipIcon, Plane, Truck, Zap, Route, CheckCircle2, Lock, Search, Globe, MapPin, X, Clock, Sparkles, Loader2 } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import GlobalPortDirectory from '../components/GlobalPortDirectory'
 import { useApp } from '../context/AppContext'
@@ -122,6 +122,59 @@ export default function Ship() {
   const [existingCustomerCode, setExistingCustomerCode] = useState('')
 
   const [submitting, setSubmitting] = useState(false)
+  const [isCalculating, setIsCalculating] = useState(false)
+  const [calcCountdown, setCalcCountdown] = useState(30)
+  const [hasCalculated, setHasCalculated] = useState(false)
+
+  // 30-second computation countdown
+  useEffect(() => {
+    let interval = null
+    if (isCalculating && calcCountdown > 0) {
+      interval = setInterval(() => {
+        setCalcCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval)
+            setIsCalculating(false)
+            setHasCalculated(true)
+            toast('Quotation calculation complete! Pricing and routing ready.')
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isCalculating, calcCountdown, toast])
+
+  // Reset calculation when core shipment parameters change
+  useEffect(() => {
+    setHasCalculated(false)
+    setIsCalculating(false)
+    setCalcCountdown(30)
+  }, [originGw, destGw, mode, loadType, cargo, readyDate])
+
+  const handleStartCalculation = () => {
+    if (checkAuthGate()) return
+
+    if (!originGw || !destGw) {
+      toast('Please select origin and destination locations from master data')
+      return
+    }
+    if (!readyDate) {
+      toast('Please select a shipment ready date')
+      return
+    }
+    if (!cargo || cargo.length === 0) {
+      toast('Please add at least one cargo item')
+      return
+    }
+
+    setIsCalculating(true)
+    setCalcCountdown(30)
+    setHasCalculated(false)
+  }
 
   const isLoaded = useRef(false)
   useEffect(() => {
@@ -1410,66 +1463,217 @@ export default function Ship() {
 
             {/* LIVE ESTIMATE RIGHT PANEL */}
             <div className="sticky top-[92px]">
-              <div className="rounded-lg2 bg-brand-navy p-7 text-white shadow-md2">
-                <div className="mb-4 font-mono text-[11px] font-semibold uppercase tracking-[.18em] text-slate-400">
-                  LIVE ESTIMATE
-                </div>
+              {!hasCalculated && !isCalculating && (
+                <div className="rounded-lg2 bg-brand-navy p-7 text-white shadow-md2 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="font-mono text-[11px] font-semibold uppercase tracking-[.18em] text-slate-400">
+                      QUOTATION ESTIMATE
+                    </div>
+                    <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-mono text-slate-300">
+                      AWAITING INPUT
+                    </span>
+                  </div>
 
-                <div className="mb-4 rounded-md2 bg-white/5 p-3 text-xs text-slate-300">
-                  Charge basis
-                  <b className="mt-1 block font-display text-[15px] font-bold text-white">{estimate.chargeBasis}</b>
-                </div>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center my-4">
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-orange/20 text-brand-orangeLight">
+                      <Zap className="h-6 w-6" />
+                    </div>
+                    <h4 className="font-display text-[16px] font-bold text-white mb-1.5">
+                      Ready to Generate Quotation
+                    </h4>
+                    <p className="text-xs text-slate-300 leading-relaxed mb-3">
+                      Fill in your shipment route, cargo and schedule details, then click below to trigger the 30-second AI route intelligence & pricing analysis.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-left bg-black/25 rounded-lg p-2.5 text-[11px] text-slate-300 font-mono">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">ROUTE</span>
+                        <span className="truncate block font-semibold text-white">
+                          {originGw && destGw ? `${originGw.city} → ${destGw.city}` : 'Select gateways'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">SERVICE</span>
+                        <span className="truncate block font-semibold text-white">
+                          {mode} {loadType || ''}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-                <div className="space-y-3 font-mono text-xs text-slate-300">
-                  <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-slate-400 font-sans">Containers / Units</span>
-                    <span className="font-semibold text-white">{estimate.unitsLabel}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-slate-400 font-sans">Gross weight</span>
-                    <span className="font-semibold text-white">{estimate.grossWeightKg.toLocaleString()} kg</span>
-                  </div>
-                  <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-slate-400 font-sans">{estimate.distanceLabel}</span>
-                    <span className="font-semibold text-white">{estimate.mainDistanceNm.toLocaleString()} {mode === 'OCEAN' ? 'nm' : 'km'}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-slate-400 font-sans">Estimated transit</span>
-                    <span className="font-semibold text-white">{estimate.transitRange}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-slate-400 font-sans">Est. arrival</span>
-                    <span className="font-semibold text-white">{estimate.arrivalDateFormatted}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-white/10 pb-2">
-                    <span className="text-slate-400 font-sans">Route options</span>
-                    <span className="font-semibold text-brand-orangeLight">{estimate.routeOptionsCount} found</span>
-                  </div>
-                </div>
+                  <button
+                    type="button"
+                    onClick={handleStartCalculation}
+                    className="w-full rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight py-3.5 font-display text-[15px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(217,80,10,.55)] transition-transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                  >
+                    <Zap className="h-4 w-4" /> Generate Quotation →
+                  </button>
 
-                <div className="mt-6 border-t border-white/10 pt-4">
-                  <div className="font-mono text-[11px] uppercase tracking-wide text-slate-400">ESTIMATED TOTAL</div>
-                  <div className="mt-1 font-display text-[30px] font-bold tracking-tight text-white">
-                    {estimate.totalFormatted}
-                  </div>
-                  <div className="mt-2 inline-block rounded-md border border-brand-orange/40 bg-brand-orange/15 px-2.5 py-1 font-mono text-[10px] font-bold text-brand-orangeLight">
-                    ◆ INDICATIVE RATE
+                  <div className="mt-4 text-[11px] leading-relaxed text-slate-400 text-center">
+                    Runs a 30s comprehensive multi-carrier tariff and transit time estimation.
                   </div>
                 </div>
+              )}
 
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={handleSubmitQuote}
-                  className="mt-6 w-full rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight py-3.5 font-display text-[15px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(217,80,10,.55)] transition-transform hover:-translate-y-0.5 disabled:opacity-50"
-                >
-                  {submitting ? 'Generating…' : 'Generate full quotation →'}
-                </button>
+              {isCalculating && (
+                <div className="rounded-lg2 bg-brand-navy p-7 text-white shadow-md2 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="font-mono text-[11px] font-semibold uppercase tracking-[.18em] text-brand-orangeLight flex items-center gap-2">
+                      <span className="inline-block h-2 w-2 rounded-full bg-brand-orange animate-ping" />
+                      GENERATING ESTIMATE
+                    </div>
+                    <span className="rounded-full bg-brand-orange/20 border border-brand-orange/40 px-2.5 py-0.5 text-xs font-mono font-bold text-brand-orangeLight">
+                      {calcCountdown}s
+                    </span>
+                  </div>
 
-                <div className="mt-4 text-[11px] leading-relaxed text-slate-400">
-                  Final rates confirmed by your account manager. Estimate excludes duties & taxes.
+                  {/* Progress Bar */}
+                  <div className="w-full bg-white/10 rounded-full h-2 mb-4 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-brand-orange to-amber-400 h-2 rounded-full transition-all duration-1000 ease-linear"
+                      style={{ width: `${Math.min(100, Math.round(((30 - calcCountdown) / 30) * 100))}%` }}
+                    />
+                  </div>
+
+                  {/* Dynamic Pipeline Stage Card */}
+                  <div className="rounded-xl border border-brand-orange/30 bg-white/5 p-4 mb-4">
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-orange/20 text-brand-orangeLight flex-shrink-0 animate-spin">
+                        <Route className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                          Analysis Pipeline (Stage {Math.min(5, Math.floor((30 - calcCountdown) / 6) + 1)}/5)
+                        </div>
+                        <div className="text-xs font-bold text-white truncate">
+                          {calcCountdown > 24 && 'Resolving Carrier Schedules'}
+                          {calcCountdown <= 24 && calcCountdown > 18 && 'Calculating Port Nautical Miles & Dwell'}
+                          {calcCountdown <= 18 && calcCountdown > 12 && 'Computing Freight Tariffs & Surcharges'}
+                          {calcCountdown <= 12 && calcCountdown > 6 && 'Evaluating Margin Floors & Compliance'}
+                          {calcCountdown <= 6 && 'Compiling Final Quotation Scorecards'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-300 leading-relaxed font-sans mt-2 border-t border-white/10 pt-2">
+                      {calcCountdown > 24 && '?? Route Intelligence Agent querying direct & transshipment schedules across partner shipping lines?'}
+                      {calcCountdown <= 24 && calcCountdown > 18 && '?? Calculating sea distance, origin/destination dwell buffers & weather contingency?'}
+                      {calcCountdown <= 18 && calcCountdown > 12 && '?? Computing base ocean/air tariffs, BAF/CAF adjustments & Terminal Handling Charges (THC)?'}
+                      {calcCountdown <= 12 && calcCountdown > 6 && '??? Checking corporate margin floor rules, currency conversion & verified customer discounts?'}
+                      {calcCountdown <= 6 && '?? Packaging formal quotation record with transit timeline and multi-route comparisons?'}
+                    </p>
+                  </div>
+
+                  {/* Checklist */}
+                  <div className="space-y-1.5 text-[11px] font-mono text-slate-300 border-t border-white/10 pt-3">
+                    <div className="flex justify-between">
+                      <span>1. Route & Vessel Matching</span>
+                      <span className={calcCountdown <= 24 ? 'text-emerald-400 font-bold' : 'text-amber-400'}>
+                        {calcCountdown <= 24 ? '? Done' : 'Analyzing?'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>2. Transit Time Modeling</span>
+                      <span className={calcCountdown <= 18 ? 'text-emerald-400 font-bold' : calcCountdown <= 24 ? 'text-amber-400' : 'text-slate-500'}>
+                        {calcCountdown <= 18 ? '? Done' : calcCountdown <= 24 ? 'Analyzing?' : 'Queued'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>3. 5-Layer Cost Tariffs</span>
+                      <span className={calcCountdown <= 12 ? 'text-emerald-400 font-bold' : calcCountdown <= 18 ? 'text-amber-400' : 'text-slate-500'}>
+                        {calcCountdown <= 12 ? '? Done' : calcCountdown <= 18 ? 'Analyzing?' : 'Queued'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>4. Margin & Compliance</span>
+                      <span className={calcCountdown <= 6 ? 'text-emerald-400 font-bold' : calcCountdown <= 12 ? 'text-amber-400' : 'text-slate-500'}>
+                        {calcCountdown <= 6 ? '? Done' : calcCountdown <= 12 ? 'Analyzing?' : 'Queued'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>5. Final Quotation Compilation</span>
+                      <span className={calcCountdown === 0 ? 'text-emerald-400 font-bold' : calcCountdown <= 6 ? 'text-amber-400' : 'text-slate-500'}>
+                        {calcCountdown === 0 ? '? Done' : calcCountdown <= 6 ? 'Finalizing?' : 'Queued'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-lg bg-black/30 p-2.5 text-center text-xs font-semibold text-brand-orangeLight flex items-center justify-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Revealing estimated quotation in {calcCountdown}s?
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {hasCalculated && !isCalculating && (
+                <div className="rounded-lg2 bg-brand-navy p-7 text-white shadow-md2 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="font-mono text-[11px] font-semibold uppercase tracking-[.18em] text-emerald-400 flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> ESTIMATE READY
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleStartCalculation}
+                      className="text-[11px] font-mono text-slate-400 hover:text-white underline"
+                    >
+                      Recalculate (30s)
+                    </button>
+                  </div>
+
+                  <div className="mb-4 rounded-md2 bg-white/5 p-3 text-xs text-slate-300">
+                    Charge basis
+                    <b className="mt-1 block font-display text-[15px] font-bold text-white">{estimate.chargeBasis}</b>
+                  </div>
+
+                  <div className="space-y-3 font-mono text-xs text-slate-300">
+                    <div className="flex justify-between border-b border-white/10 pb-2">
+                      <span className="text-slate-400 font-sans">Containers / Units</span>
+                      <span className="font-semibold text-white">{estimate.unitsLabel}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-white/10 pb-2">
+                      <span className="text-slate-400 font-sans">Gross weight</span>
+                      <span className="font-semibold text-white">{estimate.grossWeightKg.toLocaleString()} kg</span>
+                    </div>
+                    <div className="flex justify-between border-b border-white/10 pb-2">
+                      <span className="text-slate-400 font-sans">{estimate.distanceLabel}</span>
+                      <span className="font-semibold text-white">{estimate.mainDistanceNm.toLocaleString()} {mode === 'OCEAN' ? 'nm' : 'km'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-white/10 pb-2">
+                      <span className="text-slate-400 font-sans">Estimated transit</span>
+                      <span className="font-semibold text-white">{estimate.transitRange}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-white/10 pb-2">
+                      <span className="text-slate-400 font-sans">Est. arrival</span>
+                      <span className="font-semibold text-white">{estimate.arrivalDateFormatted}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-white/10 pb-2">
+                      <span className="text-slate-400 font-sans">Route options</span>
+                      <span className="font-semibold text-brand-orangeLight">{estimate.routeOptionsCount} found</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 border-t border-white/10 pt-4">
+                    <div className="font-mono text-[11px] uppercase tracking-wide text-slate-400">ESTIMATED TOTAL</div>
+                    <div className="mt-1 font-display text-[30px] font-bold tracking-tight text-white">
+                      {estimate.totalFormatted}
+                    </div>
+                    <div className="mt-2 inline-block rounded-md border border-brand-orange/40 bg-brand-orange/15 px-2.5 py-1 font-mono text-[10px] font-bold text-brand-orangeLight">
+                      ? INDICATIVE RATE
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={handleSubmitQuote}
+                    className="mt-6 w-full rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight py-3.5 font-display text-[15px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(217,80,10,.55)] transition-transform hover:-translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {submitting ? 'Saving Quotation?' : 'Generate full quotation ?'}
+                  </button>
+
+                  <div className="mt-4 text-[11px] leading-relaxed text-slate-400">
+                    Final rates confirmed by your account manager. Estimate excludes duties & taxes.
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>
