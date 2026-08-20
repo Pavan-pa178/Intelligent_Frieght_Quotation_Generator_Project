@@ -135,3 +135,20 @@ class AgentRunStatusView(APIView):
                 'Transit & Cost score calculated'
             ]
         }, status=status.HTTP_200_OK)
+
+class ShipmentCancelView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, tracking_number):
+        tn = (tracking_number or '').strip().upper()
+        reason = request.data.get('reason', 'Cancelled by customer')
+        try:
+            col = get_collection('shipments')
+            if col is not None:
+                col.update_one(
+                    {'tn': {'$regex': f'^{tn}$', '$options': 'i'}},
+                    {'$set': {'status': 'Cancelled', 'cancellation_reason': reason}}
+                )
+        except Exception:
+            pass
+        return Response({'detail': f'Shipment {tn} has been cancelled.', 'status': 'Cancelled', 'tracking_number': tn})
