@@ -62,6 +62,35 @@ export default function Ship() {
   const [destSearch, setDestSearch] = useState('')
   const [showOriginDropdown, setShowOriginDropdown] = useState(false)
   const [showDestDropdown, setShowDestDropdown] = useState(false)
+  const originDropdownRef = useRef(null)
+  const destDropdownRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (originDropdownRef.current && !originDropdownRef.current.contains(event.target)) {
+        setShowOriginDropdown(false)
+      }
+      if (destDropdownRef.current && !destDropdownRef.current.contains(event.target)) {
+        setShowDestDropdown(false)
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setShowOriginDropdown(false)
+        setShowDestDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
 
   // Sync gateways from URL params if present (e.g. ?origin=INNSA&dest=AEJEA&service=ocean)
   useEffect(() => {
@@ -360,7 +389,7 @@ export default function Ship() {
               <FormSection num={1} title="Route">
                 <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_auto_1fr]">
                   {/* Origin Gateway */}
-                  <div className="relative">
+                  <div ref={originDropdownRef} className="relative">
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-[13px] font-semibold text-brand-navy">
                         {mode === 'OCEAN' ? 'Origin sea port' : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? 'Origin air cargo hub' : 'Origin port / airport / rail ICD / road hub'} <span className="text-brand-danger">*</span>
@@ -394,7 +423,7 @@ export default function Ship() {
                     ) : (
                       <>
                         <div className="relative">
-                          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-brand-slateLight" />
+                          <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-slateLight" />
                           <input
                             type="text"
                             value={originSearch}
@@ -402,13 +431,19 @@ export default function Ship() {
                               if (checkAuthGate()) return
                               setOriginSearch(e.target.value)
                               setShowOriginDropdown(true)
+                              setShowDestDropdown(false)
                             }}
                             onFocus={() => {
                               if (checkAuthGate()) return
                               setShowOriginDropdown(true)
+                              setShowDestDropdown(false)
                             }}
-                            onClick={() => checkAuthGate()}
-                      className={brandInputStyle}
+                            onClick={() => {
+                              if (checkAuthGate()) return
+                              setShowOriginDropdown(true)
+                              setShowDestDropdown(false)
+                            }}
+                            className={`${brandInputStyle} pl-10 pr-9`}
                             placeholder={
                               mode === 'OCEAN' 
                                 ? "Search sea port name, city, UN/LOCODE... (e.g. JNPT, Rotterdam, Singapore)"
@@ -421,7 +456,7 @@ export default function Ship() {
                             <button
                               type="button"
                               onClick={() => { setOriginSearch(''); setShowOriginDropdown(false) }}
-                              className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-brand-slateLight/20 text-brand-slate text-xs hover:bg-brand-slateLight/40"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-slateLight/20 text-brand-slate text-xs hover:bg-brand-slateLight/40"
                             >
                               ×
                             </button>
@@ -512,7 +547,7 @@ export default function Ship() {
                   </button>
 
                   {/* Destination Gateway */}
-                  <div className="relative">
+                  <div ref={destDropdownRef} className="relative">
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-[13px] font-semibold text-brand-navy">
                         {mode === 'OCEAN' ? 'Destination sea port' : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? 'Destination air cargo hub' : 'Destination port / airport / rail ICD / road hub'} <span className="text-brand-danger">*</span>
@@ -546,7 +581,7 @@ export default function Ship() {
                     ) : (
                       <>
                         <div className="relative">
-                          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-brand-slateLight" />
+                          <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-slateLight" />
                           <input
                             type="text"
                             value={destSearch}
@@ -554,12 +589,19 @@ export default function Ship() {
                               if (checkAuthGate()) return
                               setDestSearch(e.target.value)
                               setShowDestDropdown(true)
+                              setShowOriginDropdown(false)
                             }}
                             onFocus={() => {
                               if (checkAuthGate()) return
                               setShowDestDropdown(true)
+                              setShowOriginDropdown(false)
                             }}
-                      className={brandInputStyle}
+                            onClick={() => {
+                              if (checkAuthGate()) return
+                              setShowDestDropdown(true)
+                              setShowOriginDropdown(false)
+                            }}
+                            className={`${brandInputStyle} pl-10 pr-9`}
                             placeholder={
                               mode === 'OCEAN' 
                                 ? "Search sea port name, city, UN/LOCODE... (e.g. Jebel Ali, Singapore, Hamburg)"
@@ -572,7 +614,7 @@ export default function Ship() {
                             <button
                               type="button"
                               onClick={() => { setDestSearch(''); setShowDestDropdown(false) }}
-                              className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-brand-slateLight/20 text-brand-slate text-xs hover:bg-brand-slateLight/40"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-slateLight/20 text-brand-slate text-xs hover:bg-brand-slateLight/40"
                             >
                               ×
                             </button>
