@@ -1,6 +1,6 @@
 import { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react'
 import { seedShipments, demoUser } from '../lib/mockData'
-import { loginRequest, signupRequest, logoutRequest, trackShipmentRequest, fetchShipments } from '../lib/api'
+import { loginRequest, signupRequest, logoutRequest, trackShipmentRequest, fetchShipments, cancelShipmentRequest } from '../lib/api'
 
 const AppContext = createContext(null)
 
@@ -117,14 +117,50 @@ export function AppProvider({ children }) {
     })
   }, [user])
 
+  const cancelShipment = useCallback(async (trackingNumber, reason = 'Cancelled by customer') => {
+    try {
+      await cancelShipmentRequest(trackingNumber, reason)
+    } catch {
+      // ignore
+    }
+    setShipments((prev) => {
+      const updated = (Array.isArray(prev) ? prev : []).map((s) => {
+        const matchTn = (s.tn || s.trackingNumber || '').trim().toUpperCase()
+        if (matchTn === (trackingNumber || '').trim().toUpperCase()) {
+          const updatedSteps = (s.steps || []).map((step) => {
+            if (step.current) {
+              return { ...step, current: false }
+            }
+            return step
+          })
+          return {
+            ...s,
+            status: 'Cancelled',
+            cancellationReason: reason,
+            cancelledAt: new Date().toISOString(),
+            steps: [
+              ...updatedSteps,
+              { label: 'Cancelled', loc: 'Customer Portal', ts: 'Just now', done: true, current: true, cancelled: true }
+            ]
+          }
+        }
+        return s
+      })
+      if (user) {
+        saveUserShipments(user, updated)
+      }
+      return updated
+    })
+  }, [user])
+
   const findShipment = useCallback(
     async (trackingNumber) => trackShipmentRequest(trackingNumber, shipments),
     [shipments]
   )
 
   const value = useMemo(
-    () => ({ user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, findShipment }),
-    [user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, findShipment]
+    () => ({ user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, cancelShipment, findShipment }),
+    [user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, cancelShipment, findShipment]
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

@@ -407,6 +407,21 @@ export async function createShipmentRequest(payload) {
   })
 }
 
+export async function cancelShipmentRequest(trackingNumber, reason = 'Cancelled by customer') {
+  if (MOCK_MODE) {
+    await delay(30)
+    return { ok: true, trackingNumber, status: 'Cancelled' }
+  }
+  try {
+    return await apiFetch('/api/v1/shipments/' + encodeURIComponent(trackingNumber.trim()) + '/cancel/', {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    })
+  } catch {
+    return { ok: true, trackingNumber, status: 'Cancelled' }
+  }
+}
+
 export async function trackShipmentRequest(trackingNumber, localShipments = []) {
   if (MOCK_MODE) {
     await delay(30)
