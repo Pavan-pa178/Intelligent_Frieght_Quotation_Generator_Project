@@ -5544,6 +5544,28 @@ RATE_CARDS = [
         "currency": "USD",
         "rates": [
             {
+                "lane_code": "INMAA-SGSIN-OCEAN",
+                "container": "20GP",
+                "base_rate_inr": 35000,
+                "base_rate_usd": 420,
+                "thc_origin_inr": 8000,
+                "thc_dest_inr": 18000,
+                "baf_pct": 10,
+                "baf_inr": 3500,
+                "doc_fee_inr": 3000
+            },
+            {
+                "lane_code": "INMAA-SGSIN-OCEAN",
+                "container": "40HC",
+                "base_rate_inr": 50000,
+                "base_rate_usd": 600,
+                "thc_origin_inr": 8000,
+                "thc_dest_inr": 24000,
+                "baf_pct": 10,
+                "baf_inr": 5000,
+                "doc_fee_inr": 3000
+            },
+            {
                 "lane_code": "INNSA-SGSIN-OCEAN",
                 "container": "20GP",
                 "base_rate_usd": 380,
