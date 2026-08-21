@@ -322,6 +322,7 @@ export default function Ship() {
         commodity: cargo[0]?.commodity_description || 'General Merchandise',
         hsCode: cargo[0]?.hs_code || '',
         grossWeightKg: estimate.grossWeightKg,
+        costBreakdown: estimate.costBreakdown || [],
         cargoItems: cargo,
         routes: estimate.routes,
         transitBreakdown: [
@@ -1692,13 +1693,42 @@ export default function Ship() {
                     </div>
                   </div>
 
-                  <div className="mt-6 border-t border-white/10 pt-4">
-                    <div className="font-mono text-[11px] uppercase tracking-wide text-slate-400">ESTIMATED TOTAL</div>
+                  {/* Itemized 5-Layer Cost Build-Up */}
+                  {estimate.costBreakdown && estimate.costBreakdown.length > 0 && (
+                    <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3.5 space-y-2 text-xs font-mono">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-brand-orangeLight font-sans mb-1 flex items-center justify-between">
+                        <span>Cost Build-Up</span>
+                        <span>Itemized Tariff</span>
+                      </div>
+                      {estimate.costBreakdown.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className={"flex justify-between " + (
+                            item.isTotal
+                              ? "border-t border-brand-orange/40 pt-2 font-bold text-white text-[13px]"
+                              : item.isSubtotal
+                              ? "border-t border-white/10 pt-1.5 font-semibold text-slate-200"
+                              : "text-slate-300"
+                          )}
+                        >
+                          <span className={item.isTotal || item.isSubtotal ? "font-sans font-semibold" : "text-slate-400 font-sans"}>
+                            {item.label}
+                          </span>
+                          <span className={item.isTotal ? "text-brand-orangeLight font-bold font-mono" : "font-mono"}>
+                            ? {Number(item.val || 0).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mt-5 border-t border-white/10 pt-4">
+                    <div className="font-mono text-[11px] uppercase tracking-wide text-slate-400">FINAL SELL PRICE</div>
                     <div className="mt-1 font-display text-[30px] font-bold tracking-tight text-white">
                       {estimate.totalFormatted}
                     </div>
                     <div className="mt-2 inline-block rounded-md border border-brand-orange/40 bg-brand-orange/15 px-2.5 py-1 font-mono text-[10px] font-bold text-brand-orangeLight">
-                      ? INDICATIVE RATE
+                      ? CONFIRMED TARIFF & MARGIN
                     </div>
                   </div>
 

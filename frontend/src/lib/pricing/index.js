@@ -34,16 +34,17 @@ export function computeLiveEstimate(formState = {}) {
   if (!isMinimallyComplete) {
     return {
       isComplete: false,
-      chargeBasis: loadType === 'FCL' ? 'Per container — FCL' : 'Chargeable weight',
-      unitsLabel: '—',
+      chargeBasis: loadType === 'FCL' ? 'Per container ? FCL' : 'Chargeable weight',
+      unitsLabel: '?',
       grossWeightKg: actualWeight(cargoItems) || 0,
       mainDistanceNm: og && dg ? mainLegDistance(og, dg, mode) : 0,
       distanceLabel: mode === 'OCEAN' ? 'Sea distance' : 'Flight distance',
-      transitRange: '—',
-      arrivalDateFormatted: '—',
+      transitRange: '?',
+      arrivalDateFormatted: '?',
       routeOptionsCount: 0,
-      totalFormatted: '—',
+      totalFormatted: '?',
       totalAmount: 0,
+      costBreakdown: [],
       isIndicative: true
     }
   }
@@ -78,9 +79,17 @@ export function computeLiveEstimate(formState = {}) {
     transitBreakdown: transitResult,
     routeOptionsCount: routes.length,
     routes,
-    totalFormatted: `₹ ${priceResult.amount.toLocaleString('en-IN')}`,
+    totalFormatted: `? ${priceResult.amount.toLocaleString('en-IN')}`,
     totalAmount: priceResult.amount,
     currency: priceResult.currency,
+    costBreakdown: priceResult.breakdown || [],
+    baseFreight: priceResult.baseRate,
+    bafAmount: priceResult.bafAmount,
+    thcAmount: priceResult.thcAmount,
+    docFee: priceResult.docFee,
+    totalCost: priceResult.totalCost,
+    marginAmount: priceResult.marginAmount,
+    marginRate: priceResult.marginRate,
     isIndicative: true
   }
 }
