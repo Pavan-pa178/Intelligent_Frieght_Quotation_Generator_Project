@@ -1,37 +1,48 @@
-// Calibrated Freight Tariff Cards (in INR)
-const OCEAN_FCL_LANE_RATES = {
-  // Chennai (INMAA) -> Singapore (SGSIN)
-  'INMAA-SGSIN': { '20GP': 35000, '40GP': 48000, '40HC': 50000, '45HC': 58000, 'REEFER': 82000 },
-  // Nhava Sheva (INNSA) -> Singapore (SGSIN)
-  'INNSA-SGSIN': { '20GP': 38000, '40GP': 51000, '40HC': 52000, '45HC': 60000, 'REEFER': 85000 },
-  // Nhava Sheva (INNSA) -> Jebel Ali (AEJEA)
-  'INNSA-AEJEA': { '20GP': 42000, '40GP': 56000, '40HC': 60000, '45HC': 70000, 'REEFER': 95000 },
-  // Mundra (INMUN) -> Jebel Ali (AEJEA)
-  'INMUN-AEJEA': { '20GP': 40000, '40GP': 54000, '40HC': 58000, '45HC': 68000, 'REEFER': 92000 },
-  // Chennai (INMAA) -> Port Klang (MYPKG)
-  'INMAA-MYPKG': { '20GP': 32000, '40GP': 44000, '40HC': 46000, '45HC': 54000, 'REEFER': 78000 },
-  // Nhava Sheva (INNSA) -> Rotterdam (NLRTM)
-  'INNSA-NLRTM': { '20GP': 95000, '40GP': 135000, '40HC': 140000, '45HC': 160000, 'REEFER': 210000 },
+import { FALLBACK_SEED } from '../masterSeedData'
+
+// Helpers to get master collections (from localStorage / cache or FALLBACK_SEED)
+export function getMasterCollection(colKey) {
+  try {
+    const raw = localStorage.getItem(`portline_master_${colKey}`)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch (e) {}
+  return FALLBACK_SEED[colKey] || []
 }
 
 /**
- * Calculates deterministic 5-layer quotation build-up:
- * Base Freight -> Surcharges (BAF + THC + Doc) -> Total Cost -> Margin -> Final Sell Price
+ * Deterministic Master Data-Driven 5-Layer Quotation Pricing Engine:
+ * 1. Queries Master Rate Cards for lane base rate & container tariffs
+ * 2. Queries Surcharge Rules (BAF %, Origin THC, Documentation fee)
+ * 3. Computes Total Landed Buy Cost
+ * 4. Queries Margin Policies (floor / target margin rules)
+ * 5. Computes Final Commercial Sell Price
  */
 export function indicativeTotal(originGw, destGw, mode = 'OCEAN', loadType = 'FCL', weightObj = {}, distance = 1200) {
   const ogCode = originGw?.code || 'INMAA'
   const dgCode = destGw?.code || 'SGSIN'
-  const laneKey = `${ogCode}-${dgCode}`
-  const reverseLaneKey = `${dgCode}-${ogCode}`
+  const laneKey = `${ogCode}-${dgCode}-${mode}`
+  const reverseLaneKey = `${dgCode}-${ogCode}-${mode}`
+  const shortLaneKey = `${ogCode}-${dgCode}`
   const distVal = distance > 0 ? distance : 1200
   const currency = 'INR'
 
+  const rateCards = getMasterCollection('rate_cards')
+  const marginPolicies = getMasterCollection('margin_policies')
+
+  // Find matching margin policy from master data
+  const modePolicyKey = mode === 'OCEAN' ? (loadType === 'FCL' ? 'OCEAN_FCL' : 'OCEAN_LCL') : mode
+  const matchedPolicy = marginPolicies.find(p => p.active && (p.applies_to === modePolicyKey || p.code === `MP-${modePolicyKey}`)) ||
+                        marginPolicies.find(p => p.active && (p.applies_to === 'ALL' || p.code === 'MP-GLOBAL'))
+  const marginPct = (matchedPolicy?.target_margin_pct ? matchedPolicy.target_margin_pct / 100 : 0.15)
+
   let baseRate = 0
-  let bafPct = 0.10 // 10% Bunker Adjustment Factor
+  let bafPct = 0.10
   let bafAmount = 0
   let thcAmount = 0
-  let docFee = 3000 // ?3,000 documentation fee
-  let marginPct = 0.15 // 15% standard margin
+  let docFee = 3000
   let basisLabel = 'Per container ? FCL'
 
   if (mode === 'OCEAN') {
@@ -39,26 +50,41 @@ export function indicativeTotal(originGw, destGw, mode = 'OCEAN', loadType = 'FC
       const containerType = weightObj.containerType || '40HC'
       const count = weightObj.units || 1
 
-      // 1. Look up exact contract tariff or compute calibrated rate
+      // 1. Search in Master Rate Cards
+      let matchedRateLine = null
+      for (const card of rateCards) {
+        if (!card.active && card.active !== undefined) continue
+        if (Array.isArray(card.rates)) {
+          const found = card.rates.find(r => 
+            (r.lane_code === laneKey || r.lane_code === reverseLaneKey || r.lane_code === shortLaneKey || r.lane_code === `${shortLaneKey}-OCEAN`) &&
+            (r.container === containerType || (!r.container && containerType === '40HC'))
+          )
+          if (found) {
+            matchedRateLine = found
+            break
+          }
+        }
+      }
+
       let ratePerContainer = 50000
-      const matchedLane = OCEAN_FCL_LANE_RATES[laneKey] || OCEAN_FCL_LANE_RATES[reverseLaneKey]
-      if (matchedLane) {
-        ratePerContainer = matchedLane[containerType] || matchedLane['40HC'] || 50000
+      let thcPerContainer = 8000
+
+      if (matchedRateLine) {
+        ratePerContainer = matchedRateLine.base_rate_inr || (matchedRateLine.base_rate_usd ? matchedRateLine.base_rate_usd * 83.33 : 50000)
+        thcPerContainer = matchedRateLine.thc_origin_inr || (matchedRateLine.thc_origin_usd ? matchedRateLine.thc_origin_usd * 83.33 : 8000)
+        if (matchedRateLine.baf_pct) bafPct = matchedRateLine.baf_pct / 100
+        if (matchedRateLine.doc_fee_inr) docFee = matchedRateLine.doc_fee_inr
       } else {
         const typeFactor = containerType === '20GP' ? 0.70 : containerType === '45HC' ? 1.15 : containerType === 'REEFER' ? 1.6 : 1.0
         ratePerContainer = Math.round((24000 + (distVal * 12)) * typeFactor)
       }
 
-      baseRate = ratePerContainer * count
+      baseRate = Math.round(ratePerContainer * count)
       bafAmount = Math.round(baseRate * bafPct)
-      
-      // Origin THC: ?8,000 per container
-      const thcPerContainer = 8000
-      thcAmount = thcPerContainer * count
-
+      thcAmount = Math.round(thcPerContainer * count)
       basisLabel = `${count} ? ${containerType} ? FCL`
     } else {
-      // Ocean LCL: per Revenue Ton
+      // Ocean LCL
       const perRtRate = Math.round(3200 + (distVal * 1.2))
       const units = weightObj.chargeableVal || weightObj.units || 1
       baseRate = Math.max(12000, perRtRate * units)
