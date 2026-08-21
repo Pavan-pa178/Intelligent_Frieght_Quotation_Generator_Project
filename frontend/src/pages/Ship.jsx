@@ -1640,9 +1640,7 @@ export default function Ship() {
                     </div>
                   </div>
 
-                  <div className="mt-5 rounded-lg bg-black/30 p-2.5 text-center text-xs font-semibold text-brand-orangeLight flex items-center justify-center gap-2">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Revealing estimated quotation in {calcCountdown}s?
-                  </div>
+
                 </div>
               )}
 
