@@ -69,6 +69,7 @@ export const BUILTIN_USERS = {
   'manager@portline.in': { password: 'manager123', user: managerUser },
   'demo@portline.in': { password: 'demo123', user: demoUser },
   'ravi@sharmatextiles.in': { password: 'demo123', user: demoUser },
+  'hello1@gmail.com': { password: 'HelloTest', user: { ...demoUser, name: 'Hello Shipper', email: 'hello1@gmail.com' } },
 }
 
 function getStoredUsers() {

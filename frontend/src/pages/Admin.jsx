@@ -1109,20 +1109,7 @@ export default function Admin() {
           </div>
         </div>
       )}
-    </>
-  )
-}
-
-function KpiCard({ icon: Icon, label, value, colorClass }) {
-  return (
-    <div className="rounded-xl border border-brand-line bg-white p-5 shadow-sm">
-      <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl ${colorClass}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <div className="font-display text-2xl font-bold text-brand-navy">{value}</div>
-      <div className="mt-1 text-xs font-medium text-brand-slate">{label}</div>
-    
-        {/* Quote Inspector Modal */}
+            {/* Quote Inspector Modal */}
         {inspectQuote && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
             <div className="w-full max-w-2xl rounded-2xl border border-brand-line bg-white p-6 shadow-2xl animate-in zoom-in-95 max-h-[85vh] overflow-y-auto">
@@ -1202,6 +1189,19 @@ function KpiCard({ icon: Icon, label, value, colorClass }) {
             </div>
           </div>
         )}
-</div>
+    </>
+  )
+}
+
+function KpiCard({ icon: Icon, label, value, colorClass }) {
+  return (
+    <div className="rounded-xl border border-brand-line bg-white p-5 shadow-sm">
+      <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl ${colorClass}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="font-display text-2xl font-bold text-brand-navy">{value}</div>
+      <div className="mt-1 text-xs font-medium text-brand-slate">{label}</div>
+    
+        </div>
   )
 }
