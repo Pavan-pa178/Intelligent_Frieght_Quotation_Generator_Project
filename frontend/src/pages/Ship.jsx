@@ -1598,11 +1598,11 @@ export default function Ship() {
                     </div>
 
                     <p className="text-[11px] text-slate-300 leading-relaxed font-sans mt-2 border-t border-white/10 pt-2">
-                      {calcCountdown > 24 && '?? Route Intelligence Agent querying direct & transshipment schedules across partner shipping lines?'}
-                      {calcCountdown <= 24 && calcCountdown > 18 && '?? Calculating sea distance, origin/destination dwell buffers & weather contingency?'}
-                      {calcCountdown <= 18 && calcCountdown > 12 && '?? Computing base ocean/air tariffs, BAF/CAF adjustments & Terminal Handling Charges (THC)?'}
-                      {calcCountdown <= 12 && calcCountdown > 6 && '??? Checking corporate margin floor rules, currency conversion & verified customer discounts?'}
-                      {calcCountdown <= 6 && '?? Packaging formal quotation record with transit timeline and multi-route comparisons?'}
+                      {calcCountdown > 24 && '?? Route Intelligence Agent querying direct & transshipment schedules across partner shipping lines...'}
+                      {calcCountdown <= 24 && calcCountdown > 18 && '? Calculating sea distance, origin/destination dwell buffers & weather contingency...'}
+                      {calcCountdown <= 18 && calcCountdown > 12 && '?? Computing base ocean/air tariffs, BAF/CAF adjustments & Terminal Handling Charges (THC)...'}
+                      {calcCountdown <= 12 && calcCountdown > 6 && '?? Checking corporate margin floor rules, currency conversion & verified customer discounts...'}
+                      {calcCountdown <= 6 && '?? Packaging formal quotation record with transit timeline and multi-route comparisons...'}
                     </p>
                   </div>
 

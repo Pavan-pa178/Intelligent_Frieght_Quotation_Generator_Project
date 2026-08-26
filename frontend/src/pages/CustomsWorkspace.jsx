@@ -260,7 +260,7 @@ export default function CustomsWorkspace() {
                   <h3 className="font-display text-lg font-bold text-white">Customs Compliance Case Review</h3>
                   <p className="text-xs text-slate-400">{selectedCase.checkId} ? {selectedCase.shipmentId}</p>
                 </div>
-                <button onClick={() => setSelectedCase(null)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white">?</button>
+                <button onClick={() => setSelectedCase(null)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white font-bold">?</button>
               </div>
 
               <div className="mt-4 space-y-4 max-h-[65vh] overflow-y-auto pr-1 text-xs">
