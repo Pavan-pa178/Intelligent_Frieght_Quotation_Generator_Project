@@ -39,15 +39,16 @@ function RoleRouteGuard({ children }) {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Role-based guards
+    // Role-based guards - allow inspecting quotes and details
     if (loggedIn) {
-      if (user?.role === 'admin' && pathname !== '/admin') {
+      const isQuoteRoute = pathname === '/quotes' || pathname.startsWith('/quotes/')
+      if (user?.role === 'admin' && pathname !== '/admin' && !isQuoteRoute) {
         navigate('/admin', { replace: true })
-      } else if (user?.role === 'customs_officer' && !pathname.startsWith('/customs') && pathname !== '/quotes' && !pathname.startsWith('/quotes/')) {
+      } else if (user?.role === 'customs_officer' && !pathname.startsWith('/customs') && !isQuoteRoute) {
         navigate('/customs', { replace: true })
-      } else if (user?.role === 'agent_operator' && !pathname.startsWith('/agents')) {
+      } else if (user?.role === 'agent_operator' && !pathname.startsWith('/agents') && !isQuoteRoute) {
         navigate('/agents', { replace: true })
-      } else if (user?.role === 'manager' && !pathname.startsWith('/analytics')) {
+      } else if (user?.role === 'manager' && !pathname.startsWith('/analytics') && !isQuoteRoute) {
         navigate('/analytics', { replace: true })
       }
     }

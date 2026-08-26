@@ -13,7 +13,8 @@ import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import {
   fetchAllQuotes, fetchShipments, fetchAllUsers,
-  adminCreateUser, adminUpdateUser, adminDeleteUser
+  adminCreateUser, adminUpdateUser, adminDeleteUser,
+  agentActionOnQuote
 } from '../lib/api'
 import { routeAnalytics } from '../lib/mockData'
 
@@ -108,6 +109,65 @@ export default function Admin() {
 
   // Search & Filter states
   const [quoteSearch, setQuoteSearch] = useState('')
+  const [inspectQuote, setInspectQuote] = useState(null)
+
+  const handleApproveQuote = async (quoteId) => {
+    try {
+      await agentActionOnQuote(quoteId, 'approved', 'Approved by Operations Admin', user)
+      setQuotes(prev => prev.map(q => q.id === quoteId ? {
+        ...q,
+        status: 'Ready',
+        agent_review: {
+          status: 'approved',
+          comment: 'Approved by Operations Admin',
+          reviewed_at: new Date().toISOString()
+        }
+      } : q))
+      if (inspectQuote && inspectQuote.id === quoteId) {
+        setInspectQuote(prev => ({
+          ...prev,
+          status: 'Ready',
+          agent_review: {
+            status: 'approved',
+            comment: 'Approved by Operations Admin',
+            reviewed_at: new Date().toISOString()
+          }
+        }))
+      }
+      toast(`Quote ${quoteId} APPROVED successfully! Status set to Ready.`)
+    } catch (err) {
+      toast('Failed to approve quote')
+    }
+  }
+
+  const handleRejectQuote = async (quoteId) => {
+    try {
+      await agentActionOnQuote(quoteId, 'rejected', 'Rejected by Operations Admin', user)
+      setQuotes(prev => prev.map(q => q.id === quoteId ? {
+        ...q,
+        status: 'Rejected',
+        agent_review: {
+          status: 'rejected',
+          comment: 'Rejected by Operations Admin',
+          reviewed_at: new Date().toISOString()
+        }
+      } : q))
+      if (inspectQuote && inspectQuote.id === quoteId) {
+        setInspectQuote(prev => ({
+          ...prev,
+          status: 'Rejected',
+          agent_review: {
+            status: 'rejected',
+            comment: 'Rejected by Operations Admin',
+            reviewed_at: new Date().toISOString()
+          }
+        }))
+      }
+      toast(`Quote ${quoteId} REJECTED. Status set to Blocked/Rejected.`)
+    } catch (err) {
+      toast('Failed to reject quote')
+    }
+  }
   const [shipSearch, setShipSearch] = useState('')
   const [userSearch, setUserSearch] = useState('')
   const [userRoleFilter, setUserRoleFilter] = useState('ALL')
@@ -804,9 +864,35 @@ export default function Admin() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <button onClick={() => navigate(`/quotes/${q.id}`)} className="flex items-center gap-1 text-xs font-semibold text-brand-marine hover:underline">
-                            <Eye className="h-3.5 w-3.5" /> View
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => setInspectQuote(q)}
+                              className="flex items-center gap-1 rounded-lg border border-brand-line bg-brand-cloud/60 px-2 py-1 text-xs font-semibold text-brand-navy hover:bg-brand-marine hover:text-white transition-colors"
+                              title="Inspect full quotation details"
+                            >
+                              <Eye className="h-3.5 w-3.5" /> View
+                            </button>
+                            
+                            {q.agent_review?.status !== 'approved' && (
+                              <button
+                                onClick={() => handleApproveQuote(q.id)}
+                                className="flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors"
+                                title="Approve this quotation"
+                              >
+                                <Check className="h-3.5 w-3.5" /> Approve
+                              </button>
+                            )}
+
+                            {q.agent_review?.status !== 'rejected' && (
+                              <button
+                                onClick={() => handleRejectQuote(q.id)}
+                                className="flex items-center gap-1 rounded-lg bg-rose-50 border border-rose-200 px-2 py-1 text-xs font-bold text-rose-700 hover:bg-rose-600 hover:text-white transition-colors"
+                                title="Reject this quotation"
+                              >
+                                <X className="h-3.5 w-3.5" /> Reject
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1035,6 +1121,87 @@ function KpiCard({ icon: Icon, label, value, colorClass }) {
       </div>
       <div className="font-display text-2xl font-bold text-brand-navy">{value}</div>
       <div className="mt-1 text-xs font-medium text-brand-slate">{label}</div>
-    </div>
+    
+        {/* Quote Inspector Modal */}
+        {inspectQuote && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
+            <div className="w-full max-w-2xl rounded-2xl border border-brand-line bg-white p-6 shadow-2xl animate-in zoom-in-95 max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-brand-line pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-base font-bold text-brand-navy">{inspectQuote.id}</span>
+                    <StatusBadge status={inspectQuote.status || 'Draft'} />
+                    <AgentReviewBadge review={inspectQuote.agent_review} />
+                  </div>
+                  <p className="text-xs text-brand-slate mt-0.5">{inspectQuote.laneName} ? {inspectQuote.mode}</p>
+                </div>
+                <button onClick={() => setInspectQuote(null)} className="rounded-lg p-1.5 text-brand-slate hover:bg-brand-cloud hover:text-brand-navy">?</button>
+              </div>
+
+              <div className="mt-4 space-y-4 text-xs">
+                <div className="grid grid-cols-2 gap-3 bg-brand-cloud/40 p-3 rounded-xl border border-brand-line">
+                  <div><span className="text-brand-slate">Customer:</span> <strong className="text-brand-navy block text-[13px]">{inspectQuote.customer}</strong></div>
+                  <div><span className="text-brand-slate">Indicative Total:</span> <strong className="text-brand-orange block text-base font-display font-bold">Rs. {Number(inspectQuote.indicativeTotal || 0).toLocaleString('en-IN')}</strong></div>
+                  <div><span className="text-brand-slate">Transit Estimate:</span> <strong className="text-brand-navy block">{inspectQuote.transit || '14-18 days'}</strong></div>
+                  <div><span className="text-brand-slate">Corridor:</span> <strong className="font-mono text-brand-marine block">{inspectQuote.laneCode}</strong></div>
+                </div>
+
+                {inspectQuote.details && (
+                  <div>
+                    <h5 className="font-semibold text-brand-navy mb-1.5 uppercase text-[11px]">5-Layer Cost Build-Up</h5>
+                    <div className="space-y-1 rounded-xl bg-brand-cloud/20 p-3 border border-brand-line">
+                      <div className="flex justify-between py-1 border-b border-brand-line/40">
+                        <span className="text-brand-slate">1. Ocean Base Freight Rate</span>
+                        <span className="font-mono font-semibold text-brand-navy">Included</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-brand-line/40">
+                        <span className="text-brand-slate">2. Mandatory Surcharges (BAF, THC, Doc)</span>
+                        <span className="font-mono font-semibold text-brand-navy">Included</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-brand-line/40">
+                        <span className="text-brand-slate">3. Origin & Destination Handling</span>
+                        <span className="font-mono font-semibold text-brand-navy">Included</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-brand-line/40">
+                        <span className="text-brand-slate">4. Value Added Services / Insurance</span>
+                        <span className="font-mono font-semibold text-brand-navy">Included</span>
+                      </div>
+                      <div className="flex justify-between py-1 pt-1.5">
+                        <span className="font-bold text-brand-navy">5. Total Commercial Selling Price</span>
+                        <span className="font-mono font-bold text-brand-orange text-sm">Rs. {Number(inspectQuote.indicativeTotal || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-brand-line pt-4">
+                <button
+                  onClick={() => { setInspectQuote(null); navigate(`/quotes/${inspectQuote.id}`) }}
+                  className="text-xs font-semibold text-brand-marine hover:underline flex items-center gap-1"
+                >
+                  <Eye className="h-3.5 w-3.5" /> Open Dedicated Page View ?
+                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleRejectQuote(inspectQuote.id)}
+                    className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-600 hover:text-white transition-colors"
+                  >
+                    Reject Quote
+                  </button>
+                  <button
+                    onClick={() => handleApproveQuote(inspectQuote.id)}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-colors shadow-xs"
+                  >
+                    Approve Quotation
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+</div>
   )
 }
