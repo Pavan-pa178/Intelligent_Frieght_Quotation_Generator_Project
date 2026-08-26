@@ -43,7 +43,7 @@ export function indicativeTotal(originGw, destGw, mode = 'OCEAN', loadType = 'FC
   let bafAmount = 0
   let thcAmount = 0
   let docFee = 3000
-  let basisLabel = 'Per container ? FCL'
+  let basisLabel = 'Per container - FCL'
 
   if (mode === 'OCEAN') {
     if (weightObj.isContainer || (weightObj.basis === 'PER_CONTAINER' && loadType === 'FCL')) {
@@ -82,7 +82,7 @@ export function indicativeTotal(originGw, destGw, mode = 'OCEAN', loadType = 'FC
       baseRate = Math.round(ratePerContainer * count)
       bafAmount = Math.round(baseRate * bafPct)
       thcAmount = Math.round(thcPerContainer * count)
-      basisLabel = `${count} ? ${containerType} ? FCL`
+      basisLabel = `${count} x ${containerType} (FCL)`
     } else {
       // Ocean LCL
       const perRtRate = Math.round(3200 + (distVal * 1.2))
@@ -91,7 +91,7 @@ export function indicativeTotal(originGw, destGw, mode = 'OCEAN', loadType = 'FC
       bafAmount = Math.round(baseRate * 0.10)
       thcAmount = Math.round(1800 * units)
       docFee = 3000
-      basisLabel = 'Revenue tons ? LCL'
+      basisLabel = 'Revenue tons - LCL'
     }
   } else if (mode === 'AIR') {
     const perKgRate = Math.round(110 + (distVal * 0.025))
@@ -100,7 +100,7 @@ export function indicativeTotal(originGw, destGw, mode = 'OCEAN', loadType = 'FC
     bafAmount = Math.round(baseRate * 0.12)
     thcAmount = Math.round(12 * kg)
     docFee = 2500
-    basisLabel = 'Chargeable weight ? Air'
+    basisLabel = 'Chargeable weight - Air'
   } else if (mode === 'EXPRESS_AIR') {
     const perKgRate = Math.round(180 + (distVal * 0.035))
     const kg = weightObj.chargeableVal || weightObj.units || 10

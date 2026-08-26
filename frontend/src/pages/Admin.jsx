@@ -1121,9 +1121,11 @@ export default function Admin() {
                     <StatusBadge status={inspectQuote.status || 'Draft'} />
                     <AgentReviewBadge review={inspectQuote.agent_review} />
                   </div>
-                  <p className="text-xs text-brand-slate mt-0.5">{inspectQuote.laneName} ? {inspectQuote.mode}</p>
+                  <p className="text-xs text-brand-slate mt-0.5">{inspectQuote.laneName} · {inspectQuote.mode}</p>
                 </div>
-                <button onClick={() => setInspectQuote(null)} className="rounded-lg p-1.5 text-brand-slate hover:bg-brand-cloud hover:text-brand-navy font-bold text-sm">?</button>
+                <button onClick={() => setInspectQuote(null)} className="flex h-7 w-7 items-center justify-center rounded-lg text-brand-slate hover:bg-brand-cloud hover:text-brand-navy font-bold text-sm" title="Close">
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
               <div className="mt-4 space-y-4 text-xs">
@@ -1167,9 +1169,11 @@ export default function Admin() {
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-brand-line pt-4">
                 <button
                   onClick={() => { setInspectQuote(null); navigate(`/quotes/${inspectQuote.id}`) }}
-                  className="text-xs font-semibold text-brand-marine hover:underline flex items-center gap-1"
+                  className="text-xs font-semibold text-brand-marine hover:underline flex items-center gap-1.5"
                 >
-                  <Eye className="h-3.5 w-3.5" /> Open Dedicated Page View ?
+                  <Eye className="h-3.5 w-3.5" />
+                  <span>Open Dedicated Page View</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </button>
 
                 <div className="flex gap-2">

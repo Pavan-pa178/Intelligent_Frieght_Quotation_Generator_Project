@@ -1588,21 +1588,21 @@ export default function Ship() {
                           Analysis Pipeline (Stage {Math.min(5, Math.floor((30 - calcCountdown) / 6) + 1)}/5)
                         </div>
                         <div className="text-xs font-bold text-white truncate">
-                          {calcCountdown > 24 && 'Resolving Carrier Schedules'}
-                          {calcCountdown <= 24 && calcCountdown > 18 && 'Calculating Port Nautical Miles & Dwell'}
-                          {calcCountdown <= 18 && calcCountdown > 12 && 'Computing Freight Tariffs & Surcharges'}
-                          {calcCountdown <= 12 && calcCountdown > 6 && 'Evaluating Margin Floors & Compliance'}
-                          {calcCountdown <= 6 && 'Compiling Final Quotation Scorecards'}
+                          {calcCountdown > 24 && "Route Intelligence Agent querying direct and transshipment schedules..."}
+                          {calcCountdown <= 24 && calcCountdown > 18 && "Calculating sea distance, dwell buffers and weather contingency..."}
+                          {calcCountdown <= 18 && calcCountdown > 12 && "Computing base tariffs, BAF adjustments and Terminal Handling Charges..."}
+                          {calcCountdown <= 12 && calcCountdown > 6 && "Checking corporate margin floor rules, currency conversion and discounts..."}
+                          {calcCountdown <= 6 && "Packaging formal quotation record with transit timeline and multi-route comparisons..."}
                         </div>
                       </div>
                     </div>
 
                     <p className="text-[11px] text-slate-300 leading-relaxed font-sans mt-2 border-t border-white/10 pt-2">
-                      {calcCountdown > 24 && '?? Route Intelligence Agent querying direct & transshipment schedules across partner shipping lines...'}
-                      {calcCountdown <= 24 && calcCountdown > 18 && '? Calculating sea distance, origin/destination dwell buffers & weather contingency...'}
-                      {calcCountdown <= 18 && calcCountdown > 12 && '?? Computing base ocean/air tariffs, BAF/CAF adjustments & Terminal Handling Charges (THC)...'}
-                      {calcCountdown <= 12 && calcCountdown > 6 && '?? Checking corporate margin floor rules, currency conversion & verified customer discounts...'}
-                      {calcCountdown <= 6 && '?? Packaging formal quotation record with transit timeline and multi-route comparisons...'}
+                      {calcCountdown > 24 && "Route Intelligence Agent querying direct and transshipment schedules..."}
+                      {calcCountdown <= 24 && calcCountdown > 18 && "Calculating sea distance, dwell buffers and weather contingency..."}
+                      {calcCountdown <= 18 && calcCountdown > 12 && "Computing base tariffs, BAF adjustments and Terminal Handling Charges..."}
+                      {calcCountdown <= 12 && calcCountdown > 6 && "Checking corporate margin floor rules, currency conversion and discounts..."}
+                      {calcCountdown <= 6 && "Packaging formal quotation record with transit timeline and multi-route comparisons..."}
                     </p>
                   </div>
 
@@ -1611,31 +1611,31 @@ export default function Ship() {
                     <div className="flex justify-between">
                       <span>1. Route & Vessel Matching</span>
                       <span className={calcCountdown <= 24 ? 'text-emerald-400 font-bold' : 'text-amber-400'}>
-                        {calcCountdown <= 24 ? '? Done' : 'Analyzing?'}
+                        {calcCountdown <= 24 ? 'Done' : 'Analyzing...'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>2. Transit Time Modeling</span>
                       <span className={calcCountdown <= 18 ? 'text-emerald-400 font-bold' : calcCountdown <= 24 ? 'text-amber-400' : 'text-slate-500'}>
-                        {calcCountdown <= 18 ? '? Done' : calcCountdown <= 24 ? 'Analyzing?' : 'Queued'}
+                        {calcCountdown <= 18 ? 'Done' : calcCountdown <= 24 ? 'Analyzing...' : 'Queued'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>3. 5-Layer Cost Tariffs</span>
                       <span className={calcCountdown <= 12 ? 'text-emerald-400 font-bold' : calcCountdown <= 18 ? 'text-amber-400' : 'text-slate-500'}>
-                        {calcCountdown <= 12 ? '? Done' : calcCountdown <= 18 ? 'Analyzing?' : 'Queued'}
+                        {calcCountdown <= 12 ? 'Done' : calcCountdown <= 18 ? 'Analyzing...' : 'Queued'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>4. Margin & Compliance</span>
                       <span className={calcCountdown <= 6 ? 'text-emerald-400 font-bold' : calcCountdown <= 12 ? 'text-amber-400' : 'text-slate-500'}>
-                        {calcCountdown <= 6 ? '? Done' : calcCountdown <= 12 ? 'Analyzing?' : 'Queued'}
+                        {calcCountdown <= 6 ? 'Done' : calcCountdown <= 12 ? 'Analyzing...' : 'Queued'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>5. Final Quotation Compilation</span>
                       <span className={calcCountdown === 0 ? 'text-emerald-400 font-bold' : calcCountdown <= 6 ? 'text-amber-400' : 'text-slate-500'}>
-                        {calcCountdown === 0 ? '? Done' : calcCountdown <= 6 ? 'Finalizing?' : 'Queued'}
+                        {calcCountdown === 0 ? 'Done' : calcCountdown <= 6 ? 'Finalizing...' : 'Queued'}
                       </span>
                     </div>
                   </div>
@@ -1713,7 +1713,7 @@ export default function Ship() {
                             {item.label}
                           </span>
                           <span className={item.isTotal ? "text-brand-orangeLight font-bold font-mono" : "font-mono"}>
-                            ? {Number(item.val || 0).toLocaleString('en-IN')}
+                            Rs. {Number(item.val || 0).toLocaleString('en-IN')}
                           </span>
                         </div>
                       ))}
@@ -1726,7 +1726,7 @@ export default function Ship() {
                       {estimate.totalFormatted}
                     </div>
                     <div className="mt-2 inline-block rounded-md border border-brand-orange/40 bg-brand-orange/15 px-2.5 py-1 font-mono text-[10px] font-bold text-brand-orangeLight">
-                      ? CONFIRMED TARIFF & MARGIN
+                      CONFIRMED TARIFF & MARGIN
                     </div>
                   </div>
 

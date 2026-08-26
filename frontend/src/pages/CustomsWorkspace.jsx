@@ -176,7 +176,7 @@ export default function CustomsWorkspace() {
                         <span className="font-semibold text-white">{c.checkId}</span>
                         <div className="text-[11px] text-slate-500">{c.shipmentId}</div>
                       </td>
-                      <td className="px-4 py-3.5 font-medium">{c.origin} ? {c.destination}</td>
+                      <td className="px-4 py-3.5 font-medium">{c.origin} → {c.destination}</td>
                       <td className="px-4 py-3.5">
                         <span className="inline-block rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[11px] text-cyan-300 font-bold">{c.hsCode}</span>
                         <div className="text-[11px] text-slate-400 truncate max-w-xs">{c.commodity}</div>
@@ -258,15 +258,15 @@ export default function CustomsWorkspace() {
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div>
                   <h3 className="font-display text-lg font-bold text-white">Customs Compliance Case Review</h3>
-                  <p className="text-xs text-slate-400">{selectedCase.checkId} ? {selectedCase.shipmentId}</p>
+                  <p className="text-xs text-slate-400">{selectedCase.checkId} - {selectedCase.shipmentId}</p>
                 </div>
-                <button onClick={() => setSelectedCase(null)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white font-bold">?</button>
+                <button onClick={() => setSelectedCase(null)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white font-bold">x</button>
               </div>
 
               <div className="mt-4 space-y-4 max-h-[65vh] overflow-y-auto pr-1 text-xs">
                 <div className="grid grid-cols-2 gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                  <div><span className="text-slate-400">Corridor:</span> <strong className="text-white block">{selectedCase.origin} ? {selectedCase.destination}</strong></div>
-                  <div><span className="text-slate-400">HS Code:</span> <strong className="text-cyan-300 block">{selectedCase.hsCode} ? {selectedCase.commodity}</strong></div>
+                  <div><span className="text-slate-400">Corridor:</span> <strong className="text-white block">{selectedCase.origin} → {selectedCase.destination}</strong></div>
+                  <div><span className="text-slate-400">HS Code:</span> <strong className="text-cyan-300 block">{selectedCase.hsCode} - {selectedCase.commodity}</strong></div>
                 </div>
 
                 <div>

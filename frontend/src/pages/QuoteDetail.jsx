@@ -91,8 +91,8 @@ export default function QuoteDetail() {
     <>
       <PageBanner
         crumb={`Quotations / ${quote.id}`}
-        title={`${quote.customer} ? ${quote.laneName}`}
-        subtitle={`Quotation ${quote.id} ? ${quote.mode} (${quote.basis})`}
+        title={`${quote.customer} · ${quote.laneName}`}
+        subtitle={`Quotation ${quote.id} · ${quote.mode} (${quote.basis})`}
         icon={FileText}
       />
 
@@ -190,12 +190,12 @@ export default function QuoteDetail() {
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-brand-slate mt-0.5">{r.serviceName} ? {r.sailingFrequency}</div>
+                          <div className="text-xs text-brand-slate mt-0.5">{r.serviceName} · {r.sailingFrequency}</div>
                         </div>
 
                         <div className="text-right">
-                          <div className="font-display text-xl font-bold text-brand-navy">? {r.cost.toLocaleString('en-IN')}</div>
-                          <div className="text-[10px] font-bold text-brand-orangeLight font-mono">? INDICATIVE</div>
+                          <div className="font-display text-xl font-bold text-brand-navy">₹ {r.cost.toLocaleString('en-IN')}</div>
+                          <div className="text-[10px] font-bold text-brand-orangeLight font-mono">INDICATIVE</div>
                         </div>
                       </div>
 
@@ -249,7 +249,7 @@ export default function QuoteDetail() {
                 <div className="mt-6 border-t border-brand-line pt-4">
                   <div className="text-[11px] font-semibold text-brand-slate uppercase">Indicative Total</div>
                   <div className="font-display text-2xl font-bold text-brand-navy mt-1">
-                    ? {(quote.indicativeTotal || 0).toLocaleString('en-IN')}
+                    · {(quote.indicativeTotal || 0).toLocaleString('en-IN')}
                   </div>
                 </div>
               </div>

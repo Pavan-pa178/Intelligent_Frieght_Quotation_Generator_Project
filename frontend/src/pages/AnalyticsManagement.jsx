@@ -5,15 +5,15 @@ export default function AnalyticsManagement() {
   const kpis = [
     { label: 'Total Quotes Generated', value: '1,420', change: '+18.4% vs last mo', color: 'text-white' },
     { label: 'Quotes Issued', value: '1,180', change: '83.1% approval rate', color: 'text-emerald-400' },
-    { label: 'Pipeline Commercial Value', value: '?18.45 Cr', change: 'INR Total', color: 'text-cyan-400' },
+    { label: 'Pipeline Commercial Value', value: 'Rs. 18.45 Cr', change: 'INR Total', color: 'text-cyan-400' },
     { label: 'Average Realized Margin', value: '16.4%', change: 'Target 15%', color: 'text-amber-400' }
   ]
 
   const lanes = [
-    { lane: 'Chennai (INMAA) ? Singapore (SGSIN)', teu: '420 TEU', revenue: '?3.12 Cr', margin: '15.2%' },
-    { lane: 'Nhava Sheva (INNSA) ? Jebel Ali (AEJEA)', teu: '380 TEU', revenue: '?2.84 Cr', margin: '16.8%' },
-    { lane: 'Nhava Sheva (INNSA) ? Rotterdam (NLRTM)', teu: '290 TEU', revenue: '?4.89 Cr', margin: '18.1%' },
-    { lane: 'Mundra (INMUN) ? Jebel Ali (AEJEA)', teu: '210 TEU', revenue: '?1.58 Cr', margin: '14.9%' }
+    { lane: 'Chennai (INMAA) -> Singapore (SGSIN)', teu: '420 TEU', revenue: 'Rs. 3.12 Cr', margin: '15.2%' },
+    { lane: 'Nhava Sheva (INNSA) -> Jebel Ali (AEJEA)', teu: '380 TEU', revenue: 'Rs. 2.84 Cr', margin: '16.8%' },
+    { lane: 'Nhava Sheva (INNSA) -> Rotterdam (NLRTM)', teu: '290 TEU', revenue: 'Rs. 4.89 Cr', margin: '18.1%' },
+    { lane: 'Mundra (INMUN) -> Jebel Ali (AEJEA)', teu: '210 TEU', revenue: 'Rs. 1.58 Cr', margin: '14.9%' }
   ]
 
   return (
@@ -69,12 +69,12 @@ export default function AnalyticsManagement() {
 
             <div className="grid grid-cols-3 gap-3 text-center mb-4">
               <div className="rounded-lg bg-slate-800/60 p-3 border border-slate-700/40">
-                <span className="text-[10px] text-slate-400 uppercase">Test R? Score</span>
+                <span className="text-[10px] text-slate-400 uppercase">Test R2 Score</span>
                 <p className="text-base font-bold text-indigo-300">0.942</p>
               </div>
               <div className="rounded-lg bg-slate-800/60 p-3 border border-slate-700/40">
                 <span className="text-[10px] text-slate-400 uppercase">Test MAE</span>
-                <p className="text-base font-bold text-white">?2,420</p>
+                <p className="text-base font-bold text-white">Rs. 2,420</p>
               </div>
               <div className="rounded-lg bg-slate-800/60 p-3 border border-slate-700/40">
                 <span className="text-[10px] text-slate-400 uppercase">Within ?5%</span>

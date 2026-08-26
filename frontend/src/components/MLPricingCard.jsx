@@ -19,7 +19,7 @@ export default function MLPricingCard({ mlPricing }) {
             <h4 className="font-display text-sm font-bold tracking-wide text-white flex items-center gap-2">
               ML PRICE PREDICTION & BENCHMARK <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
             </h4>
-            <p className="text-xs text-indigo-200/70">{modelName} ? Test R? = {accuracyR2}</p>
+            <p className="text-xs text-indigo-200/70">{modelName} - Test R2 = {accuracyR2}</p>
           </div>
         </div>
 
@@ -31,7 +31,7 @@ export default function MLPricingCard({ mlPricing }) {
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-lg bg-slate-800/60 p-3 border border-slate-700/40">
           <span className="text-xs text-slate-400">Rule-Based Tariff</span>
-          <p className="mt-1 font-display text-lg font-bold text-white">?{rulePrice.toLocaleString()}</p>
+          <p className="mt-1 font-display text-lg font-bold text-white"> Rs. {rulePrice.toLocaleString()}</p>
           <span className="text-[11px] text-slate-400">Contract Rate Card</span>
         </div>
 
@@ -39,7 +39,7 @@ export default function MLPricingCard({ mlPricing }) {
           <span className="text-xs text-indigo-300 flex items-center gap-1">
             ML Spot Prediction {isLower ? <TrendingDown className="h-3.5 w-3.5 text-emerald-400" /> : <TrendingUp className="h-3.5 w-3.5 text-amber-400" />}
           </span>
-          <p className="mt-1 font-display text-lg font-bold text-indigo-200">?{mlPredictedPrice.toLocaleString()}</p>
+          <p className="mt-1 font-display text-lg font-bold text-indigo-200"> Rs. {mlPredictedPrice.toLocaleString()}</p>
           <span className={`text-[11px] font-semibold ${isLower ? 'text-emerald-400' : 'text-amber-400'}`}>
             {variancePct >= 0 ? '+' : ''}{variancePct}% vs Rule
           </span>
@@ -47,8 +47,7 @@ export default function MLPricingCard({ mlPricing }) {
 
         <div className="rounded-lg bg-slate-800/60 p-3 border border-slate-700/40">
           <span className="text-xs text-slate-400">95% Confidence Band</span>
-          <p className="mt-1 font-display text-xs font-bold text-slate-200">
-            ?{lowerBound.toLocaleString()} - ?{upperBound.toLocaleString()}
+          <p className="mt-1 font-display text-xs font-bold text-slate-200"> Rs. {lowerBound.toLocaleString()} - ?{upperBound.toLocaleString()}
           </p>
           <span className="text-[11px] text-slate-400">Dynamic Spot Range</span>
         </div>

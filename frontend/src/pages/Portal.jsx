@@ -91,7 +91,7 @@ export default function Portal() {
                 </div>
 
                 <div className="mb-[22px] space-y-3">
-                  <MetaRow icon={Mail} text={user?.email || '?'} />
+                  <MetaRow icon={Mail} text={user?.email || '-'} />
                   <MetaRow icon={Phone} text={user?.phone || '+91 98765 43210'} />
                   <MetaRow icon={Calendar} text={'Member since ' + (user?.since || '2026')} />
                 </div>
@@ -216,9 +216,9 @@ export default function Portal() {
                                   </div>
                                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-brand-slate">
                                     <span className="font-mono font-bold text-brand-navy bg-brand-cloud px-1.5 py-0.5 rounded text-[11px]">{tn}</span>
-                                    <span>?</span>
+                                    <span>Rs.</span>
                                     <span>{s?.service || 'Freight Service'}</span>
-                                    <span>?</span>
+                                    <span>Rs.</span>
                                     <span>{s?.date || 'Today'}</span>
                                   </div>
                                 </div>
@@ -227,8 +227,7 @@ export default function Portal() {
                               {/* Right: Status & Cost */}
                               <div className="flex-shrink-0 text-right">
                                 <StatusBadge status={s?.status || 'Booked'} />
-                                <div className="mt-1.5 font-mono text-[15px] font-bold text-brand-navy">
-                                  ?{costVal.toLocaleString('en-IN')}
+                                <div className="mt-1.5 font-mono text-[15px] font-bold text-brand-navy"> Rs. {costVal.toLocaleString('en-IN')}
                                 </div>
                               </div>
                             </div>
@@ -312,8 +311,8 @@ export default function Portal() {
 
             <div className="mb-4 rounded-xl bg-brand-cloud p-3.5 text-xs text-brand-navy">
               <div className="font-mono font-bold text-brand-marine">{cancelModalShipment.tn || cancelModalShipment.trackingNumber}</div>
-              <div className="font-semibold mt-1">{cancelModalShipment.from} ? {cancelModalShipment.to}</div>
-              <div className="text-brand-slate mt-0.5">{cancelModalShipment.service} ? Value: ?{Number(cancelModalShipment.cost || 0).toLocaleString('en-IN')}</div>
+              <div className="font-semibold mt-1">{cancelModalShipment.from} → {cancelModalShipment.to}</div>
+              <div className="text-brand-slate mt-0.5">{cancelModalShipment.service} - Value: Rs. {Number(cancelModalShipment.cost || 0).toLocaleString('en-IN')}</div>
             </div>
 
             <p className="text-xs text-brand-slate mb-3 leading-relaxed">

@@ -19,7 +19,7 @@ export default function CustomsComplianceCard({ customs }) {
           </div>
           <div>
             <h4 className="font-display text-sm font-bold tracking-wide text-white">CUSTOMS COMPLIANCE & RAG VERIFICATION</h4>
-            <p className="text-xs text-slate-400">HS Code: <span className="font-semibold text-white">{hsCode}</span> ? {hsDescription}</p>
+            <p className="text-xs text-slate-400">HS Code: <span className="font-semibold text-white">{hsCode}</span> Rs. {hsDescription}</p>
           </div>
         </div>
 
