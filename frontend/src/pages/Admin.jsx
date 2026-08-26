@@ -27,6 +27,19 @@ const TABS = [
   { key: 'shipments', label: 'Shipments', icon: Package },
 ]
 
+
+function getAgentDisplayName(agent) {
+  if (!agent || agent === 'Unassigned' || agent === 'unassigned') return 'Unassigned'
+  if (agent.includes('@')) {
+    const prefix = agent.split('@')[0].toLowerCase()
+    if (prefix === 'agent') return 'Rajesh Kumar'
+    if (prefix === 'agentop') return 'Alex Chen'
+    if (prefix === 'customs') return 'Kavita Menon'
+    if (prefix === 'admin') return 'Priya Sharma'
+    return prefix.charAt(0).toUpperCase() + prefix.slice(1)
+  }
+  return agent
+}
 function AgentReviewBadge({ review }) {
   if (!review || review.status === 'pending' || !review.status) {
     return (
@@ -824,78 +837,66 @@ export default function Admin() {
                 />
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left text-sm table-auto">
                   <thead>
-                    <tr className="border-b border-brand-line bg-brand-cloud/50">
-                      {['Quote ID', 'Customer', 'Lane', 'Mode', 'Amount', 'Status', 'Assigned Agent', 'Agent Decision'].map(h => (
-                        <th key={h} className="px-4 py-3 font-semibold text-brand-slate text-xs uppercase tracking-wide whitespace-nowrap">{h}</th>
-                      ))}
-                      <th className="px-4 py-3" />
+                    <tr className="border-b border-brand-line bg-brand-cloud/50 text-[11px] font-semibold text-brand-slate uppercase tracking-wider">
+                      <th className="px-4 py-3">Quote ID</th>
+                      <th className="px-4 py-3">Customer</th>
+                      <th className="px-4 py-3">Lane</th>
+                      <th className="px-4 py-3">Mode</th>
+                      <th className="px-4 py-3">Amount</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Assigned Agent</th>
+                      <th className="px-4 py-3">Agent Decision</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredQuotes.map(q => (
-                      <tr key={q.id} className="border-b border-brand-line/50 hover:bg-brand-cloud/30">
-                        <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-marine whitespace-nowrap">{q.id}</td>
-                        <td className="px-4 py-3 text-[13px] font-medium text-brand-navy">{q.customer || 'N/A'}</td>
-                        <td className="px-4 py-3">
-                          <div className="font-mono text-xs text-brand-slate">{q.laneCode || 'N/A'}</div>
-                          <div className="text-[11px] text-brand-slateLight">{q.laneName || ''}</div>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-brand-slate whitespace-nowrap">{q.mode || 'N/A'}</td>
-                        <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-navy whitespace-nowrap">
-                          {q.indicativeTotal ? `Rs.${Number(q.indicativeTotal).toLocaleString('en-IN')}` : 'N/A'}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <StatusBadge status={q.status || 'Draft'} />
-                        </td>
-                        <td className="px-4 py-3 text-[11px] text-brand-slate">
-                          {q.assigned_agent ? <span className="font-mono">{q.assigned_agent}</span> : <span className="text-brand-slateLight italic">Unassigned</span>}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div>
-                            <AgentReviewBadge review={q.agent_review} />
-                            {q.agent_review?.comment && (
-                              <div className="mt-1 max-w-[200px] truncate text-[10px] text-brand-slateLight italic">"{q.agent_review.comment}"</div>
+                  <tbody className="divide-y divide-brand-line/50">
+                    {filteredQuotes.map(q => {
+                      const agentName = getAgentDisplayName(q.assigned_agent)
+                      return (
+                        <tr key={q.id} className="hover:bg-brand-cloud/30 transition-colors">
+                          <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-marine whitespace-nowrap">{q.id}</td>
+                          <td className="px-4 py-3 text-[13px] font-medium text-brand-navy max-w-[130px] truncate" title={q.customer}>{q.customer || 'N/A'}</td>
+                          <td className="px-4 py-3 text-xs">
+                            <div className="font-mono text-xs text-brand-navy font-semibold">{q.laneCode || 'N/A'}</div>
+                            <div className="text-[11px] text-brand-slate max-w-[140px] truncate" title={q.laneName}>{q.laneName || ''}</div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-brand-slate whitespace-nowrap">{q.mode || 'N/A'}</td>
+                          <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-navy whitespace-nowrap">
+                            {q.indicativeTotal ? `Rs.${Number(q.indicativeTotal).toLocaleString('en-IN')}` : 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <StatusBadge status={q.status || 'Draft'} />
+                          </td>
+                          <td className="px-4 py-3 text-xs">
+                            {agentName !== 'Unassigned' ? (
+                              <span className="font-medium text-brand-navy">{agentName}</span>
+                            ) : (
+                              <span className="text-brand-slateLight italic">Unassigned</span>
                             )}
-                            {q.agent_review?.reviewed_at && (
-                              <div className="mt-0.5 text-[10px] text-brand-slateLight">{new Date(q.agent_review.reviewed_at).toLocaleDateString()}</div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div>
+                              <AgentReviewBadge review={q.agent_review} />
+                              {q.agent_review?.reviewed_at && (
+                                <div className="mt-0.5 text-[10px] text-brand-slateLight">
+                                  {new Date(q.agent_review.reviewed_at).toLocaleDateString('en-GB')}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
                             <button
                               onClick={() => setInspectQuote(q)}
-                              className="flex items-center gap-1 rounded-lg border border-brand-line bg-brand-cloud/60 px-2 py-1 text-xs font-semibold text-brand-navy hover:bg-brand-marine hover:text-white transition-colors"
-                              title="Inspect full quotation details"
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-marine hover:underline"
                             >
                               <Eye className="h-3.5 w-3.5" /> View
                             </button>
-                            
-                            {q.agent_review?.status !== 'approved' && (
-                              <button
-                                onClick={() => handleApproveQuote(q.id)}
-                                className="flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors"
-                                title="Approve this quotation"
-                              >
-                                <Check className="h-3.5 w-3.5" /> Approve
-                              </button>
-                            )}
-
-                            {q.agent_review?.status !== 'rejected' && (
-                              <button
-                                onClick={() => handleRejectQuote(q.id)}
-                                className="flex items-center gap-1 rounded-lg bg-rose-50 border border-rose-200 px-2 py-1 text-xs font-bold text-rose-700 hover:bg-rose-600 hover:text-white transition-colors"
-                                title="Reject this quotation"
-                              >
-                                <X className="h-3.5 w-3.5" /> Reject
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      )
+                    })}
                     {filteredQuotes.length === 0 && (
                       <tr><td colSpan={9} className="px-6 py-10 text-center text-sm text-brand-slateLight">No quotes found</td></tr>
                     )}
