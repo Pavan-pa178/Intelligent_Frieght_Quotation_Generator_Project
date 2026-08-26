@@ -25,6 +25,33 @@ export const agentUser = {
   since: 'June 2024',
 }
 
+export const customsOfficerUser = {
+  name: 'Inspector Rajesh Kumar',
+  role: 'customs_officer',
+  company: 'Indian Customs / CBIC Desk',
+  email: 'customs@portline.in',
+  phone: '+91 98111 33333',
+  since: 'January 2023',
+}
+
+export const agentOperatorUser = {
+  name: 'Suresh Varma',
+  role: 'agent_operator',
+  company: 'PORTLINE AI Ops & Telemetry',
+  email: 'agentop@portline.in',
+  phone: '+91 98222 44444',
+  since: 'May 2024',
+}
+
+export const managerUser = {
+  name: 'Ananya Roy',
+  role: 'manager',
+  company: 'PORTLINE Revenue & Commercial',
+  email: 'manager@portline.in',
+  phone: '+91 98333 55555',
+  since: 'October 2022',
+}
+
 export const seedShipments = [
   {
     tn: 'PORT-58213-IN',

@@ -1,4 +1,4 @@
-import { seedShipments, seedQuotes, routeAnalytics, demoUser, adminUser, agentUser, RATES } from './mockData'
+import { seedShipments, seedQuotes, routeAnalytics, demoUser, adminUser, agentUser, customsOfficerUser, agentOperatorUser, managerUser, RATES } from './mockData'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://freightquote-api.onrender.com' : '')
 export const MOCK_MODE = false
@@ -64,6 +64,9 @@ async function apiFetch(path, options = {}) {
 export const BUILTIN_USERS = {
   'admin@portline.in': { password: '***REMOVED***', user: adminUser },
   'agent@portline.in': { password: '***REMOVED***', user: agentUser },
+  'customs@portline.in': { password: '***REMOVED***', user: customsOfficerUser },
+  'agentop@portline.in': { password: '***REMOVED***', user: agentOperatorUser },
+  'manager@portline.in': { password: '***REMOVED***', user: managerUser },
   'demo@portline.in': { password: '***REMOVED***', user: demoUser },
   'ravi@sharmatextiles.in': { password: '***REMOVED***', user: demoUser },
 }

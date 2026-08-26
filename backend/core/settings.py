@@ -33,6 +33,12 @@ INSTALLED_APPS = [
     'apps.shipments',
     'apps.quotes',
     'apps.routing',
+    'apps.weather',
+    'apps.customs',
+    'apps.risk',
+    'apps.ml_pricing',
+    'apps.agent_ops',
+    'apps.analytics_app',
 ]
 
 MIDDLEWARE = [
