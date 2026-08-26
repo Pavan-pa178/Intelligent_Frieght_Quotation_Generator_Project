@@ -18,6 +18,9 @@ import Contact from './pages/Contact'
 import Login from './pages/Login'
 import Admin from './pages/Admin'
 import Agent from './pages/Agent'
+import CustomsWorkspace from './pages/CustomsWorkspace'
+import AgentOperations from './pages/AgentOperations'
+import AnalyticsManagement from './pages/AnalyticsManagement'
 
 import { useNavigate } from 'react-router-dom'
 import { useApp } from './context/AppContext'
@@ -30,15 +33,23 @@ function ScrollToTop() {
   return null
 }
 
-function AdminRouteGuard({ children }) {
+function RoleRouteGuard({ children }) {
   const { loggedIn, user } = useApp()
   const { pathname } = useLocation()
   const navigate = useNavigate()
 
   useEffect(() => {
-    // When logged in as Admin, keep navigation strictly on /admin
-    if (loggedIn && user?.role === 'admin' && pathname !== '/admin') {
-      navigate('/admin', { replace: true })
+    // Role-based guards
+    if (loggedIn) {
+      if (user?.role === 'admin' && pathname !== '/admin') {
+        navigate('/admin', { replace: true })
+      } else if (user?.role === 'customs_officer' && !pathname.startsWith('/customs') && pathname !== '/quotes' && !pathname.startsWith('/quotes/')) {
+        navigate('/customs', { replace: true })
+      } else if (user?.role === 'agent_operator' && !pathname.startsWith('/agents')) {
+        navigate('/agents', { replace: true })
+      } else if (user?.role === 'manager' && !pathname.startsWith('/analytics')) {
+        navigate('/analytics', { replace: true })
+      }
     }
   }, [loggedIn, user, pathname, navigate])
 
@@ -49,8 +60,8 @@ function LayoutChrome({ children }) {
   const { pathname } = useLocation()
   const { loggedIn, user } = useApp()
   const isAuthPage = pathname === '/login'
-  const isAdmin = loggedIn && user?.role === 'admin'
-  const isAdminPage = pathname.startsWith('/admin')
+  const isWorkspace = ['admin', 'customs_officer', 'agent_operator', 'manager'].includes(user?.role)
+  const isWorkspacePage = pathname.startsWith('/admin') || pathname.startsWith('/customs') || pathname.startsWith('/agents') || pathname.startsWith('/analytics')
 
   useEffect(() => {
     document.body.classList.toggle('overflow-hidden', isAuthPage)
@@ -61,11 +72,11 @@ function LayoutChrome({ children }) {
     <>
       {!isAuthPage && <Navbar />}
       <main className={isAuthPage ? '' : 'pt-[72px]'}>
-        <AdminRouteGuard>
+        <RoleRouteGuard>
           {children}
-        </AdminRouteGuard>
+        </RoleRouteGuard>
       </main>
-      {!isAuthPage && !isAdminPage && !isAdmin && <Footer />}
+      {!isAuthPage && !isWorkspacePage && !isWorkspace && <Footer />}
     </>
   )
 }
@@ -91,6 +102,9 @@ export default function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/agent" element={<Agent />} />
+                <Route path="/customs" element={<CustomsWorkspace />} />
+                <Route path="/agents" element={<AgentOperations />} />
+                <Route path="/analytics" element={<AnalyticsManagement />} />
               </Routes>
             </ErrorBoundary>
           </LayoutChrome>

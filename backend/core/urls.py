@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
 from apps.shipments.views import AgentRunStatusView
-
 from apps.masterdata.views import ContactView
 
 urlpatterns = [
@@ -17,4 +16,14 @@ urlpatterns = [
     path('api/v1/estimate/', include('apps.quotes.estimate_urls')),
     path('api/v1/routes/', include('apps.routing.urls')),
     path('api/v1/contact/', ContactView.as_view(), name='contact_submit'),
+    
+    # Milestone 3 Intelligence & Compliance APIs
+    path('api/v1/weather/', include('apps.weather.urls')),
+    path('api/v1/customs/', include('apps.customs.urls')),
+    path('api/v1/regulations/', include('apps.customs.urls')),
+    path('api/v1/risk/', include('apps.risk.urls')),
+    path('api/v1/alerts/', include('apps.risk.urls')),
+    path('api/v1/ml/', include('apps.ml_pricing.urls')),
+    path('api/v1/agents/', include('apps.agent_ops.urls')),
+    path('api/v1/analytics/', include('apps.analytics_app.urls')),
 ]

@@ -37,6 +37,12 @@ export default function Login() {
       navigate(explicitRedirect)
     } else if (userObj?.role === 'admin') {
       navigate('/admin')
+    } else if (userObj?.role === 'customs_officer') {
+      navigate('/customs')
+    } else if (userObj?.role === 'agent_operator') {
+      navigate('/agents')
+    } else if (userObj?.role === 'manager') {
+      navigate('/analytics')
     } else if (userObj?.role === 'agent' || userObj?.role === 'broker') {
       navigate('/agent')
     } else {
@@ -191,10 +197,11 @@ export default function Login() {
                       setSiLoading(false)
                     }
                   }}
-                  className="flex w-full items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-brand-line py-2.5 text-xs font-semibold text-brand-navy hover:bg-brand-cloud transition-colors"
+                  className="flex w-full items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-brand-line py-2 text-xs font-semibold text-brand-navy hover:bg-brand-cloud transition-colors"
                 >
-                  <User className="h-4 w-4 text-brand-marine" /> Customer (Ravi)
+                  <User className="h-4 w-4 text-brand-marine" /> 1. Customer (Shipper)
                 </button>
+                
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -214,17 +221,18 @@ export default function Login() {
                     }}
                     className="flex items-center justify-center gap-1.5 rounded-[10px] border border-blue-200 bg-blue-50/70 py-2 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
                   >
-                    <Shield className="h-3.5 w-3.5 text-blue-600" /> Admin
+                    <Shield className="h-3.5 w-3.5 text-blue-600" /> 2. Admin
                   </button>
+
                   <button
                     type="button"
                     onClick={async () => {
-                      setSiEmail('agent@portline.in')
-                      setSiPassword('agent123')
+                      setSiEmail('customs@portline.in')
+                      setSiPassword('customs123')
                       setSiError('')
                       setSiLoading(true)
                       try {
-                        const userObj = await login({ email: 'agent@portline.in', password: 'agent123' })
+                        const userObj = await login({ email: 'customs@portline.in', password: 'customs123' })
                         afterLogin(userObj)
                       } catch (err) {
                         setSiError(err.message)
@@ -234,7 +242,51 @@ export default function Login() {
                     }}
                     className="flex items-center justify-center gap-1.5 rounded-[10px] border border-amber-200 bg-amber-50/70 py-2 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
                   >
-                    <UserCheck className="h-3.5 w-3.5 text-amber-600" /> Agent
+                    <UserCheck className="h-3.5 w-3.5 text-amber-600" /> 3. Customs Officer
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setSiEmail('agentop@portline.in')
+                      setSiPassword('agent123')
+                      setSiError('')
+                      setSiLoading(true)
+                      try {
+                        const userObj = await login({ email: 'agentop@portline.in', password: 'agent123' })
+                        afterLogin(userObj)
+                      } catch (err) {
+                        setSiError(err.message)
+                      } finally {
+                        setSiLoading(false)
+                      }
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-[10px] border border-indigo-200 bg-indigo-50/70 py-2 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors"
+                  >
+                    <UserCheck className="h-3.5 w-3.5 text-indigo-600" /> 4. AI Agent Ops
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setSiEmail('manager@portline.in')
+                      setSiPassword('manager123')
+                      setSiError('')
+                      setSiLoading(true)
+                      try {
+                        const userObj = await login({ email: 'manager@portline.in', password: 'manager123' })
+                        afterLogin(userObj)
+                      } catch (err) {
+                        setSiError(err.message)
+                      } finally {
+                        setSiLoading(false)
+                      }
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-[10px] border border-emerald-200 bg-emerald-50/70 py-2 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+                  >
+                    <Shield className="h-3.5 w-3.5 text-emerald-600" /> 5. Analytics Mgr
                   </button>
                 </div>
               </div>

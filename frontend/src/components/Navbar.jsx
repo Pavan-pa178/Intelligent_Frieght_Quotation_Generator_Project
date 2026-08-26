@@ -22,6 +22,24 @@ const AGENT_NAV_ITEMS = [
   { to: '/services', label: 'Services' },
 ]
 
+const CUSTOMS_NAV_ITEMS = [
+  { to: '/customs', label: 'Customs Workspace' },
+  { to: '/quotes', label: 'Quotations' },
+  { to: '/routes', label: 'Routes' },
+]
+
+const AGENT_OP_NAV_ITEMS = [
+  { to: '/agents', label: 'AI Agent Operations' },
+  { to: '/quotes', label: 'Quotations' },
+  { to: '/routes', label: 'Routes' },
+]
+
+const MANAGER_NAV_ITEMS = [
+  { to: '/analytics', label: 'Executive Analytics' },
+  { to: '/quotes', label: 'Quotations' },
+  { to: '/routes', label: 'Routes' },
+]
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -30,8 +48,12 @@ export default function Navbar() {
   const toast = useToast()
 
   const isAdmin = loggedIn && user?.role === 'admin'
+  const isCustoms = loggedIn && user?.role === 'customs_officer'
+  const isAgentOp = loggedIn && user?.role === 'agent_operator'
+  const isManager = loggedIn && user?.role === 'manager'
   const isAgent = loggedIn && (user?.role === 'agent' || user?.role === 'broker')
-  const navItems = isAgent ? AGENT_NAV_ITEMS : CUSTOMER_NAV_ITEMS
+  
+  const navItems = isCustoms ? CUSTOMS_NAV_ITEMS : (isAgentOp ? AGENT_OP_NAV_ITEMS : (isManager ? MANAGER_NAV_ITEMS : (isAgent ? AGENT_NAV_ITEMS : CUSTOMER_NAV_ITEMS)))
 
   const handleLogout = () => {
     logout()
