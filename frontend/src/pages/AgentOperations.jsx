@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Activity, CheckCircle2, ShieldAlert, Clock, Cpu, RefreshCw } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
+import PageBanner from '../components/PageBanner'
 
 export default function AgentOperations() {
   const toast = useToast()
@@ -57,25 +58,25 @@ export default function AgentOperations() {
       uptime: 99.92,
       latencyP50: 320,
       latencyP95: 680,
-      successRate: 98.9,
-      requests24h: 3210,
-      lastRun: '4 mins ago',
-      fallback: 'STATIC_CORPUS_EMBEDDINGS',
-      desc: 'HS Code validation, international trade law RAG retrieval, and compliance checklist synthesis.'
+      successRate: 98.8,
+      requests24h: 3420,
+      lastRun: '5 mins ago',
+      fallback: 'CBIC_LOCAL_EMBEDDINGS',
+      desc: 'Vector retrieval across CBIC/EU/US customs codes, document verification, and officer handoff trigger.'
     },
     {
       id: 'agent-risk',
-      name: 'Composite Shipment Risk Engine',
+      name: '5-Factor Composite Risk Agent',
       type: 'RISK',
       status: 'HEALTHY',
-      uptime: 100.0,
-      latencyP50: 45,
-      latencyP95: 95,
-      successRate: 100.0,
-      requests24h: 4200,
+      uptime: 99.99,
+      latencyP50: 65,
+      latencyP95: 120,
+      successRate: 99.9,
+      requests24h: 4410,
       lastRun: 'Just now',
-      fallback: 'WEIGHTED_FALLBACK',
-      desc: '5-factor weighted risk aggregation, explainability generator, and operational alert dispatcher.'
+      fallback: 'DEFAULT_SAFETY_BUFFER',
+      desc: 'Calculates weighted risk score (Weather 25%, Customs 25%, Route 20%, Port 15%, Cargo 15%).'
     }
   ]
 
@@ -83,94 +84,122 @@ export default function AgentOperations() {
     setRefreshing(true)
     setTimeout(() => {
       setRefreshing(false)
-      toast('All 5 AI Agent orchestrators pinged successfully.')
+      toast('Agent health metrics and telemetry synchronized')
     }, 600)
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-8 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-              <Cpu className="h-6 w-6" />
+    <div className="min-h-screen bg-brand-cloud pb-16">
+      <PageBanner
+        crumb="Operations / AI Ops Telemetry"
+        title="AI AGENT OPERATIONS & TELEMETRY"
+        subtitle="Live multi-agent orchestration, health telemetry, and fallback routing"
+        icon={Cpu}
+      />
+
+      <div className="mx-auto max-w-[1220px] px-8 sm:px-5 pt-8">
+        
+        {/* Top Controls Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-brand-line bg-white p-5 rounded-2xl shadow-xs">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-display text-base font-bold text-brand-navy">Orchestration Cluster</span>
+              <span className="rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold">
+                5 OF 5 ONLINE
+              </span>
             </div>
-            <div>
-              <h1 className="font-display text-2xl font-bold tracking-tight text-white">AI AGENT OPERATIONS CENTER</h1>
-              <p className="text-xs text-slate-400">Real-time health, latency telemetry, and execution traces for all 5 pipeline agents</p>
-            </div>
+            <p className="text-xs text-brand-slate mt-0.5">Real-time latency SLAs, cache fallbacks, and task throughput</p>
           </div>
 
-          <button onClick={handleRefresh} className="flex items-center gap-2 rounded-lg bg-slate-900 border border-slate-800 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-all">
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} /> Run Diagnostic Ping
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-4 py-2 text-xs font-semibold text-white hover:bg-brand-marine transition-colors shadow-xs"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>{refreshing ? 'Syncing...' : 'Sync Telemetry'}</span>
           </button>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
-          {agents.map(agent => (
-            <div key={agent.id} className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div>
-                    <h3 className="font-display text-sm font-bold text-white">{agent.name}</h3>
-                    <span className="text-[11px] text-indigo-400 font-mono">{agent.type}</span>
+        {/* Global Cluster Stats */}
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl border border-brand-line bg-white p-5 shadow-xs">
+            <span className="text-xs text-brand-slate font-medium">Cluster Uptime (30d)</span>
+            <p className="mt-1 font-display text-2xl font-bold text-emerald-600">99.95%</p>
+            <span className="mt-1 block text-[11px] text-brand-slateLight">Zero Sev-1 incidents</span>
+          </div>
+          <div className="rounded-2xl border border-brand-line bg-white p-5 shadow-xs">
+            <span className="text-xs text-brand-slate font-medium">Avg Inference Latency</span>
+            <p className="mt-1 font-display text-2xl font-bold text-brand-navy">164 ms</p>
+            <span className="mt-1 block text-[11px] text-brand-slateLight">p50 across 5 agents</span>
+          </div>
+          <div className="rounded-2xl border border-brand-line bg-white p-5 shadow-xs">
+            <span className="text-xs text-brand-slate font-medium">Total 24h Invocations</span>
+            <p className="mt-1 font-display text-2xl font-bold text-brand-orange">20,190</p>
+            <span className="mt-1 block text-[11px] text-brand-slateLight">+12% peak quote load</span>
+          </div>
+          <div className="rounded-2xl border border-brand-line bg-white p-5 shadow-xs">
+            <span className="text-xs text-brand-slate font-medium">Circuit Breaker Fallback</span>
+            <p className="mt-1 font-display text-2xl font-bold text-emerald-600">STANDBY</p>
+            <span className="mt-1 block text-[11px] text-brand-slateLight">Local cache active</span>
+          </div>
+        </div>
+
+        {/* Individual Agent Health Cards */}
+        <div className="mt-8 space-y-4">
+          <h3 className="font-display text-base font-bold text-brand-navy">Autonomous Domain Agents</h3>
+
+          <div className="grid grid-cols-1 gap-4">
+            {agents.map(agent => (
+              <div key={agent.id} className="rounded-2xl border border-brand-line bg-white p-6 shadow-sm hover:border-brand-marine/50 transition-colors">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-line pb-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-cloud border border-brand-line text-brand-navy">
+                      <Cpu className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-display text-sm font-bold text-brand-navy">{agent.name}</h4>
+                        <span className="rounded-md bg-brand-navy/10 px-2 py-0.5 font-mono text-[10px] font-bold text-brand-navy">
+                          {agent.type}
+                        </span>
+                      </div>
+                      <p className="text-xs text-brand-slate mt-0.5">{agent.desc}</p>
+                    </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-1 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
-                    <CheckCircle2 className="h-3 w-3" /> {agent.status}
+
+                  <span className="rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 font-mono text-xs font-bold">
+                    {agent.status}
                   </span>
                 </div>
 
-                <p className="mt-3 text-xs text-slate-400 leading-relaxed">{agent.desc}</p>
-
-                <div className="mt-4 grid grid-cols-3 gap-2 rounded-lg bg-slate-950 p-2.5 text-center border border-slate-800/80">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-5 text-xs">
                   <div>
-                    <span className="text-[10px] text-slate-500 block uppercase">Uptime</span>
-                    <strong className="text-xs text-white font-mono">{agent.uptime}%</strong>
+                    <span className="text-brand-slate">Uptime:</span>
+                    <strong className="block font-mono text-emerald-600 font-bold mt-0.5">{agent.uptime}%</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 block uppercase">Latency (p50)</span>
-                    <strong className="text-xs text-cyan-400 font-mono">{agent.latencyP50} ms</strong>
+                    <span className="text-brand-slate">Latency (p50 / p95):</span>
+                    <strong className="block font-mono text-brand-navy font-bold mt-0.5">{agent.latencyP50}ms / {agent.latencyP95}ms</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 block uppercase">Success Rate</span>
-                    <strong className="text-xs text-emerald-400 font-mono">{agent.successRate}%</strong>
+                    <span className="text-brand-slate">Success Rate:</span>
+                    <strong className="block font-mono text-brand-navy font-bold mt-0.5">{agent.successRate}%</strong>
                   </div>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3 text-[11px] text-slate-500">
-                <span>Fallback: <strong className="text-slate-400 font-mono">{agent.fallback}</strong></span>
-                <span>Last run: <strong className="text-slate-300">{agent.lastRun}</strong></span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-          <h3 className="font-display text-sm font-bold text-white mb-4">Recent Multi-Agent Orchestration Traces</h3>
-          <div className="space-y-2">
-            {[
-              { traceId: 'TRC-8921', agent: 'Weather Agent', action: 'Sampled 6 waypoints for INMAA-SGSIN', ms: 215, status: 'SUCCESS', time: '2 mins ago' },
-              { traceId: 'TRC-8920', agent: 'Customs RAG', action: 'Retrieved UCC Art 127 for HS 850440', ms: 340, status: 'SUCCESS', time: '4 mins ago' },
-              { traceId: 'TRC-8919', agent: 'Risk Engine', action: 'Computed composite score: 32 (MEDIUM)', ms: 48, status: 'SUCCESS', time: '5 mins ago' },
-              { traceId: 'TRC-8918', agent: 'ML Pricing', action: 'Predicted spot price variance: -1.8%', ms: 92, status: 'SUCCESS', time: '7 mins ago' },
-              { traceId: 'TRC-8917', agent: 'Route Agent', action: 'Matched direct Maersk service rotation', ms: 138, status: 'SUCCESS', time: '10 mins ago' }
-            ].map(t => (
-              <div key={t.traceId} className="flex items-center justify-between rounded-lg bg-slate-800/40 p-3 text-xs border border-slate-800">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-cyan-400 font-bold">{t.traceId}</span>
-                  <span className="font-semibold text-white">{t.agent}</span>
-                  <span className="text-slate-400">{t.action}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-slate-400 font-mono">{t.ms} ms</span>
-                  <span className="rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400">{t.status}</span>
-                  <span className="text-slate-500 text-[11px]">{t.time}</span>
+                  <div>
+                    <span className="text-brand-slate">24h Volume:</span>
+                    <strong className="block font-mono text-brand-navy font-bold mt-0.5">{agent.requests24h.toLocaleString()} calls</strong>
+                  </div>
+                  <div>
+                    <span className="text-brand-slate">Fallback Mechanism:</span>
+                    <strong className="block font-mono text-brand-marine font-semibold text-[11px] mt-0.5">{agent.fallback}</strong>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+
       </div>
     </div>
   )
