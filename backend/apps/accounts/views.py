@@ -34,11 +34,35 @@ class LoginView(APIView):
             user_obj.save()
             UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'agent', 'company': 'PORTLINE Logistics'})
             user = user_obj
+        elif email == 'customs@portline.in' and password in ['customs123', 'customs', 'password']:
+            user_obj, _ = User.objects.get_or_create(username='customs@portline.in', defaults={'email': 'customs@portline.in', 'first_name': 'Rajesh', 'last_name': 'Kumar'})
+            user_obj.set_password('customs123')
+            user_obj.save()
+            UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customs_officer', 'company': 'CBIC Indian Customs'})
+            user = user_obj
+        elif email == 'agentop@portline.in' and password in ['agent123', 'agentop', 'password']:
+            user_obj, _ = User.objects.get_or_create(username='agentop@portline.in', defaults={'email': 'agentop@portline.in', 'first_name': 'Suresh', 'last_name': 'Varma'})
+            user_obj.set_password('agent123')
+            user_obj.save()
+            UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'agent_operator', 'company': 'PORTLINE AI Ops & Telemetry'})
+            user = user_obj
+        elif email == 'manager@portline.in' and password in ['manager123', 'manager', 'password']:
+            user_obj, _ = User.objects.get_or_create(username='manager@portline.in', defaults={'email': 'manager@portline.in', 'first_name': 'Ananya', 'last_name': 'Roy'})
+            user_obj.set_password('manager123')
+            user_obj.save()
+            UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'manager', 'company': 'PORTLINE Commercial Analytics'})
+            user = user_obj
         elif email in ['demo@portline.in', 'ravi@sharmatextiles.in'] and password in ['demo123', 'password', 'demo']:
             user_obj, _ = User.objects.get_or_create(username='demo@portline.in', defaults={'email': 'demo@portline.in', 'first_name': 'Ravi', 'last_name': 'Sharma'})
             user_obj.set_password(password)
             user_obj.save()
             UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customer', 'company': 'Sharma Textiles'})
+            user = user_obj
+        elif email == 'hello1@gmail.com' and password in ['HelloTest', 'hellotest', 'password']:
+            user_obj, _ = User.objects.get_or_create(username='hello1@gmail.com', defaults={'email': 'hello1@gmail.com', 'first_name': 'Hello', 'last_name': 'Shipper'})
+            user_obj.set_password('HelloTest')
+            user_obj.save()
+            UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customer', 'company': 'Global Shippers Corp'})
             user = user_obj
         else:
             # 1. Authenticate against Django ORM
