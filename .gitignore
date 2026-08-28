@@ -32,3 +32,6 @@ Thumbs.db
 
 # Documents
 *.pdf
+
+# Local credentials
+docs/ROLE_CREDENTIALS.md
