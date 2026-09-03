@@ -1,10 +1,16 @@
 """
 PORTLINE ML Pricing Engine - Prediction Service v2.0
 Uses the trained LightGBM model (Log-Transform) for real-time freight rate benchmarking.
+Includes graceful fallback if ML dependencies are still installing or unavailable.
 """
 import os
 import json
-import numpy as np
+import math
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 BASE_DIR = os.path.dirname(__file__)
 MODELS_DIR = os.path.join(BASE_DIR, "models")
@@ -26,8 +32,9 @@ def _load_model():
             return False
         _model = joblib.load(model_path)
         _label_encoders = joblib.load(enc_path)
-        with open(meta_path) as f:
-            _metadata = json.load(f)
+        if os.path.exists(meta_path):
+            with open(meta_path, "r", encoding="utf-8") as f:
+                _metadata = json.load(f)
         return True
     except Exception:
         return False
@@ -46,7 +53,7 @@ def predict_freight_price_ml(distance_nm, weight_kg, container_count=1,
     distance_km = int(distance_nm * 1.852) if distance_nm < 5000 else int(distance_nm)
     volume_cbm  = max(1.0, weight_kg / 500.0)
 
-    if not _load_model():
+    if not _load_model() or np is None:
         est = int(rule_price * (0.93 + 0.14 * (hash(str(rule_price)) % 100) / 100))
         return _build_response(est, rule_price, 0.8387, use_model=False)
 
@@ -61,9 +68,10 @@ def predict_freight_price_ml(distance_nm, weight_kg, container_count=1,
             float(weight_kg) / (float(distance_km) + 1),
             float(volume_cbm) / (float(distance_km) + 1),
             float(fuel_price) * float(distance_km) / 1000.0,
-            np.log1p(float(weight_kg)), np.log1p(float(volume_cbm)),
-            np.log1p(float(distance_km)),
-            np.log1p(float(weight_kg) / (float(volume_cbm) + 0.001)),
+            float(np.log1p(float(weight_kg))),
+            float(np.log1p(float(volume_cbm))),
+            float(np.log1p(float(distance_km))),
+            float(np.log1p(float(weight_kg) / (float(volume_cbm) + 0.001))),
             _safe_encode(les["Origin"], origin),
             _safe_encode(les["Destination"], destination),
             _safe_encode(les["Transport_Mode"], t_mode),
@@ -74,7 +82,8 @@ def predict_freight_price_ml(distance_nm, weight_kg, container_count=1,
         ]
         log_pred = _model.predict([feat])[0]
         ml_price = int(np.expm1(log_pred) * container_count)
-        return _build_response(ml_price, rule_price, _metadata.get("r2_score_log", 0.8387), use_model=True)
+        r2 = _metadata.get("r2_score_log", 0.8387) if _metadata else 0.8387
+        return _build_response(ml_price, rule_price, r2, use_model=True)
     except Exception:
         est = int(rule_price * 0.97)
         return _build_response(est, rule_price, 0.8387, use_model=False)
