@@ -206,6 +206,35 @@ export default function CustomsWorkspace() {
     setOfficerComments('')
   }
 
+  const handleVerifyDoc = (docIndex, docName) => {
+    setSelectedCase(prev => {
+      if (!prev) return prev
+      const updatedUploads = [...(prev.customerUploadedDocuments || [])]
+      if (updatedUploads[docIndex]) {
+        updatedUploads[docIndex] = { ...updatedUploads[docIndex], verified: true }
+      } else {
+        // match by name
+        for (let i = 0; i < updatedUploads.length; i++) {
+          if ((updatedUploads[i].name || '').toLowerCase() === (docName || '').toLowerCase()) {
+            updatedUploads[i] = { ...updatedUploads[i], verified: true }
+          }
+        }
+      }
+
+      const updatedChecklist = prev.checklist.map(ci => 
+        (ci.name || '').toLowerCase() === (docName || '').toLowerCase() ? { ...ci, status: 'VERIFIED', uploaded: true } : ci
+      )
+
+      return {
+        ...prev,
+        customerUploadedDocuments: updatedUploads,
+        checklist: updatedChecklist,
+        readinessScore: 100
+      }
+    })
+    toast(`Verified ${docName || 'document'} successfully!`)
+  }
+
   const handleSendDocumentRequest = async () => {
     if (!selectedCase) return
     if (selectedDocsToRequest.length === 0) {
@@ -567,27 +596,24 @@ export default function CustomsWorkspace() {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => setPreviewDoc(doc)}
-                              className="flex items-center gap-1 rounded-lg bg-brand-cloud px-3 py-1.5 text-xs font-semibold text-brand-navy hover:bg-brand-navy hover:text-white transition-colors border border-brand-line"
+                              onClick={() => setPreviewDoc({ ...doc, _index: dIdx })}
+                              className="flex items-center gap-1 rounded-lg bg-brand-cloud px-3 py-1.5 text-xs font-semibold text-brand-navy hover:bg-brand-navy hover:text-white transition-colors border border-brand-line shadow-2xs"
                             >
                               <Eye className="h-3.5 w-3.5" /> Inspect File
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedCase(prev => {
-                                  if (!prev) return prev
-                                  const updatedList = prev.checklist.map(ci => 
-                                    ci.name.toLowerCase() === (doc.name || '').toLowerCase() ? { ...ci, status: 'VERIFIED' } : ci
-                                  )
-                                  return { ...prev, checklist: updatedList, readinessScore: 100 }
-                                })
-                                toast(`Verified ${doc.name}!`)
-                              }}
-                              className="flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors border border-emerald-200"
-                            >
-                              <Check className="h-3.5 w-3.5" /> Verify
-                            </button>
+                            {doc.verified ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-300 shadow-2xs">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Verified
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleVerifyDoc(dIdx, doc.name)}
+                                className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 transition-colors shadow-xs"
+                              >
+                                <Check className="h-3.5 w-3.5" /> Verify
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -660,7 +686,7 @@ export default function CustomsWorkspace() {
         
         {/* DOCUMENT PREVIEW MODAL */}
         {previewDoc && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
+          <div className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" style={{ zIndex: 9999 }}>
             <div className="w-full max-w-xl rounded-2xl border border-brand-line bg-white p-6 shadow-2xl animate-in zoom-in-95">
               <div className="flex items-center justify-between border-b border-brand-line pb-4">
                 <div className="flex items-center gap-2.5">
@@ -708,13 +734,7 @@ export default function CustomsWorkspace() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (selectedCase) {
-                      const updatedList = selectedCase.checklist.map(ci => 
-                        ci.name.toLowerCase() === (previewDoc.name || '').toLowerCase() ? { ...ci, status: 'VERIFIED' } : ci
-                      )
-                      setSelectedCase({ ...selectedCase, checklist: updatedList, readinessScore: 100 })
-                    }
-                    toast(`Verified & cleared ${previewDoc.name}!`)
+                    handleVerifyDoc(previewDoc._index ?? -1, previewDoc.name)
                     setPreviewDoc(null)
                   }}
                   className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-500 shadow-xs"
