@@ -28,7 +28,26 @@ export default function QuoteDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   const { user } = useApp()
+
+  const getBackNavigation = () => {
+    const from = location.state?.from || (searchParams.get('view') === 'agent' ? '/agent' : null)
+    if (from === '/agent' || user?.role === 'agent' || user?.role === 'broker') {
+      return { path: '/agent', label: 'Back to Agent Workspace' }
+    }
+    if (from === '/customs' || user?.role === 'customs_officer') {
+      return { path: '/customs', label: 'Back to Customs Workspace' }
+    }
+    if (from === '/admin' || user?.role === 'admin') {
+      return { path: '/admin', label: 'Back to Admin Console' }
+    }
+    if (user?.role === 'customer') {
+      return { path: '/portal', label: 'Back to Shipper Portal' }
+    }
+    return { path: '/quotes', label: 'Back to Quotations' }
+  }
+  const backNav = getBackNavigation()
   const toast = useToast()
   const [quote, setQuote] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -342,7 +361,7 @@ export default function QuoteDetail() {
     return (
       <div className="py-20 text-center">
         <h3 className="text-xl font-bold text-brand-navy">Quote not found</h3>
-        <button onClick={() => navigate('/quotes')} className="mt-4 rounded-lg bg-brand-navy px-5 py-2 text-white">Back to quotes</button>
+        <button onClick={() => navigate(backNav.path)} className="mt-4 rounded-lg bg-brand-navy px-5 py-2 text-white">{backNav.label}</button>
       </div>
     )
   }
@@ -360,8 +379,8 @@ export default function QuoteDetail() {
         <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
 
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <button onClick={() => navigate('/quotes')} className="inline-flex items-center gap-2 text-xs font-semibold text-brand-slate hover:text-brand-navy">
-              <ArrowLeft className="h-4 w-4" /> Back to Quotations
+            <button onClick={() => navigate(backNav.path)} className="inline-flex items-center gap-2 text-xs font-semibold text-brand-slate hover:text-brand-navy">
+              <ArrowLeft className="h-4 w-4" /> {backNav.label}
             </button>
             <div className="flex items-center gap-3">
               <StatusBadge status={quote.status} />

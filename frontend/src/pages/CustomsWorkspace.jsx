@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { FileCheck, ShieldCheck, AlertTriangle, Clock, XCircle, Search, Check, ExternalLink, ShieldAlert, History, X, FileText, Send, CheckCircle2 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
-import { REGULATION_CORPUS } from '../lib/customsRAG'
+import { REGULATION_CORPUS, HS_CODE_CATALOG } from '../lib/customsRAG'
 import { fetchAllQuotes, customsActionOnQuote } from '../lib/api'
 import PageBanner from '../components/PageBanner'
 
@@ -366,32 +366,84 @@ export default function CustomsWorkspace() {
 
         {/* TAB 2: REGULATION LEGAL CORPUS */}
         {activeTab === 'regulations' && (
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-            {Object.entries(REGULATION_CORPUS).map(([code, reg]) => (
-              <div key={code} className="rounded-2xl border border-brand-line bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between border-b border-brand-line pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-lg bg-brand-navy/10 px-2 py-0.5 font-mono text-xs font-bold text-brand-navy">HS {code}</span>
-                    <h4 className="font-semibold text-brand-navy text-xs">{reg.description}</h4>
-                  </div>
-                  <span className="text-[10px] font-mono font-semibold text-brand-slate uppercase">{reg.jurisdiction}</span>
-                </div>
-                <div className="mt-3 space-y-2 text-xs">
-                  <p className="text-brand-slate"><strong className="text-brand-navy">Legal Rule:</strong> {reg.ruleSummary}</p>
-                  <p className="text-[11px] font-mono text-brand-marine"><strong className="text-brand-slate">Statutory Citation:</strong> {reg.citation}</p>
-                  <div>
-                    <strong className="text-brand-navy block mb-1 text-[11px]">Mandatory Filings:</strong>
-                    <div className="flex flex-wrap gap-1.5">
-                      {reg.mandatoryDocs.map((doc, i) => (
-                        <span key={i} className="rounded-md bg-brand-cloud px-2 py-0.5 text-[10px] text-brand-slate border border-brand-line font-medium">
-                          {doc}
-                        </span>
-                      ))}
+          <div className="mt-6 space-y-6">
+            {/* Treaties & Statutory Acts Section */}
+            <div>
+              <h3 className="font-display text-sm font-bold text-brand-navy mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-brand-marine" />
+                International Maritime & Customs Legal Treaties
+              </h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {REGULATION_CORPUS.map((reg) => (
+                  <div key={reg.id} className="rounded-2xl border border-brand-line bg-white p-5 shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between border-b border-brand-line pb-2.5 mb-2.5">
+                        <span className="rounded-md bg-brand-navy/10 px-2 py-0.5 font-mono text-[11px] font-bold text-brand-navy">{reg.id}</span>
+                        <span className="text-[10px] font-mono font-semibold text-brand-slate">{reg.authority}</span>
+                      </div>
+                      <h4 className="font-semibold text-brand-navy text-xs leading-snug">{reg.title}</h4>
+                      <p className="text-[11px] font-mono text-brand-marine mt-1">{reg.citation}</p>
+                      
+                      <div className="mt-3 space-y-2 border-t border-brand-line/60 pt-2.5">
+                        {reg.sections.map(sec => (
+                          <div key={sec.sectionId} className="rounded-lg bg-brand-cloud/40 p-2.5 border border-brand-line/40">
+                            <div className="font-semibold text-brand-navy text-[11px]">{sec.title}</div>
+                            <p className="text-[11px] text-brand-slate mt-1 leading-relaxed">{sec.content}</p>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {sec.requiredDocs.map((d, di) => (
+                                <span key={di} className="rounded bg-white px-1.5 py-0.5 text-[9.5px] font-medium text-brand-navy border border-brand-line shadow-2xs">
+                                  {d}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* HS Code Regulatory Catalog Section */}
+            <div>
+              <h3 className="font-display text-sm font-bold text-brand-navy mb-3 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                Harmonized System (HS) Statutory Tariffs & Document Requirements
+              </h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(HS_CODE_CATALOG).map(([code, meta]) => (
+                  <div key={code} className="rounded-2xl border border-brand-line bg-white p-5 shadow-xs">
+                    <div className="flex items-center justify-between border-b border-brand-line pb-2.5 mb-2.5">
+                      <span className="rounded-lg bg-brand-orangePale px-2 py-0.5 font-mono text-xs font-bold text-brand-orange">
+                        HS {code}
+                      </span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                        meta.defaultRisk === 'CRITICAL' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                        meta.defaultRisk === 'HIGH' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                        'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      }`}>
+                        {meta.defaultRisk} RISK
+                      </span>
+                    </div>
+
+                    <h4 className="font-semibold text-brand-navy text-xs leading-snug">{meta.description}</h4>
+                    <p className="text-[11px] text-brand-slate mt-1">Chapter {meta.chapter} ? {meta.prohibited ? 'Prohibited Cargo' : meta.restricted ? 'Special Restricted Clearance' : 'Standard Commercial Cargo'}</p>
+
+                    <div className="mt-3">
+                      <span className="block text-[11px] font-semibold text-brand-navy mb-1.5">Mandatory Compliance Filings:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {meta.mandatoryDocs.map((doc, di) => (
+                          <span key={di} className="rounded-md bg-brand-cloud px-2 py-0.5 text-[10px] text-brand-slate border border-brand-line font-medium">
+                            {doc}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

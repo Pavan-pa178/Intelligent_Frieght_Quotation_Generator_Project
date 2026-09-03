@@ -15,17 +15,11 @@ const CUSTOMER_NAV_ITEMS = [
 ]
 
 const AGENT_NAV_ITEMS = [
-  { to: '/agent', label: 'Review Queue' },
-  { to: '/quotes', label: 'Quotations' },
-  { to: '/routes', label: 'Routes' },
-  { to: '/tracking', label: 'Tracking' },
-  { to: '/services', label: 'Services' },
+  { to: '/agent', label: 'Agent Workspace' },
 ]
 
 const CUSTOMS_NAV_ITEMS = [
   { to: '/customs', label: 'Customs Workspace' },
-  { to: '/quotes', label: 'Quotations' },
-  { to: '/routes', label: 'Routes' },
 ]
 
 const AGENT_OP_NAV_ITEMS = [
