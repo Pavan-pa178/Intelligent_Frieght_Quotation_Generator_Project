@@ -11,6 +11,24 @@ import { computeLiveEstimate } from '../lib/pricing/index'
 
 const DRAFT_KEY = 'portline_ship_draft_v1'
 
+const COUNTRY_DIAL_CODES = [
+  { code: '+91', country: 'IN', label: '+91 (India)' },
+  { code: '+971', country: 'AE', label: '+971 (UAE)' },
+  { code: '+1', country: 'US', label: '+1 (USA / Canada)' },
+  { code: '+49', country: 'DE', label: '+49 (Germany)' },
+  { code: '+31', country: 'NL', label: '+31 (Netherlands)' },
+  { code: '+65', country: 'SG', label: '+65 (Singapore)' },
+  { code: '+44', country: 'GB', label: '+44 (UK)' },
+  { code: '+86', country: 'CN', label: '+86 (China)' },
+  { code: '+60', country: 'MY', label: '+60 (Malaysia)' },
+  { code: '+81', country: 'JP', label: '+81 (Japan)' },
+  { code: '+61', country: 'AU', label: '+61 (Australia)' },
+  { code: '+33', country: 'FR', label: '+33 (France)' },
+  { code: '+39', country: 'IT', label: '+39 (Italy)' },
+  { code: '+966', country: 'SA', label: '+966 (Saudi Arabia)' },
+]
+
+
 function checkAddressMatchesGateway(address, gateway) {
   if (!address || !gateway) return { matches: false, missing: true }
   const addr = address.toLowerCase().trim()
@@ -162,6 +180,7 @@ export default function Ship() {
   const [fullName, setFullName] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [email, setEmail] = useState('')
+  const [destinationPhoneCode, setDestinationPhoneCode] = useState('+91')
   const [destinationPhone, setDestinationPhone] = useState('')
   const [country, setCountry] = useState('India')
   const [hasCustomerCode, setHasCustomerCode] = useState(false)
@@ -324,6 +343,7 @@ export default function Ship() {
       toast('Please enter a destination mobile / phone number')
       return
     }
+    const formattedPhone = destinationPhone.trim().startsWith('+') ? destinationPhone.trim() : `${destinationPhoneCode} ${destinationPhone.trim()}`
 
     setSubmitting(true)
 
@@ -356,7 +376,7 @@ export default function Ship() {
         destGw,
         pickupAddress,
         deliveryAddress,
-        destinationPhone,
+        destinationPhone: formattedPhone,
         destinationContactName: fullName,
         destinationEmail: email,
         destinationCompany: companyName,
@@ -388,7 +408,7 @@ export default function Ship() {
       status: 'Booked',
       weight: estimate.grossWeightKg,
       cost: estimate.totalAmount,
-      destinationPhone,
+      destinationPhone: formattedPhone,
       pickupAddress,
       deliveryAddress,
       date: new Date().toISOString().slice(0, 10),
@@ -1576,13 +1596,24 @@ export default function Ship() {
                     <label className="mb-2 block text-[13px] font-semibold text-brand-navy flex items-center gap-1.5">
                       <Phone className="h-3.5 w-3.5 text-brand-marine" /> Mobile number / Phone <span className="text-brand-danger">*</span>
                     </label>
-                    <input
-                      type="tel"
-                      value={destinationPhone}
-                      onChange={(e) => setDestinationPhone(e.target.value)}
-                      placeholder="e.g. +91 98765 43210"
-                      className={brandInputStyle}
-                    />
+                    <div className="flex gap-2">
+                      <select
+                        value={destinationPhoneCode}
+                        onChange={(e) => setDestinationPhoneCode(e.target.value)}
+                        className="w-36 rounded-xl border border-brand-line bg-brand-cloud/40 px-2.5 py-2.5 text-xs font-semibold text-brand-navy focus:border-brand-marine focus:bg-white focus:outline-none shadow-xs"
+                      >
+                        {COUNTRY_DIAL_CODES.map(c => (
+                          <option key={c.code} value={c.code}>{c.label}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        value={destinationPhone}
+                        onChange={(e) => setDestinationPhone(e.target.value)}
+                        placeholder="e.g. 98765 43210"
+                        className={`flex-1 ${brandInputStyle}`}
+                      />
+                    </div>
                   </div>
                 </div>
 

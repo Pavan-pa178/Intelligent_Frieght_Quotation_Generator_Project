@@ -188,7 +188,7 @@ export default function Agent() {
                         </div>
                       </div>
                       <button
-                        onClick={() => navigate(`/quotes/${q.id}?view=agent`)}
+                        onClick={() => navigate(`/quotes/${q.id}?view=agent`, { state: { from: '/agent' } })}
                         className="flex items-center gap-1.5 rounded-lg border border-brand-line bg-brand-cloud px-3 py-2 text-xs font-semibold text-brand-navy hover:bg-brand-marinePale hover:text-brand-marine transition-colors"
                       >
                         <Eye className="h-3.5 w-3.5" /> View Details
@@ -279,7 +279,7 @@ export default function Agent() {
                       )}
                     </div>
                     <button
-                      onClick={() => navigate(`/quotes/${q.id}`)}
+                      onClick={() => navigate(`/quotes/${q.id}?view=agent`, { state: { from: '/agent' } })}
                       className="flex items-center gap-1 text-xs font-semibold text-brand-marine hover:underline mt-1"
                     >
                       <Eye className="h-3.5 w-3.5" /> View
