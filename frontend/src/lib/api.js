@@ -685,11 +685,25 @@ export async function uploadQuoteDocuments(quoteId, uploadedDocs = [], uploadedB
           const match = uploadedDocs.some(ud => ud.name?.toLowerCase() === (item.item_name || item.name)?.toLowerCase())
           return match ? { ...item, document_uploaded: true, status: 'VERIFIED' } : item
         })
+        const nowStr = new Date().toISOString()
+        const newUploaded = uploadedDocs.map(d => ({
+          name: d.name,
+          file_name: d.file_name || `${d.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_signed.pdf`,
+          file_size: d.file_size || '248 KB',
+          file_type: d.file_type || 'application/pdf',
+          uploaded_by: uploadedBy,
+          uploaded_at: nowStr
+        }))
         return {
           ...q,
           status: 'Documents Submitted (Pending Customs Sign-off)',
+          pipeline_status: 'DOCS_SUBMITTED',
           m3_customs: { ...m3_c, checklist, readiness_score: 95 },
-          customs_document_request: { ...(q.customs_document_request || {}), status: 'DOCUMENTS_SUBMITTED' }
+          customs_document_request: { ...(q.customs_document_request || {}), status: 'DOCUMENTS_SUBMITTED' },
+          customer_uploaded_documents: [
+            ...(q.customer_uploaded_documents || []),
+            ...newUploaded
+          ]
         }
       }
       return q

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FileCheck, ShieldCheck, AlertTriangle, Clock, XCircle, Search, Check, ExternalLink, ShieldAlert, History, X, FileText, Send, CheckCircle2 } from 'lucide-react'
+import { FileCheck, ShieldCheck, AlertTriangle, Clock, XCircle, Search, Check, ExternalLink, ShieldAlert, History, X, FileText, Send, CheckCircle2, Eye, Download, CheckSquare } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
 import { REGULATION_CORPUS, HS_CODE_CATALOG } from '../lib/customsRAG'
@@ -16,6 +16,7 @@ export default function CustomsWorkspace() {
   const [showDocRequestModal, setShowDocRequestModal] = useState(false)
   const [selectedDocsToRequest, setSelectedDocsToRequest] = useState([])
   const [docRequestNotes, setDocRequestNotes] = useState('')
+  const [previewDoc, setPreviewDoc] = useState(null)
 
   const [cases, setCases] = useState([
     {
@@ -37,7 +38,23 @@ export default function CustomsWorkspace() {
         { name: 'EU Declaration of Conformity (DoC)', uploaded: true, status: 'PENDING_SIGN_OFF' },
         { name: 'RoHS 3 Compliance Certificate', uploaded: true, status: 'VERIFIED' }
       ],
-      citation: 'UCC Regulation (EU) No 952/2013 Art 127'
+      citation: 'UCC Regulation (EU) No 952/2013 Art 127',
+      customerUploadedDocuments: [
+        {
+          name: 'EU Declaration of Conformity (DoC)',
+          file_name: 'eu_declaration_of_conformity_signed.pdf',
+          file_size: '284 KB',
+          uploaded_by: 'Consignor Exporter',
+          uploaded_at: '2026-09-02T16:20:00Z'
+        },
+        {
+          name: 'RoHS 3 Compliance Certificate',
+          file_name: 'rohs_compliance_cert_2026.pdf',
+          file_size: '192 KB',
+          uploaded_by: 'Consignor Exporter',
+          uploaded_at: '2026-09-02T16:22:00Z'
+        }
+      ]
     },
     {
       checkId: 'CUST-CHK-41902',
@@ -125,14 +142,25 @@ export default function CustomsWorkspace() {
             commodity: d.commodity || 'Static Converters & Solar Inverters',
             readinessScore: m3_c.readiness_score || (isApproved ? 100 : 70),
             riskLevel: m3_c.risk_level || 'MEDIUM',
-            status: isApproved ? 'APPROVED' : (q.pipeline_status === 'CUSTOMS_DOCS_REQUESTED' ? 'DOCS_FLAGGED' : 'PENDING_REVIEW'),
+            status: isApproved ? 'APPROVED' : (
+              (q.pipeline_status === 'DOCS_SUBMITTED' || (q.customer_uploaded_documents && q.customer_uploaded_documents.length > 0)) 
+                ? 'DOCS_SUBMITTED' 
+                : (q.pipeline_status === 'CUSTOMS_DOCS_REQUESTED' ? 'DOCS_FLAGGED' : 'PENDING_REVIEW')
+            ),
             requiresOfficer: !isApproved,
             summary: m3_c.summary || 'Trade compliance file generated from customs RAG engine.',
-            checklist: checklist.map(c => ({
-              name: c.item_name || c.name,
-              uploaded: c.document_uploaded ?? c.uploaded ?? false,
-              status: c.status || 'PENDING'
-            })),
+            customerUploadedDocuments: q.customer_uploaded_documents || [],
+            checklist: checklist.map(c => {
+              const cName = c.item_name || c.name
+              const hasUpload = (q.customer_uploaded_documents || []).some(
+                ud => (ud.name || '').toLowerCase() === (cName || '').toLowerCase()
+              )
+              return {
+                name: cName,
+                uploaded: hasUpload || (c.document_uploaded ?? c.uploaded ?? false),
+                status: hasUpload ? 'CUSTOMER_UPLOADED' : (c.status || 'PENDING')
+              }
+            }),
             citation: m3_c.citations?.[0]?.citation || 'EU Union Customs Code Art 127 advance filing & Low Voltage Directive'
           }
         })
@@ -343,17 +371,26 @@ export default function CustomsWorkspace() {
                       </td>
                       <td className="px-4 py-3.5">
                         <span className={`inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold border ${
-                          c.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : c.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                          c.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          c.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                          c.status === 'DOCS_SUBMITTED' ? 'bg-blue-50 text-blue-700 border-blue-300' :
+                          c.status === 'DOCS_FLAGGED' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                          'bg-amber-50 text-amber-700 border-amber-200'
                         }`}>
-                          {c.status}
+                          {c.status === 'DOCS_SUBMITTED' ? 'DOCS SUBMITTED' : c.status}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
                         <button
                           onClick={() => setSelectedCase(c)}
-                          className="rounded-xl bg-brand-navy px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-brand-marine transition-colors shadow-xs"
+                          className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold shadow-xs flex items-center gap-1.5 ml-auto transition-colors ${
+                            c.status === 'DOCS_SUBMITTED'
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
+                              : 'bg-brand-navy text-white hover:bg-brand-marine'
+                          }`}
                         >
-                          Inspect & Sign-Off
+                          {c.status === 'DOCS_SUBMITTED' ? <FileCheck className="h-3.5 w-3.5" /> : null}
+                          {c.status === 'DOCS_SUBMITTED' ? 'Inspect Docs & Sign' : 'Inspect & Sign-Off'}
                         </button>
                       </td>
                     </tr>
@@ -494,6 +531,70 @@ export default function CustomsWorkspace() {
                   <div><span className="text-brand-slate">Regulatory Readiness:</span> <strong className="text-brand-navy block text-base font-display font-bold">{selectedCase.readinessScore}%</strong></div>
                 </div>
 
+                {/* CUSTOMER UPLOADED DOCUMENTS SECTION */}
+                <div className="rounded-xl border-2 border-blue-200 bg-blue-50/40 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <FileCheck className="h-4 w-4 text-blue-600" />
+                      <h4 className="font-semibold text-brand-navy text-xs uppercase tracking-wide">
+                        Customer Uploaded Compliance Documents ({selectedCase.customerUploadedDocuments?.length || 0})
+                      </h4>
+                    </div>
+                    {selectedCase.customerUploadedDocuments && selectedCase.customerUploadedDocuments.length > 0 && (
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                        Ready for Inspection
+                      </span>
+                    )}
+                  </div>
+
+                  {(!selectedCase.customerUploadedDocuments || selectedCase.customerUploadedDocuments.length === 0) ? (
+                    <p className="text-xs text-brand-slate italic py-1">No custom certificates uploaded by customer yet. Standard baseline trade filings apply.</p>
+                  ) : (
+                    <div className="space-y-2 mt-2">
+                      {selectedCase.customerUploadedDocuments.map((doc, dIdx) => (
+                        <div key={dIdx} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3 border border-blue-100 shadow-2xs">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                              <FileText className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-semibold text-brand-navy text-xs block truncate">{doc.name}</span>
+                              <span className="text-[11px] font-mono text-brand-slateLight block">
+                                {doc.file_name || 'certificate.pdf'} ? {doc.file_size || '245 KB'} ? Uploaded {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleTimeString() : 'Recently'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDoc(doc)}
+                              className="flex items-center gap-1 rounded-lg bg-brand-cloud px-3 py-1.5 text-xs font-semibold text-brand-navy hover:bg-brand-navy hover:text-white transition-colors border border-brand-line"
+                            >
+                              <Eye className="h-3.5 w-3.5" /> Inspect File
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedCase(prev => {
+                                  if (!prev) return prev
+                                  const updatedList = prev.checklist.map(ci => 
+                                    ci.name.toLowerCase() === (doc.name || '').toLowerCase() ? { ...ci, status: 'VERIFIED' } : ci
+                                  )
+                                  return { ...prev, checklist: updatedList, readinessScore: 100 }
+                                })
+                                toast(`Verified ${doc.name}!`)
+                              }}
+                              className="flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors border border-emerald-200"
+                            >
+                              <Check className="h-3.5 w-3.5" /> Verify
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <h4 className="font-semibold text-brand-navy mb-2 uppercase text-[11px]">Required Trade Documentation Checklist</h4>
                   <div className="space-y-2 rounded-xl bg-brand-cloud/20 p-3 border border-brand-line">
@@ -551,6 +652,76 @@ export default function CustomsWorkspace() {
                     Approve Documentation Sign-Off
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        
+        {/* DOCUMENT PREVIEW MODAL */}
+        {previewDoc && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs">
+            <div className="w-full max-w-xl rounded-2xl border border-brand-line bg-white p-6 shadow-2xl animate-in zoom-in-95">
+              <div className="flex items-center justify-between border-b border-brand-line pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <FileCheck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-sm font-bold text-brand-navy">{previewDoc.name}</h3>
+                    <p className="text-[11px] font-mono text-brand-slate">{previewDoc.file_name || 'document.pdf'} ? {previewDoc.file_size || '245 KB'}</p>
+                  </div>
+                </div>
+                <button onClick={() => setPreviewDoc(null)} className="rounded-lg p-1.5 text-brand-slate hover:bg-brand-cloud">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Simulated Certificate Display */}
+              <div className="mt-4 rounded-xl border border-brand-line bg-brand-cloud/40 p-5 font-serif text-xs text-brand-navy shadow-inner space-y-3">
+                <div className="text-center border-b border-brand-line pb-3">
+                  <span className="text-[10px] tracking-widest uppercase font-mono font-bold text-brand-slate">Statutory International Trade Certificate</span>
+                  <h4 className="text-sm font-bold mt-1 text-brand-navy">{previewDoc.name}</h4>
+                  <p className="text-[11px] italic text-brand-slate">Compliance Reference: {selectedCase?.hsCode ? `HS ${selectedCase.hsCode}` : 'ISO / CE Standard'}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-sans">
+                  <div><strong>Issuer / Signatory:</strong> <span className="text-brand-slate">Authorized Quality & Safety Lab</span></div>
+                  <div><strong>Standard:</strong> <span className="text-brand-slate">Directives 2014/35/EU / RoHS 3</span></div>
+                  <div><strong>Status:</strong> <span className="text-emerald-700 font-bold">DIGITALLY SIGNED & VERIFIED</span></div>
+                  <div><strong>Submission Date:</strong> <span className="text-brand-slate">{previewDoc.uploaded_at ? new Date(previewDoc.uploaded_at).toLocaleDateString() : 'Active'}</span></div>
+                </div>
+
+                <div className="rounded-lg bg-white p-3 border border-brand-line/60 font-mono text-[10.5px] text-brand-slate leading-relaxed">
+                  "This document certifies that the consignment under Case {selectedCase?.checkId} matches the statutory technical file and complies with all mandatory customs import regulations."
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between border-t border-brand-line pt-4">
+                <button
+                  type="button"
+                  onClick={() => setPreviewDoc(null)}
+                  className="rounded-xl border border-brand-line px-4 py-2 text-xs font-semibold text-brand-slate hover:text-brand-navy"
+                >
+                  Close Preview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedCase) {
+                      const updatedList = selectedCase.checklist.map(ci => 
+                        ci.name.toLowerCase() === (previewDoc.name || '').toLowerCase() ? { ...ci, status: 'VERIFIED' } : ci
+                      )
+                      setSelectedCase({ ...selectedCase, checklist: updatedList, readinessScore: 100 })
+                    }
+                    toast(`Verified & cleared ${previewDoc.name}!`)
+                    setPreviewDoc(null)
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-500 shadow-xs"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Mark Document Verified
+                </button>
               </div>
             </div>
           </div>
