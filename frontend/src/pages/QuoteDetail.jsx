@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import { FileText, ArrowLeft, Ship, Check, ShieldCheck } from 'lucide-react'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, AlertCircle, Clock, Send, ThumbsUp, ThumbsDown, Upload, X, Loader2, Phone, AlertTriangle } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import WeatherRiskPanel from '../components/WeatherRiskPanel'
@@ -11,41 +11,189 @@ import { assessRouteWeather } from '../lib/weatherEngine'
 import { validateCustomsCompliance } from '../lib/customsRAG'
 import { computeCompositeRisk } from '../lib/riskEngine'
 import { predictMLFreightPrice } from '../lib/mlPricingEngine'
-import { fetchQuoteById } from '../lib/api'
+import {
+  fetchQuoteById,
+  customerDecisionOnQuote,
+  selectQuoteRoute,
+  uploadQuoteDocuments,
+  fetchBackendMLPrice,
+  fetchBackendWeatherAssess,
+  fetchBackendCustomsValidate,
+  fetchBackendRiskAssess
+} from '../lib/api'
+import { useApp } from '../context/AppContext'
+import { useToast } from '../context/ToastContext'
 
 export default function QuoteDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { user } = useApp()
+  const toast = useToast()
   const [quote, setQuote] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [deciding, setDeciding] = useState(false)
+  const [decisionNotes, setDecisionNotes] = useState('')
+  const [showDeclineModal, setShowDeclineModal] = useState(false)
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState({})
+  const [isUploading, setIsUploading] = useState(false)
+
+  const isAgentView = user?.role === 'agent' || searchParams.get('view') === 'agent'
+
+  // Real backend async state (used if quote document doesn't already have precomputed AI)
+  const [liveML, setLiveML] = useState(null)
+  const [liveWeather, setLiveWeather] = useState(null)
+  const [liveCustoms, setLiveCustoms] = useState(null)
+  const [liveRisk, setLiveRisk] = useState(null)
 
   useEffect(() => {
     fetchQuoteById(id).then((res) => {
       setQuote(res)
       setLoading(false)
+
+      // If quote lacks precomputed backend AI, fetch from real backend endpoints
+      if (res) {
+        const d = res.details || {}
+        const ogCode = d.originGw?.code || 'INMAA'
+        const dgCode = d.destGw?.code || 'SGSIN'
+        const mode = res.mode || 'OCEAN'
+
+        if (!res.m2_ml_pricing) {
+          fetchBackendMLPrice({
+            distance_nm: 1205,
+            weight_kg: d.grossWeightKg || 15000,
+            container_count: d.containerCount || 2,
+            mode,
+            container_type: d.containerType || '40HC',
+            rule_price: res.indicativeTotal || 148350,
+            origin: d.originGw?.city || 'Chennai',
+            destination: d.destGw?.city || 'Singapore',
+            cargo_type: d.commodity || 'General Cargo'
+          }).then(mlRes => mlRes && setLiveML(mlRes))
+        }
+
+        if (!res.m3_weather) {
+          fetchBackendWeatherAssess({
+            origin_code: ogCode,
+            dest_code: dgCode,
+            mode
+          }).then(wRes => wRes && setLiveWeather(wRes))
+        }
+
+        if (!res.m3_customs) {
+          fetchBackendCustomsValidate({
+            hs_code: d.hsCode || '850440',
+            commodity: d.commodity || 'General Merchandise',
+            origin: 'IN',
+            destination: 'SG',
+            shipment_id: res.shipment_id || res.id
+          }).then(cRes => cRes && setLiveCustoms(cRes))
+        }
+      }
     })
   }, [id])
 
   const d = quote?.details || {}
   const routes = d.routes || []
 
-  // Milestone 3 Intelligence calculations
+  // Milestone 3 Intelligence calculations (prioritizes real backend data from MongoDB)
   const weatherData = useMemo(() => {
     if (!quote) return null
+    if (quote.m3_weather) {
+      const w = quote.m3_weather
+      return {
+        riskScore: w.risk_score,
+        riskLevel: w.risk_level,
+        delayProbabilityPct: w.delay_probability_pct,
+        maxWaveHeightM: w.max_wave_height_m,
+        maxWindSpeedKts: w.max_wind_speed_kts,
+        waypoints: w.observations || [],
+        storms: w.storm_details || [],
+        routeAdvice: w.route_advice || 'Standard transit schedule expected.'
+      }
+    }
+    if (liveWeather) {
+      return {
+        riskScore: liveWeather.risk_score,
+        riskLevel: liveWeather.risk_level,
+        delayProbabilityPct: liveWeather.delay_probability_pct,
+        maxWaveHeightM: liveWeather.max_wave_height_m,
+        maxWindSpeedKts: liveWeather.max_wind_speed_kts,
+        waypoints: liveWeather.observations || [],
+        storms: liveWeather.storm_details || [],
+        routeAdvice: liveWeather.route_advice
+      }
+    }
     return assessRouteWeather(d.originGw?.code || 'INMAA', d.destGw?.code || 'SGSIN', quote.mode || 'OCEAN')
-  }, [quote, d])
+  }, [quote, liveWeather, d])
 
   const customsData = useMemo(() => {
     if (!quote) return null
+    if (quote.m3_customs) {
+      const c = quote.m3_customs
+      return {
+        hsCode: c.hs_code || d.hsCode || '850440',
+        hsDescription: d.commodity || 'Standard Commercial Cargo',
+        readinessScore: c.readiness_score || 85,
+        complianceStatus: c.compliance_status || 'APPROVED',
+        checklist: (c.checklist || []).map(item => ({
+          name: item.item_name || item.name,
+          uploaded: item.document_uploaded ?? item.uploaded ?? true,
+          status: item.status || 'VERIFIED'
+        })),
+        citations: c.retrieved_citations || [],
+        summary: c.summary || 'Customs trade classification verified against regulatory corpus.',
+        requiresOfficerReview: c.requires_officer_review || false
+      }
+    }
+    if (liveCustoms) {
+      return {
+        hsCode: liveCustoms.hs_code || d.hsCode || '850440',
+        hsDescription: d.commodity || 'Standard Commercial Cargo',
+        readinessScore: liveCustoms.readiness_score || 85,
+        complianceStatus: liveCustoms.compliance_status || 'APPROVED',
+        checklist: (liveCustoms.document_checklist || []).map(item => ({
+          name: item.item_name || item.name,
+          uploaded: item.document_uploaded ?? true,
+          status: item.status || 'VERIFIED'
+        })),
+        citations: liveCustoms.retrieved_citations || [],
+        summary: liveCustoms.summary,
+        requiresOfficerReview: liveCustoms.requires_officer_review
+      }
+    }
     return validateCustomsCompliance({
       hsCode: d.hsCode || '850440',
       commodity: d.commodity || 'Static Inverters',
       originCountry: 'IN',
       destCountry: 'SG'
     })
-  }, [quote, d])
+  }, [quote, liveCustoms, d])
 
   const compositeRiskData = useMemo(() => {
+    if (!quote) return null
+    if (quote.m3_risk) {
+      const r = quote.m3_risk
+      return {
+        overallScore: r.overall_score,
+        riskLevel: r.risk_level,
+        color: r.risk_level === 'CRITICAL' ? '#991B1B' : r.risk_level === 'HIGH' ? '#EF4444' : r.risk_level === 'MEDIUM' ? '#F59E0B' : '#10B981',
+        primaryDriver: r.primary_driver,
+        explanation: r.explanation,
+        guidance: r.guidance,
+        formula: r.formula || 'Weather (30%) + Customs (25%) + Route (20%) + Port (15%) + Cargo (10%)',
+        factors: (r.factor_breakdown || []).map(f => ({
+          name: f.factor_name,
+          score: f.score,
+          weight: f.weight_pct,
+          contribution: f.contribution_pts,
+          severity: f.severity,
+          reason: f.reason,
+          source: f.source
+        }))
+      }
+    }
     if (!weatherData || !customsData) return null
     return computeCompositeRisk({
       weatherScore: weatherData.riskScore,
@@ -56,10 +204,45 @@ export default function QuoteDetail() {
       weatherDetails: weatherData.routeAdvice,
       customsDetails: customsData.summary
     })
-  }, [weatherData, customsData])
+  }, [quote, weatherData, customsData])
 
   const mlPricingData = useMemo(() => {
     if (!quote) return null
+    if (quote.m2_ml_pricing) {
+      const ml = quote.m2_ml_pricing
+      const rule = ml.rule_based_price || quote.indicativeTotal || 148350
+      const pred = ml.ml_predicted_price || rule
+      return {
+        rulePrice: rule,
+        mlPredictedPrice: pred,
+        varianceInr: pred - rule,
+        variancePct: ml.price_variance_pct || 0,
+        lowerBound: Math.round(pred * 0.96),
+        upperBound: Math.round(pred * 1.04),
+        marketSentiment: ml.confidence_level === 'HIGH' ? 'BALANCED' : 'TIGHT',
+        recommendation: 'RULE_COMPETITIVE',
+        explanation: `LightGBM ML Model v${ml.model_version || '2.0'} predicts Rs. ${pred.toLocaleString()} (${ml.price_variance_pct >= 0 ? '+' : ''}${ml.price_variance_pct}% vs rule tariff) with R2 = ${ml.r2_score || 0.8387}.`,
+        modelName: 'LightGBM Gradient Boosted Regressor (v2.0)',
+        accuracyR2: ml.r2_score || 0.8387
+      }
+    }
+    if (liveML) {
+      const rule = liveML.rule_based_price || quote.indicativeTotal || 148350
+      const pred = liveML.ml_predicted_price || rule
+      return {
+        rulePrice: rule,
+        mlPredictedPrice: pred,
+        varianceInr: pred - rule,
+        variancePct: liveML.price_variance_pct || 0,
+        lowerBound: Math.round(pred * 0.96),
+        upperBound: Math.round(pred * 1.04),
+        marketSentiment: liveML.confidence_level === 'HIGH' ? 'BALANCED' : 'TIGHT',
+        recommendation: 'RULE_COMPETITIVE',
+        explanation: `LightGBM ML Model predicts Rs. ${pred.toLocaleString()} (${liveML.price_variance_pct >= 0 ? '+' : ''}${liveML.price_variance_pct}% vs rule tariff) with R2 = ${liveML.r2_score || 0.8387}.`,
+        modelName: liveML.model_type || 'LightGBM Regression v2.0',
+        accuracyR2: liveML.r2_score || 0.8387
+      }
+    }
     return predictMLFreightPrice({
       distanceNm: 1205,
       weightKg: d.grossWeightKg || 15000,
@@ -68,7 +251,84 @@ export default function QuoteDetail() {
       containerType: d.containerType || '40HC',
       rulePrice: quote.indicativeTotal || 148350
     })
-  }, [quote, d])
+  }, [quote, liveML, d])
+
+  const handleCustomerDecision = async (decision) => {
+    setDeciding(true)
+    try {
+      await customerDecisionOnQuote(quote.id, decision, decisionNotes, user)
+      toast(`Quotation ${quote.id} ${decision === 'accepted' ? 'accepted' : 'declined'} successfully!`)
+      setQuote(prev => ({
+        ...prev,
+        status: decision === 'accepted' ? 'Accepted' : 'Rejected',
+        customer_decision: {
+          status: decision.toUpperCase(),
+          notes: decisionNotes,
+          decided_at: new Date().toISOString()
+        }
+      }))
+      setShowDeclineModal(false)
+      setDecisionNotes('')
+    } catch (err) {
+      toast(err.message || 'Error updating quote decision')
+    } finally {
+      setDeciding(false)
+    }
+  }
+
+  const handleSelectRoute = async (route) => {
+    try {
+      await selectQuoteRoute(quote.id, route, user?.email || quote.user_email)
+      setQuote(prev => ({
+        ...prev,
+        selected_route: route,
+        indicativeTotal: route.cost || prev.indicativeTotal
+      }))
+      toast(`Route selected: ${route.carrier} (${route.transitDays}d) — ₹${(route.cost || 0).toLocaleString('en-IN')}. Route request logged.`)
+    } catch (err) {
+      toast(`Route selection failed: ${err.message}`)
+    }
+  }
+
+  const handleUploadSubmit = async () => {
+    setIsUploading(true)
+    try {
+      const docsList = Object.entries(uploadedFiles).map(([name, file]) => ({
+        name,
+        file_name: file.name,
+        file_size: `${Math.round(file.size / 1024)} KB`,
+        file_type: file.type || 'application/pdf'
+      }))
+      await uploadQuoteDocuments(quote.id, docsList, user?.name || 'Customer')
+      toast('Customs documents uploaded successfully! Customs compliance desk notified.')
+      setShowUploadModal(false)
+      setQuote(prev => ({
+        ...prev,
+        status: 'Documents Submitted (Pending Customs Sign-off)',
+        customs_document_request: {
+          ...(prev.customs_document_request || {}),
+          status: 'DOCUMENTS_SUBMITTED'
+        }
+      }))
+    } catch (err) {
+      toast(`Document upload failed: ${err.message}`)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const agentApproved = quote?.agent_review?.status === 'approved'
+  const customsApproved = quote?.customs_review?.status === 'approved' || quote?.status === 'Approved'
+  const canCustomerAccept = agentApproved && customsApproved
+
+  const docReq = quote?.customs_document_request
+  const pendingDocsList = useMemo(() => {
+    if (docReq?.requested_docs && docReq.requested_docs.length > 0) {
+      return docReq.requested_docs
+    }
+    const customsChecklist = customsData?.checklist || []
+    return customsChecklist.filter(c => !c.uploaded).map(c => c.name)
+  }, [docReq, customsData])
 
   if (loading) {
     return (
@@ -108,6 +368,49 @@ export default function QuoteDetail() {
               <span className="font-mono text-xs text-brand-slateLight">Generated {quote.created}</span>
             </div>
           </div>
+
+          {/* CUSTOMS DOCUMENT REQUEST ALERT BANNER */}
+          {pendingDocsList.length > 0 && docReq?.status !== 'DOCUMENTS_SUBMITTED' && !customsApproved && (
+            <div className="mb-8 rounded-2xl border-2 border-amber-400 bg-amber-50/95 p-5 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-amber-500 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-bold text-amber-950 uppercase tracking-wider">Customs Compliance Action Required</span>
+                      <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">
+                        Documents Flagged
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-amber-900 leading-relaxed">
+                      Customs compliance team requires specific trade documentation before this shipment can pass regulatory customs clearance.
+                    </p>
+                    {docReq?.officer_notes && (
+                      <p className="mt-2 rounded-lg border border-amber-300 bg-white/90 p-2.5 text-xs italic text-amber-950 font-medium">
+                        Customs Officer Message: "{docReq.officer_notes}"
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {pendingDocsList.map((doc, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-900 shadow-2xs">
+                          <FileText className="h-3.5 w-3.5 text-amber-600" /> {doc}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowUploadModal(true)}
+                  className="flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-amber-700 shadow-sm transition-all"
+                >
+                  <Upload className="h-4 w-4" /> Upload Required Documents
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
 
@@ -169,49 +472,88 @@ export default function QuoteDetail() {
                 </div>
               )}
 
-              {/* Ranked Route Options */}
-              <div>
-                <h3 className="mb-4 text-lg font-bold text-brand-navy">Recommended Route Options ({routes.length})</h3>
-                <div className="space-y-4">
-                  {routes.map((r, idx) => (
-                    <div
-                      key={r.id || idx}
-                      className={`rounded-lg2 border-[1.5px] p-6 bg-white shadow-sm2 transition-all ${
-                        r.recommended ? 'border-brand-orange shadow-md2 ring-2 ring-brand-orange/20' : 'border-brand-line'
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-line pb-4 mb-4">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-display text-base font-bold text-brand-navy">{r.carrier}</span>
-                            {r.recommended && (
-                              <span className="rounded-full bg-brand-orangePale px-2.5 py-0.5 font-mono text-[10px] font-bold text-brand-orange">
-                                RECOMMENDED
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-brand-slate mt-0.5">{r.serviceName} · {r.sailingFrequency}</div>
-                        </div>
-
-                        <div className="text-right">
-                          <div className="font-display text-xl font-bold text-brand-navy">₹ {r.cost.toLocaleString('en-IN')}</div>
-                          <div className="text-[10px] font-bold text-brand-orangeLight font-mono">INDICATIVE</div>
-                        </div>
-                      </div>
-
-                      {/* Score breakdown bars */}
-                      {r.scores && (
-                        <div className="grid grid-cols-2 gap-4 text-xs sm:grid-cols-4">
-                          <ScoreBar label="Transit score" val={r.scores.transit} />
-                          <ScoreBar label="Cost score" val={r.scores.cost} />
-                          <ScoreBar label="Reliability" val={r.scores.reliability} />
-                          <ScoreBar label="Congestion" val={r.scores.congestion} />
-                        </div>
-                      )}
+              {/* Ranked Route Options (Hidden for Agent dashboard to keep focus on commercial verification) */}
+              {!isAgentView && (
+                <div>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-lg font-bold text-brand-navy">Recommended Route Options ({routes.length})</h3>
+                      <p className="text-xs text-brand-slate">Choose your preferred carrier route. Click to select and request approval.</p>
                     </div>
-                  ))}
+                    {quote.selected_route && (
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
+                        Chosen: {quote.selected_route.carrier}
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-4">
+                    {routes.map((r, idx) => {
+                      const isSelected = (quote.selected_route?.carrier === r.carrier) || (!quote.selected_route && r.recommended)
+                      return (
+                        <div
+                          key={r.id || idx}
+                          className={`rounded-lg2 border-[1.5px] p-6 bg-white shadow-sm2 transition-all ${
+                            isSelected
+                              ? 'border-emerald-500 shadow-md2 ring-2 ring-emerald-500/20 bg-emerald-50/10'
+                              : r.recommended 
+                                ? 'border-brand-orange shadow-md2 ring-2 ring-brand-orange/20' 
+                                : 'border-brand-line hover:border-brand-navy/30'
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-line pb-4 mb-4">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-display text-base font-bold text-brand-navy">{r.carrier}</span>
+                                {r.recommended && (
+                                  <span className="rounded-full bg-brand-orangePale px-2.5 py-0.5 font-mono text-[10px] font-bold text-brand-orange">
+                                    RECOMMENDED
+                                  </span>
+                                )}
+                                {isSelected && (
+                                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-mono text-[10px] font-bold text-emerald-800 flex items-center gap-1">
+                                    <Check className="h-3 w-3" /> SELECTED ROUTE
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-brand-slate mt-0.5">{r.serviceName} · {r.sailingFrequency}</div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <div className="font-display text-xl font-bold text-brand-navy">₹ {(r.cost || 0).toLocaleString('en-IN')}</div>
+                                <div className="text-[10px] font-bold text-brand-slate font-mono">{r.transitDays} DAYS TRANSIT</div>
+                              </div>
+                              {isSelected ? (
+                                <span className="rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white flex items-center gap-1.5 shadow-xs">
+                                  <Check className="h-3.5 w-3.5" /> Chosen
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSelectRoute(r)}
+                                  className="rounded-lg bg-brand-navy px-3.5 py-2 text-xs font-bold text-white hover:bg-brand-marine transition-colors shadow-xs"
+                                >
+                                  Select Route
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Score breakdown bars */}
+                          {r.scores && (
+                            <div className="grid grid-cols-2 gap-4 text-xs sm:grid-cols-4">
+                              <ScoreBar label="Transit score" val={r.scores.transit} />
+                              <ScoreBar label="Cost score" val={r.scores.cost} />
+                              <ScoreBar label="Reliability" val={r.scores.reliability} />
+                              <ScoreBar label="Congestion" val={r.scores.congestion} />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Transit Breakdown */}
               {d.transitBreakdown && (
@@ -244,14 +586,168 @@ export default function QuoteDetail() {
                   <DetailRow label="Gross weight" val={`${(d.grossWeightKg || quote.indicativeTotal || 0).toLocaleString()} kg`} />
                   <DetailRow label="Mode" val={quote.mode} />
                   <DetailRow label="Basis" val={quote.basis} />
+                  {d.destinationPhone && <DetailRow label="Mobile / Phone" val={d.destinationPhone} />}
+                  {quote.selected_route && (
+                    <DetailRow label="Selected Carrier" val={`${quote.selected_route.carrier} (${quote.selected_route.transitDays}d)`} />
+                  )}
                 </div>
 
                 <div className="mt-6 border-t border-brand-line pt-4">
                   <div className="text-[11px] font-semibold text-brand-slate uppercase">Indicative Total</div>
                   <div className="font-display text-2xl font-bold text-brand-navy mt-1">
-                    · {(quote.indicativeTotal || 0).toLocaleString('en-IN')}
+                    ₹ {(quote.indicativeTotal || 0).toLocaleString('en-IN')}
                   </div>
                 </div>
+              </div>
+
+              {/* Multi-Stage Sequential Approval Tracker */}
+              <div className="rounded-lg2 border border-brand-line bg-white p-5 shadow-sm2">
+                <h4 className="mb-3 text-xs font-bold text-brand-navy uppercase tracking-wider">Approval Sequence</h4>
+                
+                <div className="space-y-3 text-xs">
+                  {/* Stage 1: Freight Agent */}
+                  <div className="flex items-start gap-2.5 p-2 rounded-lg bg-brand-cloud/60 border border-brand-line/60">
+                    <div className="mt-0.5">
+                      {agentApproved ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      ) : (
+                        <Clock className="h-4 w-4 text-amber-500" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-brand-navy">1. Freight Agent Review</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          agentApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {agentApproved ? 'APPROVED' : 'PENDING'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-brand-slate mt-0.5">
+                        {agentApproved ? `Verified by ${quote.agent_review?.agent_name || 'Agent'}` : 'Awaiting commercial tariff validation'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stage 2: Customs Officer */}
+                  <div className="flex items-start gap-2.5 p-2 rounded-lg bg-brand-cloud/60 border border-brand-line/60">
+                    <div className="mt-0.5">
+                      {customsApproved ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      ) : docReq?.status === 'PENDING_CUSTOMER_UPLOAD' ? (
+                        <AlertTriangle className="h-4 w-4 text-rose-500" />
+                      ) : (
+                        <Clock className="h-4 w-4 text-amber-500" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-brand-navy">2. Customs Officer Check</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          customsApproved 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : docReq?.status === 'PENDING_CUSTOMER_UPLOAD' 
+                              ? 'bg-rose-100 text-rose-800' 
+                              : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {customsApproved ? 'APPROVED' : docReq?.status === 'PENDING_CUSTOMER_UPLOAD' ? 'DOCS REQUIRED' : 'PENDING'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-brand-slate mt-0.5">
+                        {customsApproved 
+                          ? 'Regulatory compliance signed off' 
+                          : docReq?.status === 'PENDING_CUSTOMER_UPLOAD'
+                            ? 'Upload requested docs below'
+                            : 'Awaiting customs document inspection'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stage 3: Customer Final Acceptance */}
+                  <div className="flex items-start gap-2.5 p-2 rounded-lg bg-brand-cloud/60 border border-brand-line/60">
+                    <div className="mt-0.5">
+                      {quote.customer_decision?.status === 'ACCEPTED' ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      ) : (
+                        <Clock className="h-4 w-4 text-brand-slateLight" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-brand-navy">3. Customer Acceptance</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          quote.customer_decision?.status === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          {quote.customer_decision?.status === 'ACCEPTED' ? 'ACCEPTED' : canCustomerAccept ? 'READY' : 'LOCKED'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-brand-slate mt-0.5">
+                        {quote.customer_decision?.status === 'ACCEPTED' ? 'Quotation booked' : canCustomerAccept ? 'All approvals granted. You can accept now!' : 'Requires Agent & Customs approvals first'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Decision & Quote Acceptance */}
+              <div className="rounded-lg2 border border-brand-line bg-white p-6 shadow-sm2">
+                <h4 className="mb-3 text-xs font-bold text-brand-navy uppercase tracking-wider">Customer Action</h4>
+                {quote.customer_decision?.status === 'ACCEPTED' || quote.status === 'Accepted' ? (
+                  <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 text-center">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto mb-1.5" />
+                    <span className="text-sm font-bold text-emerald-800 block">Quotation Accepted</span>
+                    <p className="text-xs text-emerald-600 mt-1">Confirmed booking dispatch. Documentation team notified.</p>
+                  </div>
+                ) : quote.customer_decision?.status === 'REJECTED' || quote.status === 'Rejected' ? (
+                  <div className="rounded-lg bg-rose-50 border border-rose-200 p-4 text-center">
+                    <XCircle className="h-8 w-8 text-rose-600 mx-auto mb-1.5" />
+                    <span className="text-sm font-bold text-rose-800 block">Quotation Declined</span>
+                    <p className="text-xs text-rose-600 mt-1">This quotation was declined by customer.</p>
+                  </div>
+                ) : !canCustomerAccept ? (
+                  <div className="space-y-3 text-center p-3 rounded-xl bg-amber-50/70 border border-amber-200">
+                    <Clock className="h-6 w-6 text-amber-500 mx-auto" />
+                    <p className="text-xs font-semibold text-amber-900">
+                      Approval in progress
+                    </p>
+                    <p className="text-[11px] text-amber-800">
+                      {!agentApproved
+                        ? 'Freight Agent is reviewing commercial tariffs and rates.'
+                        : 'Customs Officer is validating clearance documentation in the Customs panel.'}
+                    </p>
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full rounded-xl bg-slate-200 py-2.5 text-xs font-bold text-slate-500 cursor-not-allowed opacity-60"
+                    >
+                      Accept Quotation (Locked)
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs text-brand-slate leading-relaxed">
+                      Agent & Customs compliance have signed off. You can now confirm and book this quotation.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={deciding}
+                      onClick={() => handleCustomerDecision('accepted')}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 py-3 text-xs font-bold text-white shadow-md transition hover:from-emerald-700 hover:to-emerald-600 disabled:opacity-50"
+                    >
+                      <ThumbsUp className="h-4 w-4" />
+                      {deciding ? 'Confirming...' : 'Accept & Book Quotation'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deciding}
+                      onClick={() => setShowDeclineModal(true)}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-brand-line bg-slate-50 py-2.5 text-xs font-semibold text-brand-slate hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition"
+                    >
+                      <ThumbsDown className="h-3.5 w-3.5" />
+                      Decline / Request Revision
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Checklist */}
@@ -273,6 +769,110 @@ export default function QuoteDetail() {
 
         </div>
       </section>
+
+      {/* DECLINE CONFIRMATION MODAL */}
+      {showDeclineModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-brand-line">
+            <h3 className="font-display text-lg font-bold text-brand-navy">Decline Quotation</h3>
+            <p className="mt-1 text-xs text-brand-slate">
+              Please share a reason or feedback for our commercial freight desk:
+            </p>
+            <textarea
+              rows={3}
+              value={decisionNotes}
+              onChange={(e) => setDecisionNotes(e.target.value)}
+              placeholder="e.g. Schedule does not align / Rate above budget / Found alternate route..."
+              className="mt-3 w-full rounded-xl border border-brand-line p-3 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+            />
+            <div className="mt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeclineModal(false)}
+                className="flex-1 rounded-xl border border-brand-line py-2 text-xs font-semibold text-brand-slate hover:bg-brand-cloud"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deciding}
+                onClick={() => handleCustomerDecision('rejected')}
+                className="flex-1 rounded-xl bg-rose-600 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50"
+              >
+                Confirm Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DEDICATED CUSTOMS DOCUMENT UPLOAD MODAL */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-xl rounded-2xl border border-brand-line bg-white p-6 shadow-2xl animate-in fade-in">
+            <div className="flex items-center justify-between border-b border-brand-line pb-4">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="h-5 w-5 text-brand-marine" />
+                <h3 className="text-base font-bold text-brand-navy">Upload Required Customs Documents</h3>
+              </div>
+              <button onClick={() => setShowUploadModal(false)} className="rounded-full p-1 text-brand-slate hover:bg-brand-cloud">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="mt-3 text-xs text-brand-slate">
+              Customs compliance requires verifying the following documents before clearance sign-off. Please upload each required document using its dedicated field:
+            </p>
+
+            <div className="mt-4 space-y-3.5 max-h-[55vh] overflow-y-auto pr-1">
+              {pendingDocsList.map((docName, idx) => (
+                <div key={idx} className="rounded-xl border border-brand-line bg-brand-cloud/40 p-3.5">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold text-brand-navy flex items-center gap-1.5">
+                      <FileText className="h-3.5 w-3.5 text-brand-marine" /> {docName} <span className="text-brand-danger">*</span>
+                    </label>
+                    {uploadedFiles[docName] && (
+                      <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Attached
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        setUploadedFiles(prev => ({ ...prev, [docName]: file }))
+                      }
+                    }}
+                    className="block w-full text-xs text-brand-slate file:mr-3 file:rounded-lg file:border-0 file:bg-brand-navy file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-brand-marine transition-colors"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3 border-t border-brand-line pt-4">
+              <button
+                type="button"
+                onClick={() => setShowUploadModal(false)}
+                className="rounded-xl border border-brand-line px-4 py-2 text-xs font-semibold text-brand-slate hover:bg-brand-cloud"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isUploading || Object.keys(uploadedFiles).length === 0}
+                onClick={handleUploadSubmit}
+                className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 shadow-sm"
+              >
+                {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                Submit Documents to Customs
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

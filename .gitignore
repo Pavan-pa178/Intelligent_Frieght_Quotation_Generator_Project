@@ -35,3 +35,7 @@ Thumbs.db
 
 # Local credentials
 docs/ROLE_CREDENTIALS.md
+
+# Local Word Documents
+*.docx
+docs/*.docx

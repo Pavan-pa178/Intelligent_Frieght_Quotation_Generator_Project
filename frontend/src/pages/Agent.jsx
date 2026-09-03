@@ -71,7 +71,7 @@ export default function Agent() {
     setState(quoteId, { loading: true })
     try {
       await agentActionOnQuote(quoteId, action, st.comment, user)
-      toast(action === 'approved' ? 'Quote approved successfully' : 'Quote rejected with comment')
+      toast(action === 'approved' ? 'Quote approved by Agent! Forwarded to Customs Clearance desk.' : 'Quote rejected with comment')
       await loadData()
       setState(quoteId, { loading: false, comment: '', showComment: false })
     } catch {
@@ -141,7 +141,7 @@ export default function Agent() {
                   <Icon className="h-4 w-4" />
                   {tab.label}
                   {badge !== null && badge > 0 && (
-                    <span className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? 'bg-white/20 text-white' : 'bg-brand-navy text-white'}`}>
+                    <span className={`ml-1 rounded-full px-2 py-0.5 text-xs font-bold ${active ? 'bg-white/20 text-white' : 'bg-brand-cloud text-brand-slate'}`}>
                       {badge}
                     </span>
                   )}
@@ -188,7 +188,7 @@ export default function Agent() {
                         </div>
                       </div>
                       <button
-                        onClick={() => navigate(`/quotes/${q.id}`)}
+                        onClick={() => navigate(`/quotes/${q.id}?view=agent`)}
                         className="flex items-center gap-1.5 rounded-lg border border-brand-line bg-brand-cloud px-3 py-2 text-xs font-semibold text-brand-navy hover:bg-brand-marinePale hover:text-brand-marine transition-colors"
                       >
                         <Eye className="h-3.5 w-3.5" /> View Details

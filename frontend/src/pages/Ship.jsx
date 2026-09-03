@@ -1,17 +1,33 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowLeftRight, Plus, Trash2, Ship as ShipIcon, Plane, Truck, Zap, Route, CheckCircle2, Lock, Search, Globe, MapPin, X, Clock, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeftRight, Plus, Trash2, Ship as ShipIcon, Plane, Truck, Zap, Route, CheckCircle2, Lock, Search, Globe, MapPin, X, Clock, Sparkles, Loader2, Check, AlertCircle, Phone } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import GlobalPortDirectory from '../components/GlobalPortDirectory'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { createShipmentRequest, saveQuote } from '../lib/api'
+import { createShipmentRequest, saveQuote, triggerQuotePipeline } from '../lib/api'
 import { resolveGateway, getGatewayByCode } from '../lib/pricing/gateway'
 import { computeLiveEstimate } from '../lib/pricing/index'
 
 const DRAFT_KEY = 'portline_ship_draft_v1'
 
+function checkAddressMatchesGateway(address, gateway) {
+  if (!address || !gateway) return { matches: false, missing: true }
+  const addr = address.toLowerCase().trim()
+  const city = (gateway.city || '').toLowerCase().trim()
+  const country = (gateway.country || '').toLowerCase().trim()
+  const code = (gateway.code || '').toLowerCase().trim()
+  const name = (gateway.name || '').toLowerCase().trim()
+
+  // Match if address explicitly mentions city, port code, or port name keywords
+  const matches = (city && addr.includes(city)) || 
+                  (code && addr.includes(code)) || 
+                  (name && addr.includes(name.split(' ')[0].toLowerCase()))
+  return { matches, city: gateway.city, name: gateway.name }
+}
+
 function getMinDeliveryDate(readyDateStr) {
+
   if (!readyDateStr) return ''
   const d = new Date(readyDateStr)
   d.setDate(d.getDate() + 2)
@@ -146,6 +162,7 @@ export default function Ship() {
   const [fullName, setFullName] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [email, setEmail] = useState('')
+  const [destinationPhone, setDestinationPhone] = useState('')
   const [country, setCountry] = useState('India')
   const [hasCustomerCode, setHasCustomerCode] = useState(false)
   const [existingCustomerCode, setExistingCustomerCode] = useState('')
@@ -281,8 +298,30 @@ export default function Ship() {
       toast('Please select origin and destination locations from master data')
       return
     }
+    if (!pickupAddress.trim()) {
+      toast(`Please enter a pickup address in ${originGw.city}`)
+      return
+    }
+    const originAddrCheck = checkAddressMatchesGateway(pickupAddress, originGw)
+    if (!originAddrCheck.matches) {
+      toast(`Pickup address must be located in ${originGw.city} to match selected origin (${originGw.name})`)
+      return
+    }
+    if (!deliveryAddress.trim()) {
+      toast(`Please enter a delivery address in ${destGw.city}`)
+      return
+    }
+    const destAddrCheck = checkAddressMatchesGateway(deliveryAddress, destGw)
+    if (!destAddrCheck.matches) {
+      toast(`Delivery address must be located in ${destGw.city} to match selected destination (${destGw.name})`)
+      return
+    }
     if (!fullName.trim() || !email.trim() || !companyName.trim()) {
-      toast('Please fill in destination contact information')
+      toast('Please fill in destination contact name, email, and company')
+      return
+    }
+    if (!destinationPhone.trim()) {
+      toast('Please enter a destination mobile / phone number')
       return
     }
 
@@ -317,6 +356,10 @@ export default function Ship() {
         destGw,
         pickupAddress,
         deliveryAddress,
+        destinationPhone,
+        destinationContactName: fullName,
+        destinationEmail: email,
+        destinationCompany: companyName,
         readyDate,
         incoterm,
         commodity: cargo[0]?.commodity_description || 'General Merchandise',
@@ -345,6 +388,9 @@ export default function Ship() {
       status: 'Booked',
       weight: estimate.grossWeightKg,
       cost: estimate.totalAmount,
+      destinationPhone,
+      pickupAddress,
+      deliveryAddress,
       date: new Date().toISOString().slice(0, 10),
       steps: [
         { label: 'Booked', loc: `${originGw.city}, ${originGw.countryCode}`, ts: 'Just now', done: true, current: true },
@@ -359,7 +405,29 @@ export default function Ship() {
     try {
       saveQuote(quoteRecord)
       addShipment(shipmentRecord)
-      await createShipmentRequest(shipmentRecord)
+      const shipRes = await createShipmentRequest(shipmentRecord)
+      const sid = shipRes?.shipment_id || quoteId
+
+      // Automatically trigger the full M1->M2->M3->Quote Engine pipeline
+      try {
+        await triggerQuotePipeline(sid, {
+          ...shipmentRecord,
+          quote_id: quoteId,
+          originGw,
+          destGw,
+          weight: estimate.grossWeightKg,
+          commodity: cargo[0]?.commodity_description || 'General Merchandise',
+          hs_code: cargo[0]?.hs_code || '850440',
+          incoterm,
+          container_count: cargo[0]?.container_count || 1,
+          container_type: cargo[0]?.container_type || '40HC',
+          modeKey: mode.toLowerCase(),
+          service: quoteRecord.mode,
+        })
+      } catch (pipeErr) {
+        console.warn('Pipeline run notice:', pipeErr.message)
+      }
+
       toast(`Quotation ${quoteId} generated successfully!`)
       localStorage.removeItem(DRAFT_KEY)
       navigate(`/quotes/${quoteId}`)
@@ -393,7 +461,7 @@ export default function Ship() {
                   <div ref={originDropdownRef} className="relative">
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-[13px] font-semibold text-brand-navy">
-                        {mode === 'OCEAN' ? 'Origin sea port' : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? 'Origin air cargo hub' : 'Origin port / airport / rail ICD / road hub'} <span className="text-brand-danger">*</span>
+                        Origin <span className="text-brand-danger">*</span>
                       </label>
                       <button
                         type="button"
@@ -551,7 +619,7 @@ export default function Ship() {
                   <div ref={destDropdownRef} className="relative">
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-[13px] font-semibold text-brand-navy">
-                        {mode === 'OCEAN' ? 'Destination sea port' : (mode === 'AIR' || mode === 'EXPRESS_AIR') ? 'Destination air cargo hub' : 'Destination port / airport / rail ICD / road hub'} <span className="text-brand-danger">*</span>
+                        Destination <span className="text-brand-danger">*</span>
                       </label>
                       <button
                         type="button"
@@ -695,27 +763,73 @@ export default function Ship() {
                 <div className="mt-[18px] grid grid-cols-1 gap-[18px] sm:grid-cols-2">
                   <div>
                     <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
-                      Pickup address <span className="text-brand-slateLight font-normal">(door pickup)</span>
+                      Pickup address <span className="text-brand-danger">*</span>
                     </label>
                     <input
                       type="text"
                       value={pickupAddress}
                       onChange={(e) => setPickupAddress(e.target.value)}
-                      placeholder="Street, city, PIN code"
-                      className={brandInputStyle}
+                      placeholder={originGw ? `e.g. 12 Industrial Area, ${originGw.city}` : "Street, city, PIN code"}
+                      className={`${brandInputStyle} ${
+                        pickupAddress && originGw && !checkAddressMatchesGateway(pickupAddress, originGw).matches
+                          ? 'border-rose-400 bg-rose-50/20'
+                          : pickupAddress && originGw && checkAddressMatchesGateway(pickupAddress, originGw).matches
+                            ? 'border-emerald-500 bg-emerald-50/20'
+                            : ''
+                      }`}
                     />
+                    {originGw && (
+                      <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
+                        {pickupAddress && checkAddressMatchesGateway(pickupAddress, originGw).matches ? (
+                          <span className="text-emerald-600 font-medium flex items-center gap-1">
+                            <Check className="h-3 w-3" /> Address verified: In {originGw.city}
+                          </span>
+                        ) : pickupAddress ? (
+                          <span className="text-rose-600 font-medium flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> Address must be in {originGw.city} to match origin port ({originGw.name})
+                          </span>
+                        ) : (
+                          <span className="text-brand-slateLight">
+                            Must be located in {originGw.city} (matches selected origin port)
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
-                      Delivery address <span className="text-brand-slateLight font-normal">(door delivery)</span>
+                      Delivery address <span className="text-brand-danger">*</span>
                     </label>
                     <input
                       type="text"
                       value={deliveryAddress}
                       onChange={(e) => setDeliveryAddress(e.target.value)}
-                      placeholder="Street, city, postal code"
-                      className={brandInputStyle}
+                      placeholder={destGw ? `e.g. 45 Logistics Blvd, ${destGw.city}` : "Street, city, postal code"}
+                      className={`${brandInputStyle} ${
+                        deliveryAddress && destGw && !checkAddressMatchesGateway(deliveryAddress, destGw).matches
+                          ? 'border-rose-400 bg-rose-50/20'
+                          : deliveryAddress && destGw && checkAddressMatchesGateway(deliveryAddress, destGw).matches
+                            ? 'border-emerald-500 bg-emerald-50/20'
+                            : ''
+                      }`}
                     />
+                    {destGw && (
+                      <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
+                        {deliveryAddress && checkAddressMatchesGateway(deliveryAddress, destGw).matches ? (
+                          <span className="text-emerald-600 font-medium flex items-center gap-1">
+                            <Check className="h-3 w-3" /> Address verified: In {destGw.city}
+                          </span>
+                        ) : deliveryAddress ? (
+                          <span className="text-rose-600 font-medium flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> Address must be in {destGw.city} to match destination port ({destGw.name})
+                          </span>
+                        ) : (
+                          <span className="text-brand-slateLight">
+                            Must be located in {destGw.city} (matches selected destination port)
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1458,6 +1572,21 @@ export default function Ship() {
                       className={brandInputStyle}
                     />
                   </div>
+                  <div>
+                    <label className="mb-2 block text-[13px] font-semibold text-brand-navy flex items-center gap-1.5">
+                      <Phone className="h-3.5 w-3.5 text-brand-marine" /> Mobile number / Phone <span className="text-brand-danger">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={destinationPhone}
+                      onChange={(e) => setDestinationPhone(e.target.value)}
+                      placeholder="e.g. +91 98765 43210"
+                      className={brandInputStyle}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
                   <div>
                     <label className="mb-2 block text-[13px] font-semibold text-brand-navy">
                       Destination country <span className="text-brand-danger">*</span>

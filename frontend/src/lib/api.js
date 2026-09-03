@@ -22,8 +22,10 @@ function delay(ms = 30) {
 }
 
 async function apiFetch(path, options = {}) {
+  const isHeavy = path.includes('/generate-quote/') || path.includes('/ml/') || path.includes('/weather/') || path.includes('/customs/') || path.includes('/risk/')
+  const timeoutMs = options.timeout || (isHeavy ? 35000 : 10000)
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 4000)
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   const isAuthEndpoint = path.includes('/auth/login/') || path.includes('/auth/register/')
   const token = !isAuthEndpoint && !options.skipAuth ? getToken() : null
@@ -581,7 +583,6 @@ export async function agentActionOnQuote(quoteId, action, comment, agentUser) {
   })
 }
 
-// Get all agent actions from localStorage (mock mode)
 export function getAgentActions() {
   try {
     const raw = localStorage.getItem('portline_agent_actions')
@@ -591,7 +592,175 @@ export function getAgentActions() {
   }
 }
 
+
+// Trigger the full M1->M2->M3->Quote Engine pipeline on the backend
+export async function triggerQuotePipeline(shipmentId, payload = {}) {
+  if (MOCK_MODE) {
+    await delay(300)
+    return { status: 'COMPLETED', quote_id: payload.quote_id || 'QT-MOCK-001' }
+  }
+  return apiFetch(`/api/v1/shipments/${shipmentId}/generate-quote/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+// Customer accepts or rejects a quote
+export async function customerDecisionOnQuote(quoteId, decision, notes = '', customerUser = null) {
+  if (MOCK_MODE) {
+    await delay(200)
+    const all = getSavedQuotes()
+    const record = { status: decision.toUpperCase(), notes, decided_at: new Date().toISOString() }
+    const updated = all.map(q => q.id === quoteId ? { ...q, customer_decision: record, status: decision === 'accepted' ? 'Accepted' : 'Rejected' } : q)
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+    return { ok: true, quote_id: quoteId, status: decision === 'accepted' ? 'Accepted' : 'Rejected' }
+  }
+  return apiFetch(`/api/v1/quotes/${quoteId}/customer-decision/`, {
+    method: 'POST',
+    body: JSON.stringify({
+      decision,
+      notes,
+      customer_email: customerUser?.email,
+      customer_name: customerUser?.name
+    }),
+  })
+}
+
+// Customer selects a recommended route option
+export async function selectQuoteRoute(quoteId, route, requestedBy = '') {
+  if (MOCK_MODE) {
+    await delay(150)
+    const all = getSavedQuotes()
+    const updated = all.map(q => q.id === quoteId ? {
+      ...q,
+      selected_route: route,
+      indicativeTotal: route.cost || q.indicativeTotal,
+      route_approval_status: 'PENDING_APPROVAL'
+    } : q)
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+    return { ok: true, quote_id: quoteId, selected_route: route }
+  }
+  return apiFetch(`/api/v1/quotes/${quoteId}/select-route/`, {
+    method: 'POST',
+    body: JSON.stringify({ route, requested_by: requestedBy }),
+  })
+}
+
+// Customs Officer approves documentation or requests specific documents
+export async function customsActionOnQuote(quoteId, action, { requestedDocs = [], comment = '', officerUser = null } = {}) {
+  if (MOCK_MODE) {
+    await delay(200)
+    const all = getSavedQuotes()
+    const status = action === 'approve' ? 'Approved' : 'Documents Requested'
+    const updated = all.map(q => q.id === quoteId ? {
+      ...q,
+      status,
+      customs_review: action === 'approve' ? { status: 'approved', officer_name: officerUser?.name, reviewed_at: new Date().toISOString(), notes: comment } : null,
+      customs_document_request: action === 'request_documents' ? { requested_docs: requestedDocs, officer_notes: comment, status: 'PENDING_CUSTOMER_UPLOAD', requested_at: new Date().toISOString() } : q.customs_document_request
+    } : q)
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+    return { ok: true, quote_id: quoteId, action, status }
+  }
+  return apiFetch(`/api/v1/quotes/${quoteId}/customs-action/`, {
+    method: 'POST',
+    body: JSON.stringify({
+      action,
+      requested_docs: requestedDocs,
+      officer_notes: comment,
+      officer_name: officerUser?.name || 'Customs Officer',
+      officer_email: officerUser?.email
+    }),
+  })
+}
+
+// Customer uploads required customs documents
+export async function uploadQuoteDocuments(quoteId, uploadedDocs = [], uploadedBy = 'Customer') {
+  if (MOCK_MODE) {
+    await delay(300)
+    const all = getSavedQuotes()
+    const updated = all.map(q => {
+      if (q.id === quoteId) {
+        const m3_c = q.m3_customs || {}
+        const checklist = (m3_c.checklist || []).map(item => {
+          const match = uploadedDocs.some(ud => ud.name?.toLowerCase() === (item.item_name || item.name)?.toLowerCase())
+          return match ? { ...item, document_uploaded: true, status: 'VERIFIED' } : item
+        })
+        return {
+          ...q,
+          status: 'Documents Submitted (Pending Customs Sign-off)',
+          m3_customs: { ...m3_c, checklist, readiness_score: 95 },
+          customs_document_request: { ...(q.customs_document_request || {}), status: 'DOCUMENTS_SUBMITTED' }
+        }
+      }
+      return q
+    })
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+    return { ok: true, quote_id: quoteId, status: 'Documents Submitted (Pending Customs Sign-off)' }
+  }
+  return apiFetch(`/api/v1/quotes/${quoteId}/upload-documents/`, {
+    method: 'POST',
+    body: JSON.stringify({
+      uploaded_docs: uploadedDocs,
+      uploaded_by: uploadedBy
+    }),
+  })
+}
+
+
+// Backend M2 ML Price Prediction
+export async function fetchBackendMLPrice(payload) {
+  try {
+    return await apiFetch('/api/v1/ml/predict-rate/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (err) {
+    console.warn('Backend ML price API error, falling back:', err.message)
+    return null
+  }
+}
+
+// Backend M3 Weather Assessment
+export async function fetchBackendWeatherAssess(payload) {
+  try {
+    return await apiFetch('/api/v1/weather/assess/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (err) {
+    console.warn('Backend weather assess API error, falling back:', err.message)
+    return null
+  }
+}
+
+// Backend M3 Customs Validation
+export async function fetchBackendCustomsValidate(payload) {
+  try {
+    return await apiFetch('/api/v1/customs/validate/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (err) {
+    console.warn('Backend customs validate API error, falling back:', err.message)
+    return null
+  }
+}
+
+// Backend M3 Composite Risk Assessment
+export async function fetchBackendRiskAssess(payload) {
+  try {
+    return await apiFetch('/api/v1/risk/assess/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  } catch (err) {
+    console.warn('Backend risk assess API error, falling back:', err.message)
+    return null
+  }
+}
+
 // ---------------- Master Database (Admin Only) ----------------
+
 import { FALLBACK_SEED, MASTER_COLLECTIONS_META } from './masterSeedData'
 
 function getLocalMasterCollection(name) {
