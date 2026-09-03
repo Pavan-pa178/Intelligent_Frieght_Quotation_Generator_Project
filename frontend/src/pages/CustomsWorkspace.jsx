@@ -1,15 +1,21 @@
-import React, { useState } from 'react'
-import { FileCheck, ShieldCheck, AlertTriangle, Clock, XCircle, Search, Check, ExternalLink, ShieldAlert, History, X } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { FileCheck, ShieldCheck, AlertTriangle, Clock, XCircle, Search, Check, ExternalLink, ShieldAlert, History, X, FileText, Send, CheckCircle2 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
+import { useApp } from '../context/AppContext'
 import { REGULATION_CORPUS } from '../lib/customsRAG'
+import { fetchAllQuotes, customsActionOnQuote } from '../lib/api'
 import PageBanner from '../components/PageBanner'
 
 export default function CustomsWorkspace() {
   const toast = useToast()
+  const { user } = useApp()
   const [activeTab, setActiveTab] = useState('pending')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCase, setSelectedCase] = useState(null)
   const [officerComments, setOfficerComments] = useState('')
+  const [showDocRequestModal, setShowDocRequestModal] = useState(false)
+  const [selectedDocsToRequest, setSelectedDocsToRequest] = useState([])
+  const [docRequestNotes, setDocRequestNotes] = useState('')
 
   const [cases, setCases] = useState([
     {
@@ -85,9 +91,73 @@ export default function CustomsWorkspace() {
     }
   ])
 
-  const handleDecision = (decision) => {
+  useEffect(() => {
+    fetchAllQuotes().then((quotes) => {
+      if (!quotes || quotes.length === 0) return
+      const relevantQuotes = quotes.filter(q => 
+        q.agent_review?.status === 'approved' || 
+        q.pipeline_status === 'AGENT_APPROVED' ||
+        q.pipeline_status === 'CUSTOMS_DOCS_REQUESTED' ||
+        q.pipeline_status === 'DOCS_SUBMITTED' ||
+        q.status === 'Agent Approved' ||
+        q.status === 'Documents Requested' ||
+        q.status === 'Documents Submitted (Pending Customs Sign-off)'
+      )
+
+      if (relevantQuotes.length > 0) {
+        const dynamicCases = relevantQuotes.map(q => {
+          const d = q.details || {}
+          const m3_c = q.m3_customs || {}
+          const checklist = m3_c.checklist || [
+            { name: 'Commercial Invoice (USD/EUR)', uploaded: true, status: 'VERIFIED' },
+            { name: 'Packing List with Net/Gross Weight', uploaded: true, status: 'VERIFIED' },
+            { name: 'EU Declaration of Conformity', uploaded: false, status: 'MISSING' },
+            { name: 'RoHS 3 Compliance Certificate', uploaded: false, status: 'MISSING' }
+          ]
+          const isApproved = q.customs_review?.status === 'approved' || q.status === 'Approved'
+          return {
+            quoteId: q.id,
+            checkId: `CUST-${q.id.replace('QT-', '')}`,
+            shipmentId: q.id,
+            origin: `${d.originGw?.city || 'Origin'} (${d.originGw?.code || 'INMAA'})`,
+            destination: `${d.destGw?.city || 'Destination'} (${d.destGw?.code || 'NLRTM'})`,
+            hsCode: d.hsCode || '850440',
+            commodity: d.commodity || 'Static Converters & Solar Inverters',
+            readinessScore: m3_c.readiness_score || (isApproved ? 100 : 70),
+            riskLevel: m3_c.risk_level || 'MEDIUM',
+            status: isApproved ? 'APPROVED' : (q.pipeline_status === 'CUSTOMS_DOCS_REQUESTED' ? 'DOCS_FLAGGED' : 'PENDING_REVIEW'),
+            requiresOfficer: !isApproved,
+            summary: m3_c.summary || 'Trade compliance file generated from customs RAG engine.',
+            checklist: checklist.map(c => ({
+              name: c.item_name || c.name,
+              uploaded: c.document_uploaded ?? c.uploaded ?? false,
+              status: c.status || 'PENDING'
+            })),
+            citation: m3_c.citations?.[0]?.citation || 'EU Union Customs Code Art 127 advance filing & Low Voltage Directive'
+          }
+        })
+        setCases(prev => {
+          const existingIds = new Set(dynamicCases.map(c => c.checkId))
+          return [...dynamicCases, ...prev.filter(c => !existingIds.has(c.checkId))]
+        })
+      }
+    })
+  }, [])
+
+  const handleDecision = async (decision) => {
     if (!selectedCase) return
     const newStatus = decision === 'APPROVE' ? 'APPROVED' : decision === 'REJECT' ? 'REJECTED' : 'HOLD'
+
+    if (selectedCase.quoteId) {
+      try {
+        await customsActionOnQuote(selectedCase.quoteId, decision === 'APPROVE' ? 'approve' : 'reject', {
+          comment: officerComments || `Customs Officer sign-off decision: ${decision}`,
+          officerUser: user
+        })
+      } catch (err) {
+        console.warn('Customs action API error:', err.message)
+      }
+    }
 
     setCases(prev => prev.map(c => c.checkId === selectedCase.checkId ? { ...c, status: newStatus, requiresOfficer: false } : c))
 
@@ -96,16 +166,55 @@ export default function CustomsWorkspace() {
         id: `AUD-${Date.now().toString().slice(-4)}`,
         checkId: selectedCase.checkId,
         action: `${decision}_BY_OFFICER`,
-        actor: 'Customs Officer Desk',
+        actor: user?.name || 'Customs Officer Desk',
         timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST',
         notes: officerComments || `Officer validated case with decision: ${decision}`
       },
       ...prev
     ])
 
-    toast(`Case ${selectedCase.checkId} ${newStatus.toLowerCase()} successfully`)
+    toast(`Case ${selectedCase.checkId} ${newStatus.toLowerCase()} successfully!`)
     setSelectedCase(null)
     setOfficerComments('')
+  }
+
+  const handleSendDocumentRequest = async () => {
+    if (!selectedCase) return
+    if (selectedDocsToRequest.length === 0) {
+      toast('Please select at least one document to request from customer')
+      return
+    }
+
+    if (selectedCase.quoteId) {
+      try {
+        await customsActionOnQuote(selectedCase.quoteId, 'request_documents', {
+          requestedDocs: selectedDocsToRequest,
+          comment: docRequestNotes || 'Please upload the specified certificates for regulatory customs clearance.',
+          officerUser: user
+        })
+      } catch (err) {
+        console.warn('Customs document request error:', err.message)
+      }
+    }
+
+    setCases(prev => prev.map(c => c.checkId === selectedCase.checkId ? { ...c, status: 'DOCS_FLAGGED' } : c))
+    setAuditLogs(prev => [
+      {
+        id: `AUD-${Date.now().toString().slice(-4)}`,
+        checkId: selectedCase.checkId,
+        action: 'DOCUMENTS_FLAGGED_BY_OFFICER',
+        actor: user?.name || 'Customs Officer Desk',
+        timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST',
+        notes: `Flagged ${selectedDocsToRequest.length} document(s): ${selectedDocsToRequest.join(', ')}. Note: ${docRequestNotes}`
+      },
+      ...prev
+    ])
+
+    toast(`Document request alert sent to customer for ${selectedCase.checkId}!`)
+    setShowDocRequestModal(false)
+    setSelectedCase(null)
+    setSelectedDocsToRequest([])
+    setDocRequestNotes('')
   }
 
   const filteredCases = cases.filter(c => {
@@ -361,29 +470,118 @@ export default function CustomsWorkspace() {
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-brand-line pt-4">
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-brand-line pt-4">
                 <button
-                  onClick={() => handleDecision('REJECT')}
-                  className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-600 hover:text-white transition-colors"
+                  type="button"
+                  onClick={() => {
+                    const missing = selectedCase.checklist.filter(c => !c.uploaded).map(c => c.name)
+                    setSelectedDocsToRequest(missing.length > 0 ? missing : [selectedCase.checklist[0]?.name || 'Commercial Invoice'])
+                    setShowDocRequestModal(true)
+                  }}
+                  className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs"
                 >
-                  Reject Clearance
+                  <FileText className="h-3.5 w-3.5 text-amber-600" />
+                  Flag / Request Specific Documents
+                </button>
+
+                <div className="flex items-center gap-2.5">
+                  <button
+                    onClick={() => handleDecision('REJECT')}
+                    className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-600 hover:text-white transition-colors"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => handleDecision('APPROVE')}
+                    className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-colors shadow-xs"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Approve Documentation Sign-Off
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* OFFICER DOCUMENT REQUEST MODAL */}
+        {showDocRequestModal && selectedCase && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+            <div className="w-full max-w-lg rounded-2xl border border-brand-line bg-white p-6 shadow-2xl animate-in fade-in">
+              <div className="flex items-center justify-between border-b border-brand-line pb-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-amber-600" />
+                  <h3 className="text-base font-bold text-brand-navy">Flag Required Documents for Customer</h3>
+                </div>
+                <button onClick={() => setShowDocRequestModal(false)} className="rounded-full p-1 text-brand-slate hover:bg-brand-cloud">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <p className="mt-3 text-xs text-brand-slate">
+                Select the specific documents required from the shipper/customer before clearance approval can be granted:
+              </p>
+
+              <div className="mt-4 space-y-2 max-h-[40vh] overflow-y-auto">
+                {selectedCase.checklist.map((doc, idx) => {
+                  const isChecked = selectedDocsToRequest.includes(doc.name)
+                  return (
+                    <label key={idx} className="flex items-center justify-between p-2.5 rounded-xl border border-brand-line bg-brand-cloud/30 hover:bg-brand-cloud cursor-pointer">
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedDocsToRequest(prev => [...prev, doc.name])
+                            } else {
+                              setSelectedDocsToRequest(prev => prev.filter(n => n !== doc.name))
+                            }
+                          }}
+                          className="rounded accent-amber-600 h-4 w-4"
+                        />
+                        <span className="text-xs font-semibold text-brand-navy">{doc.name}</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${doc.uploaded ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                        {doc.uploaded ? 'UPLOADED' : 'MISSING'}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-xs font-bold text-brand-navy mb-1">Officer Instructions / Directive to Customer</label>
+                <textarea
+                  rows={2}
+                  value={docRequestNotes}
+                  onChange={(e) => setDocRequestNotes(e.target.value)}
+                  placeholder="e.g. Please provide EU Declaration of Conformity citing Low Voltage Directive and RoHS test report..."
+                  className="w-full rounded-xl border border-brand-line p-2.5 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                />
+              </div>
+
+              <div className="mt-5 flex justify-end gap-3 border-t border-brand-line pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowDocRequestModal(false)}
+                  className="rounded-xl border border-brand-line px-4 py-2 text-xs font-semibold text-brand-slate hover:bg-brand-cloud"
+                >
+                  Cancel
                 </button>
                 <button
-                  onClick={() => handleDecision('HOLD')}
-                  className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-500 hover:text-white transition-colors"
+                  type="button"
+                  onClick={handleSendDocumentRequest}
+                  className="flex items-center gap-1.5 rounded-xl bg-amber-600 px-5 py-2 text-xs font-bold text-white hover:bg-amber-700 shadow-sm"
                 >
-                  Place on Border Hold
-                </button>
-                <button
-                  onClick={() => handleDecision('APPROVE')}
-                  className="rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-colors shadow-xs"
-                >
-                  Approve & Issue Sign-Off
+                  <Send className="h-3.5 w-3.5" />
+                  Send Document Request to Customer
                 </button>
               </div>
             </div>
           </div>
         )}
+
 
       </div>
     </div>

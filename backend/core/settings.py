@@ -130,3 +130,25 @@ CORS_ALLOW_HEADERS = [
     'x-user-role',
     'x-user-email',
 ]
+
+# ─── Startup Pre-Warm ─────────────────────────────────────────────────────────
+# Pre-warm MongoDB Atlas connection and ML model in background threads.
+# This eliminates the ~15s first-request timeout on cold start.
+import threading
+
+def _prewarm_mongo():
+    try:
+        from core.mongodb import get_mongo_db
+        get_mongo_db()
+    except Exception:
+        pass
+
+def _prewarm_ml_model():
+    try:
+        from apps.ml_pricing.model import _load_model
+        _load_model()
+    except Exception:
+        pass
+
+threading.Thread(target=_prewarm_mongo, daemon=True, name='mongo-prewarm').start()
+threading.Thread(target=_prewarm_ml_model, daemon=True, name='ml-prewarm').start()

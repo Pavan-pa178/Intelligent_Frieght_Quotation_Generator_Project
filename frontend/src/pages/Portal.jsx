@@ -216,10 +216,18 @@ export default function Portal() {
                                   </div>
                                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-brand-slate">
                                     <span className="font-mono font-bold text-brand-navy bg-brand-cloud px-1.5 py-0.5 rounded text-[11px]">{tn}</span>
-                                    <span>Rs.</span>
+                                    <span>·</span>
                                     <span>{s?.service || 'Freight Service'}</span>
-                                    <span>Rs.</span>
+                                    <span>·</span>
                                     <span>{s?.date || 'Today'}</span>
+                                    {s?.destinationPhone && (
+                                      <>
+                                        <span>·</span>
+                                        <span className="flex items-center gap-1 font-mono text-[11px] text-brand-navy bg-brand-marinePale px-1.5 py-0.5 rounded">
+                                          <Phone className="h-2.5 w-2.5 text-brand-marine" /> {s.destinationPhone}
+                                        </span>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               </div>
