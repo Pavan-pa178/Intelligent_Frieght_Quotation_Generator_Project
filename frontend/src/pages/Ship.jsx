@@ -13,19 +13,100 @@ const DRAFT_KEY = 'portline_ship_draft_v1'
 
 const COUNTRY_DIAL_CODES = [
   { code: '+91', country: 'IN', label: '+91 (India)' },
+  { code: '+94', country: 'LK', label: '+94 (Sri Lanka)' },
   { code: '+971', country: 'AE', label: '+971 (UAE)' },
+  { code: '+65', country: 'SG', label: '+65 (Singapore)' },
   { code: '+1', country: 'US', label: '+1 (USA / Canada)' },
+  { code: '+44', country: 'GB', label: '+44 (United Kingdom)' },
   { code: '+49', country: 'DE', label: '+49 (Germany)' },
   { code: '+31', country: 'NL', label: '+31 (Netherlands)' },
-  { code: '+65', country: 'SG', label: '+65 (Singapore)' },
-  { code: '+44', country: 'GB', label: '+44 (UK)' },
   { code: '+86', country: 'CN', label: '+86 (China)' },
   { code: '+60', country: 'MY', label: '+60 (Malaysia)' },
   { code: '+81', country: 'JP', label: '+81 (Japan)' },
+  { code: '+82', country: 'KR', label: '+82 (South Korea)' },
   { code: '+61', country: 'AU', label: '+61 (Australia)' },
+  { code: '+64', country: 'NZ', label: '+64 (New Zealand)' },
   { code: '+33', country: 'FR', label: '+33 (France)' },
   { code: '+39', country: 'IT', label: '+39 (Italy)' },
+  { code: '+34', country: 'ES', label: '+34 (Spain)' },
+  { code: '+32', country: 'BE', label: '+32 (Belgium)' },
+  { code: '+41', country: 'CH', label: '+41 (Switzerland)' },
+  { code: '+46', country: 'SE', label: '+46 (Sweden)' },
+  { code: '+47', country: 'NO', label: '+47 (Norway)' },
+  { code: '+45', country: 'DK', label: '+45 (Denmark)' },
+  { code: '+48', country: 'PL', label: '+48 (Poland)' },
+  { code: '+90', country: 'TR', label: '+90 (Turkey)' },
   { code: '+966', country: 'SA', label: '+966 (Saudi Arabia)' },
+  { code: '+968', country: 'OM', label: '+968 (Oman)' },
+  { code: '+974', country: 'QA', label: '+974 (Qatar)' },
+  { code: '+965', country: 'KW', label: '+965 (Kuwait)' },
+  { code: '+973', country: 'BH', label: '+973 (Bahrain)' },
+  { code: '+880', country: 'BD', label: '+880 (Bangladesh)' },
+  { code: '+92', country: 'PK', label: '+92 (Pakistan)' },
+  { code: '+977', country: 'NP', label: '+977 (Nepal)' },
+  { code: '+66', country: 'TH', label: '+66 (Thailand)' },
+  { code: '+84', country: 'VN', label: '+84 (Vietnam)' },
+  { code: '+62', country: 'ID', label: '+62 (Indonesia)' },
+  { code: '+63', country: 'PH', label: '+63 (Philippines)' },
+  { code: '+886', country: 'TW', label: '+886 (Taiwan)' },
+  { code: '+852', country: 'HK', label: '+852 (Hong Kong)' },
+  { code: '+20', country: 'EG', label: '+20 (Egypt)' },
+  { code: '+27', country: 'ZA', label: '+27 (South Africa)' },
+  { code: '+234', country: 'NG', label: '+234 (Nigeria)' },
+  { code: '+254', country: 'KE', label: '+254 (Kenya)' },
+  { code: '+55', country: 'BR', label: '+55 (Brazil)' },
+  { code: '+52', country: 'MX', label: '+52 (Mexico)' },
+  { code: '+54', country: 'AR', label: '+54 (Argentina)' },
+  { code: '+56', country: 'CL', label: '+56 (Chile)' },
+  { code: '+57', country: 'CO', label: '+57 (Colombia)' },
+]
+
+const DESTINATION_COUNTRIES = [
+  'Sri Lanka',
+  'India',
+  'UAE',
+  'Singapore',
+  'Malaysia',
+  'United States',
+  'United Kingdom',
+  'Germany',
+  'Netherlands',
+  'China',
+  'Japan',
+  'South Korea',
+  'Australia',
+  'New Zealand',
+  'Saudi Arabia',
+  'Oman',
+  'Qatar',
+  'Kuwait',
+  'Bahrain',
+  'Bangladesh',
+  'Pakistan',
+  'Nepal',
+  'Thailand',
+  'Vietnam',
+  'Indonesia',
+  'Philippines',
+  'Taiwan',
+  'Hong Kong',
+  'France',
+  'Italy',
+  'Spain',
+  'Belgium',
+  'Switzerland',
+  'Sweden',
+  'Norway',
+  'Denmark',
+  'Poland',
+  'Turkey',
+  'Egypt',
+  'South Africa',
+  'Nigeria',
+  'Kenya',
+  'Brazil',
+  'Mexico',
+  'Canada'
 ]
 
 
@@ -145,6 +226,21 @@ export default function Ship() {
       }
     }
   }, [params])
+
+  // Sync destination country and dial code when destination gateway changes
+  useEffect(() => {
+    if (destGw) {
+      if (destGw.country) {
+        setCountry(destGw.country)
+      }
+      const match = COUNTRY_DIAL_CODES.find(
+        (c) => c.country === destGw.countryCode || (destGw.country && c.label.toLowerCase().includes(destGw.country.toLowerCase()))
+      )
+      if (match) {
+        setDestinationPhoneCode(match.code)
+      }
+    }
+  }, [destGw])
 
   const [pickupAddress, setPickupAddress] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
@@ -1640,12 +1736,13 @@ export default function Ship() {
                       onChange={(e) => setCountry(e.target.value)}
                       className={brandInputStyle}
                     >
-                      <option value="India">India</option>
-                      <option value="UAE">UAE</option>
-                      <option value="Netherlands">Netherlands</option>
-                      <option value="Singapore">Singapore</option>
-                      <option value="Germany">Germany</option>
-                      <option value="USA">USA</option>
+                      {/* Show current country option if not in predefined list */}
+                      {country && !DESTINATION_COUNTRIES.includes(country) && (
+                        <option value={country}>{country}</option>
+                      )}
+                      {DESTINATION_COUNTRIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
