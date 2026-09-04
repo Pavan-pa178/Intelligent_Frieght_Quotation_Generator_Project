@@ -540,6 +540,27 @@ export default function QuoteDetail() {
     )
   }
 
+  const userEmail = (user?.email || '').trim().toLowerCase()
+  const quoteEmail = (quote?.user_email || '').trim().toLowerCase()
+  const isOwner = !quoteEmail || (userEmail && quoteEmail === userEmail)
+
+  if (!isAgentOrAdmin && user && !isOwner) {
+    return (
+      <div className="py-20 text-center max-w-md mx-auto px-4">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-rose-50 text-rose-600 border border-rose-200">
+          <Lock className="h-6 w-6" />
+        </div>
+        <h3 className="text-xl font-bold text-brand-navy">Confidential Quotation</h3>
+        <p className="mt-2 text-xs text-brand-slate leading-relaxed">
+          Quotation <span className="font-mono font-bold text-brand-navy">{quote.id}</span> belongs to another registered account and is protected by Portline privacy policies. You can only view quotations associated with your active login ({user?.email}).
+        </p>
+        <button onClick={handleBack} className="mt-6 rounded-xl bg-brand-navy px-5 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-navy/90 transition-colors">
+          Return to My Quotations
+        </button>
+      </div>
+    )
+  }
+
   const displayTimestamp = quote.created_at 
     ? new Date(quote.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
     : (quote.created && quote.created !== 'Just now' ? quote.created : 'Today')
