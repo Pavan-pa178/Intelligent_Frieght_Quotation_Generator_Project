@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, Upload, X, Loader2, AlertTriangle, Receipt } from 'lucide-react'
+import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, Upload, X, Loader2, AlertTriangle, Receipt, Lock } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import WeatherRiskPanel from '../components/WeatherRiskPanel'
@@ -402,6 +402,16 @@ export default function QuoteDetail() {
   }
 
   const handleSelectRoute = async (route) => {
+    // Agents & Admins cannot override customer route selection
+    if (isAgentOrAdmin) {
+      toast("Route selection is reserved for the customer. As an agent, your role is to validate the customer's preferred route.")
+      return
+    }
+    // Block if quotation is already approved or accepted
+    if (quote?.status === 'Accepted' || agentApproved) {
+      toast('Route selection is locked because this quotation has already been approved.')
+      return
+    }
     try {
       await selectQuoteRoute(quote.id, route, user?.email || quote.user_email)
       setQuote(prev => ({
@@ -725,11 +735,22 @@ export default function QuoteDetail() {
                 <div>
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h3 className="text-lg font-bold text-brand-navy">Recommended Route Options ({routes.length})</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-brand-navy">Recommended Route Options ({routes.length})</h3>
+                      {isAgentOrAdmin && quote.selected_route && (
+                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-mono text-[10px] font-bold text-slate-700 border border-slate-300 flex items-center gap-1">
+                          <Lock className="h-3 w-3 text-slate-500" /> Customer Choice Locked
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-brand-slate">
                       {isAgentOrAdmin 
-                        ? 'Available carrier routes and commercial options for this lane.'
-                        : 'Choose your preferred carrier route. Click to select and request approval.'}
+                        ? (quote.selected_route 
+                            ? `The customer has selected ${quote.selected_route.carrier}. This route selection is locked to respect the customer's decision.`
+                            : 'Available carrier routes and commercial options for this lane.')
+                        : (quote.selected_route
+                            ? 'Your selected route is confirmed below. You can adjust your route before final agent approval.'
+                            : 'Choose your preferred carrier route. Click to select and request approval.')}
                     </p>
                   </div>
                     {quote.selected_route && (
@@ -763,7 +784,7 @@ export default function QuoteDetail() {
                                 )}
                                 {isSelected && (
                                   <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-mono text-[10px] font-bold text-emerald-800 flex items-center gap-1">
-                                    <Check className="h-3 w-3" /> SELECTED ROUTE
+                                    <Check className="h-3 w-3" /> {isAgentOrAdmin ? 'CHOSEN BY CUSTOMER' : 'SELECTED ROUTE'}
                                   </span>
                                 )}
                               </div>
@@ -777,13 +798,22 @@ export default function QuoteDetail() {
                               </div>
                               {isSelected ? (
                                 <span className="rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white flex items-center gap-1.5 shadow-xs">
-                                  <Check className="h-3.5 w-3.5" /> Chosen
+                                  <Check className="h-3.5 w-3.5" /> {isAgentOrAdmin ? 'Customer Selection' : 'Chosen'}
+                                </span>
+                              ) : isAgentOrAdmin ? (
+                                <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500 border border-slate-200 cursor-not-allowed flex items-center gap-1">
+                                  <Lock className="h-3 w-3 text-slate-400" /> Option Only
                                 </span>
                               ) : (
                                 <button
                                   type="button"
+                                  disabled={quote.status === 'Accepted' || agentApproved}
                                   onClick={() => handleSelectRoute(r)}
-                                  className="rounded-lg bg-brand-navy px-3.5 py-2 text-xs font-bold text-white hover:bg-brand-marine transition-colors shadow-xs"
+                                  className={`rounded-lg px-3.5 py-2 text-xs font-bold shadow-xs transition-colors ${
+                                    quote.status === 'Accepted' || agentApproved
+                                      ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                                      : 'bg-brand-navy text-white hover:bg-brand-marine'
+                                  }`}
                                 >
                                   Select Route
                                 </button>
