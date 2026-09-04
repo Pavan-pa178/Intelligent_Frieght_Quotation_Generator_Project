@@ -444,9 +444,10 @@ export default function Ship() {
     const quoteId = `QT-2026-${Math.floor(10000 + Math.random() * 89999)}`
     const tn = `PORT-${Math.floor(10000 + Math.random() * 89999)}-${destGw.countryCode || 'IN'}`
 
+    const quoteUserEmail = (user?.email || email || 'customer@portline.in').trim().toLowerCase()
     const quoteRecord = {
       id: quoteId,
-      user_email: user?.email || 'customer@portline.in',
+      user_email: quoteUserEmail,
       customer: user?.company || user?.name || companyName.trim(),
       city: originGw.city,
       laneCode: `${originGw.code} → ${destGw.code}`,

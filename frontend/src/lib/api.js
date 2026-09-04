@@ -26,7 +26,7 @@ function delay(ms = 30) {
 
 async function apiFetch(path, options = {}) {
   const isHeavy = path.includes('/generate-quote/') || path.includes('/ml/') || path.includes('/weather/') || path.includes('/customs/') || path.includes('/risk/')
-  const timeoutMs = options.timeout || (isHeavy ? 35000 : 10000)
+  const timeoutMs = options.timeout || (isHeavy ? 35000 : 25000)
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
@@ -620,11 +620,23 @@ export async function fetchQuotes(email) {
   }
 
   if (email) {
-    const emailLower = email.toLowerCase()
-    return merged.filter(q => {
-      const qEmail = (q.user_email || '').toLowerCase()
-      return !qEmail || qEmail === emailLower || qEmail === 'customer@portline.in' || qEmail === 'demo@portline.in'
-    })
+    const emailLower = email.trim().toLowerCase()
+    const userQuotes = merged.filter(q => (q.user_email || '').trim().toLowerCase() === emailLower)
+
+    // Auto-sync: If any local quotes exist for this email that weren't yet on remote backend, push them
+    if (!MOCK_MODE && remoteList.length >= 0) {
+      const remoteIds = new Set(remoteList.map(r => r.id))
+      userQuotes.forEach(uq => {
+        if (uq && uq.id && !remoteIds.has(uq.id)) {
+          apiFetch('/api/v1/quotes/', {
+            method: 'POST',
+            body: JSON.stringify(uq)
+          }).catch(() => {})
+        }
+      })
+    }
+
+    return userQuotes
   }
 
   return merged
@@ -984,6 +996,7 @@ export async function fetchBackendRiskAssess(payload) {
     return null
   }
 }
+
 
 // ---------------- Master Database (Admin Only) ----------------
 

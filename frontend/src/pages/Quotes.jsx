@@ -23,7 +23,7 @@ function formatRelativeTime(dateInput, fallbackInput) {
 }
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Search, Plus } from 'lucide-react'
+import { FileText, Search, Plus, Lock } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import { fetchQuotes, clearAllQuotes } from '../lib/api'
@@ -39,13 +39,21 @@ export default function Quotes() {
   const [modeFilter, setModeFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
 
-  const [activeTab, setActiveTab] = useState('all')
-
   const { user } = useApp()
-  const isElevated = user?.role === 'admin' || user?.role === 'agent' || user?.role === 'broker' || user?.role === 'customs_officer'
+  const isElevated = user?.role === 'admin' || user?.role === 'agent' || user?.role === 'broker' || user?.role === 'customs_officer' || user?.role === 'agent_operator' || user?.role === 'manager'
+  const [activeTab, setActiveTab] = useState(isElevated ? 'all' : 'mine')
 
   useEffect(() => {
-    fetchQuotes().then((res) => {
+    if (!user) {
+      setQuotes([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    const queryEmail = isElevated ? (activeTab === 'mine' ? user?.email : null) : user?.email
+
+    fetchQuotes(queryEmail).then((res) => {
       let list = Array.isArray(res) ? res : []
       // Sort newest first
       list.sort((a, b) => {
@@ -56,26 +64,20 @@ export default function Quotes() {
       setQuotes(list)
       setLoading(false)
     })
-  }, [user])
+  }, [user, isElevated, activeTab])
 
   const filteredQuotes = useMemo(() => {
-    const userEmail = (user?.email || '').toLowerCase()
-    const userName = (user?.name || '').toLowerCase()
-    const userCompany = (user?.company || '').toLowerCase()
+    const userEmail = (user?.email || '').trim().toLowerCase()
 
     return quotes.filter((q) => {
-      // Tab filter
-      if (activeTab === 'mine' && userEmail) {
-        const qEmail = (q.user_email || '').toLowerCase()
-        const qCust = (q.customer || '').toLowerCase()
-        const isMatch =
-          qEmail === userEmail ||
-          (userName && qCust.includes(userName)) ||
-          (userCompany && qCust.includes(userCompany)) ||
-          qEmail === 'customer@portline.in' ||
-          qEmail === 'demo@portline.in' ||
-          !qEmail
-        if (!isMatch) return false
+      // STRICT FILTER: Regular customers strictly see ONLY their own quotes
+      if (!isElevated) {
+        if (!userEmail) return false
+        const qEmail = (q.user_email || '').trim().toLowerCase()
+        if (qEmail !== userEmail) return false
+      } else if (activeTab === 'mine' && userEmail) {
+        const qEmail = (q.user_email || '').trim().toLowerCase()
+        if (qEmail !== userEmail) return false
       }
 
       const matchSearch =
@@ -101,60 +103,109 @@ export default function Quotes() {
 
       return matchSearch && matchLane && matchMode && matchStatus
     })
-  }, [quotes, search, laneFilter, modeFilter, statusFilter, activeTab, user])
+  }, [quotes, search, laneFilter, modeFilter, statusFilter, activeTab, user, isElevated])
 
   return (
     <>
       <PageBanner
-        crumb="Quotations"
-        title="Quotations Workbench"
-        subtitle="Manage, filter and review calculated freight quotations across global trade lanes."
+        crumb={isElevated ? "Quotations" : "My Quotations"}
+        title={isElevated ? "Quotations Workbench" : "My Quotations"}
+        subtitle={
+          isElevated
+            ? "Manage, filter and review calculated freight quotations across global trade lanes."
+            : `Confidential freight quotations for ${user?.email || 'your account'}. Review pricing, accept routes, and manage booking requests.`
+        }
         icon={FileText}
       />
       
       <section className="pt-10 pb-20">
         <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           
-          {/* KPI Cards */}
-          <div className="grid grid-cols-2 gap-4 mb-7 md:grid-cols-4">
-            <KpiCard label="Quotes loaded" value={quotes.length.toString()} delta="Active in system" deltaType="up" />
-            <KpiCard label="Ocean FCL quotes" value={quotes.filter(q => q.mode?.toLowerCase().includes('ocean')).length.toString()} delta="Ocean transport" deltaType="up" />
-            <KpiCard label="Air Freight quotes" value={quotes.filter(q => q.mode?.toLowerCase().includes('air')).length.toString()} delta="Air express transport" />
-            <KpiCard label="Calculated routes" value={(quotes.length * 3).toString()} delta="3 options per quote" deltaType="up" />
-          </div>
-
-          {/* Table Container */}
-          <div className="rounded-lg2 border border-brand-line bg-white shadow-sm2 overflow-hidden">
-            
-            {/* Filters bar */}
-            <div className="p-6 border-b border-brand-line bg-white">
-              {/* Tab Selector */}
-              <div className="flex items-center gap-2 mb-4 border-b border-brand-line/50 pb-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('all')}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    activeTab === 'all'
-                      ? 'bg-brand-navy text-white shadow-xs'
-                      : 'text-brand-slate hover:text-brand-navy hover:bg-brand-cloud'
-                  }`}
-                >
-                  All Quotations ({quotes.length})
-                </button>
-                {user && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('mine')}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                      activeTab === 'mine'
-                        ? 'bg-brand-navy text-white shadow-xs'
-                        : 'text-brand-slate hover:text-brand-navy hover:bg-brand-cloud'
-                    }`}
-                  >
-                    My Enquiries
-                  </button>
-                )}
+          {!user ? (
+            <div className="rounded-lg2 border border-brand-line bg-white p-12 text-center shadow-sm2 max-w-lg mx-auto my-8">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-marinePale text-brand-marine">
+                <Lock className="h-7 w-7" />
               </div>
+              <h2 className="text-xl font-bold text-brand-navy">Sign In to View Your Quotations</h2>
+              <p className="mt-2 text-xs text-brand-slate leading-relaxed">
+                Quotations are confidential and strictly scoped to individual verified user accounts. Please log in or register to access your calculated rates and bookings.
+              </p>
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => navigate('/login?redirect=/quotes')}
+                  className="w-full sm:w-auto rounded-xl bg-brand-navy px-6 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-navy/90 transition-colors"
+                >
+                  Log In
+                </button>
+                <button
+                  onClick={() => navigate('/login?tab=signup&redirect=/quotes')}
+                  className="w-full sm:w-auto rounded-xl border border-brand-line bg-brand-cloud px-6 py-2.5 text-xs font-semibold text-brand-navy hover:bg-brand-marinePale transition-colors"
+                >
+                  Create Account
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 gap-4 mb-7 md:grid-cols-4">
+                <KpiCard
+                  label={isElevated ? "Quotes loaded" : "My Quotes"}
+                  value={quotes.length.toString()}
+                  delta={isElevated ? "Active in system" : "Active in your account"}
+                  deltaType="up"
+                />
+                <KpiCard
+                  label="Ocean FCL quotes"
+                  value={quotes.filter(q => q.mode?.toLowerCase().includes('ocean')).length.toString()}
+                  delta="Ocean transport"
+                  deltaType="up"
+                />
+                <KpiCard
+                  label="Air Freight quotes"
+                  value={quotes.filter(q => q.mode?.toLowerCase().includes('air')).length.toString()}
+                  delta="Air express transport"
+                />
+                <KpiCard
+                  label="Calculated routes"
+                  value={(quotes.length * 3).toString()}
+                  delta="3 options per quote"
+                  deltaType="up"
+                />
+              </div>
+
+              {/* Table Container */}
+              <div className="rounded-lg2 border border-brand-line bg-white shadow-sm2 overflow-hidden">
+                
+                {/* Filters bar */}
+                <div className="p-6 border-b border-brand-line bg-white">
+                  {/* Tab Selector — Only visible to elevated staff */}
+                  {isElevated && (
+                    <div className="flex items-center gap-2 mb-4 border-b border-brand-line/50 pb-3">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('all')}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                          activeTab === 'all'
+                            ? 'bg-brand-navy text-white shadow-xs'
+                            : 'text-brand-slate hover:text-brand-navy hover:bg-brand-cloud'
+                        }`}
+                      >
+                        All Quotations ({quotes.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('mine')}
+                        className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                          activeTab === 'mine'
+                            ? 'bg-brand-navy text-white shadow-xs'
+                            : 'text-brand-slate hover:text-brand-navy hover:bg-brand-cloud'
+                        }`}
+                      >
+                        My Assigned ({quotes.filter(q => (q.user_email || '').toLowerCase() === (user?.email || '').toLowerCase()).length})
+                      </button>
+                    </div>
+                  )}
 
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1 min-w-[220px] max-w-[320px]">
@@ -260,7 +311,24 @@ export default function Quotes() {
                     </tr>
                   ) : filteredQuotes.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="py-8 text-center text-brand-slate">No quotes found matching criteria.</td>
+                      <td colSpan={10} className="py-12 text-center">
+                        <div className="mx-auto max-w-sm">
+                          <FileText className="mx-auto h-9 w-9 text-brand-slateLight mb-2.5 opacity-70" />
+                          <div className="font-bold text-brand-navy text-sm">No quotations found for your account</div>
+                          <div className="text-xs text-brand-slate mt-1 mb-4 leading-relaxed">
+                            {search || laneFilter !== 'All' || modeFilter !== 'All' || statusFilter !== 'All'
+                              ? 'No quotations match the active filter criteria. Try clearing search filters.'
+                              : `You haven't generated any quotations under ${user?.email || 'this account'} yet.`}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => navigate('/ship')}
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-orange to-brand-orangeLight px-5 py-2.5 text-xs font-semibold text-white shadow-xs hover:opacity-95 transition-opacity"
+                          >
+                            <Plus className="h-4 w-4" /> Calculate New Quote
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ) : (
                     filteredQuotes.map((q) => (
@@ -315,6 +383,8 @@ export default function Quotes() {
             </div>
 
           </div>
+          </>
+        )}
 
         </div>
       </section>

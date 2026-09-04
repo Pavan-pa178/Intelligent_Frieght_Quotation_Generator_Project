@@ -17,13 +17,8 @@ class QuoteListCreateView(APIView):
             col = get_collection('quotes')
             if col is not None:
                 if user_email:
-                    query = {
-                        '$or': [
-                            {'user_email': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}},
-                            {'user_email': {'$in': ['customer@portline.in', 'demo@portline.in', '']}},
-                            {'user_email': {'$exists': False}}
-                        ]
-                    }
+                    # STRICT MATCH: Only return quotes belonging specifically to this user's account
+                    query = {'user_email': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}}
                 else:
                     query = {}
                 db_quotes = list(col.find(query, {'_id': 0}))
@@ -33,14 +28,16 @@ class QuoteListCreateView(APIView):
                         if qid and not any(m.get('id') == qid for m in IN_MEMORY_QUOTES):
                             IN_MEMORY_QUOTES.append(dq)
                     return Response(db_quotes)
+                elif user_email:
+                    # User specifically queried for their email and no quotes exist for this user in DB
+                    return Response([])
         except Exception:
             pass
 
         if user_email:
             matched = [
                 q for q in IN_MEMORY_QUOTES
-                if (q.get('user_email', '').lower() == user_email.lower() or
-                    q.get('user_email', '') in ('customer@portline.in', 'demo@portline.in', ''))
+                if q.get('user_email', '').strip().lower() == user_email.lower()
             ]
             return Response(matched)
         return Response(IN_MEMORY_QUOTES)
