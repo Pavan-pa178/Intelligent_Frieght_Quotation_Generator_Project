@@ -310,28 +310,6 @@ export default function Ship() {
     return false
   }
 
-  useEffect(() => {
-    if (user) {
-      if (!fullName && user.name) setFullName(user.name)
-      if (!companyName && user.company) setCompanyName(user.company)
-      if (!email && user.email) setEmail(user.email)
-      if (!destinationPhone && user.phone) {
-        const p = (user.phone || '').trim()
-        if (p.startsWith('+')) {
-          const parts = p.split(' ')
-          if (parts.length > 1) {
-            setDestinationPhoneCode(parts[0])
-            setDestinationPhone(parts.slice(1).join(' '))
-          } else {
-            setDestinationPhone(p)
-          }
-        } else {
-          setDestinationPhone(p)
-        }
-      }
-    }
-  }, [user])
-
   const handleSubmitQuote = async () => {
     if (checkAuthGate()) return
 
@@ -354,12 +332,16 @@ export default function Ship() {
       setDeliveryAddress(finalDelivery)
     }
 
-    // Contact details fallback to logged in user
-    const finalFullName = fullName.trim() || user?.name || 'Shipper Representative'
-    const finalEmail = email.trim() || user?.email || 'shipper@example.com'
-    const finalCompany = companyName.trim() || user?.company || 'Commercial Shipper'
-    const finalPhone = destinationPhone.trim() || user?.phone || '9876543210'
-    const formattedPhone = finalPhone.startsWith('+') ? finalPhone : `${destinationPhoneCode} ${finalPhone}`
+    // Validate destination contact details entered by the user
+    if (!fullName.trim() || !companyName.trim() || !email.trim()) {
+      toast('Please fill in destination contact name, company, and email')
+      return
+    }
+    if (!destinationPhone.trim()) {
+      toast('Please enter a destination contact phone number')
+      return
+    }
+    const formattedPhone = destinationPhone.trim().startsWith('+') ? destinationPhone.trim() : `${destinationPhoneCode} ${destinationPhone.trim()}`
 
     setSubmitting(true)
 
@@ -368,8 +350,8 @@ export default function Ship() {
 
     const quoteRecord = {
       id: quoteId,
-      user_email: user?.email || finalEmail,
-      customer: finalCompany,
+      user_email: user?.email || 'customer@portline.in',
+      customer: user?.company || user?.name || companyName.trim(),
       city: originGw.city,
       laneCode: `${originGw.code} → ${destGw.code}`,
       laneName: `${originGw.city} → ${destGw.city}`,
@@ -394,9 +376,9 @@ export default function Ship() {
         pickupAddress: finalPickup,
         deliveryAddress: finalDelivery,
         destinationPhone: formattedPhone,
-        destinationContactName: finalFullName,
-        destinationEmail: finalEmail,
-        destinationCompany: finalCompany,
+        destinationContactName: fullName.trim(),
+        destinationEmail: email.trim(),
+        destinationCompany: companyName.trim(),
         readyDate,
         incoterm,
         commodity: cargo[0]?.commodity_description || 'General Merchandise',
@@ -418,13 +400,13 @@ export default function Ship() {
 
     const shipmentRecord = {
       tn,
-      user_email: user?.email || finalEmail,
-      userName: user?.name || finalFullName,
-      userCompany: user?.company || finalCompany,
-      customer: user?.name || finalFullName,
-      destinationContactName: finalFullName,
-      destinationCompany: finalCompany,
-      destinationEmail: finalEmail,
+      user_email: user?.email || 'customer@portline.in',
+      userName: user?.name || 'Shipper',
+      userCompany: user?.company || 'Company',
+      customer: user?.company || user?.name || 'Shipper',
+      destinationContactName: fullName.trim(),
+      destinationCompany: companyName.trim(),
+      destinationEmail: email.trim(),
       from: `${originGw.city}, ${originGw.countryCode}`,
       to: `${destGw.city}, ${destGw.countryCode}`,
       service: quoteRecord.mode,
