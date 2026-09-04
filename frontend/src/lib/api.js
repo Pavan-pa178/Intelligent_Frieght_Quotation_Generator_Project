@@ -579,6 +579,29 @@ export async function saveQuote(quote) {
   return quote
 }
 
+export function resolveEffectiveQuoteStatus(q) {
+  if (!q) return 'Draft'
+  const custDec = (q.customer_decision?.status || '').toUpperCase()
+  const rawStatus = (q.status || '').trim()
+  const rawStatusUpper = rawStatus.toUpperCase()
+  const pipeStatus = (q.pipeline_status || '').toUpperCase()
+  const agentStatus = (q.agent_review?.status || '').toLowerCase()
+
+  if (rawStatusUpper === 'ACCEPTED' || custDec === 'ACCEPTED' || pipeStatus === 'ACCEPTED' || rawStatusUpper === 'BOOKED') {
+    return 'Accepted'
+  }
+  if (rawStatusUpper.includes('REJECT') || custDec === 'REJECTED' || agentStatus === 'rejected') {
+    return rawStatus || 'Rejected'
+  }
+  if (rawStatusUpper === 'APPROVED' || agentStatus === 'approved' || pipeStatus === 'CUSTOMS_APPROVED') {
+    return 'Approved'
+  }
+  if (rawStatusUpper.includes('DOCUMENT') || rawStatusUpper.includes('DOC') || q.customs_document_request?.status === 'REQUESTED') {
+    return rawStatus || 'Documents Requested'
+  }
+  return rawStatus || 'Draft'
+}
+
 export async function fetchQuotes(email) {
   const localList = getSavedQuotes()
   let remoteList = []
@@ -595,29 +618,49 @@ export async function fetchQuotes(email) {
     }
   }
 
-  // Merge remote + local quotes, deduplicating by ID
+  // Merge remote + local quotes, deduplicating by ID (case-insensitive)
   const map = new Map()
-  for (const q of remoteList) {
-    if (q && q.id) map.set(q.id, q)
+  for (const rq of remoteList) {
+    if (rq && rq.id) {
+      const key = rq.id.trim().toUpperCase()
+      map.set(key, rq)
+    }
   }
-  for (const q of localList) {
-    if (q && q.id) {
-      if (!map.has(q.id)) {
-        map.set(q.id, q)
+
+  for (const lq of localList) {
+    if (lq && lq.id) {
+      const key = lq.id.trim().toUpperCase()
+      if (!map.has(key)) {
+        map.set(key, lq)
       } else {
-        map.set(q.id, { ...map.get(q.id), ...q })
+        const remote = map.get(key)
+        // Combine records: Remote database takes precedence, and active statuses (Accepted/Approved/Rejected) are preserved
+        const resolvedStatus = resolveEffectiveQuoteStatus(remote) !== 'Draft' 
+          ? resolveEffectiveQuoteStatus(remote)
+          : (resolveEffectiveQuoteStatus(lq) !== 'Draft' ? resolveEffectiveQuoteStatus(lq) : (remote.status || lq.status || 'Draft'))
+
+        map.set(key, {
+          ...lq,
+          ...remote,
+          status: resolvedStatus,
+          customer_decision: remote.customer_decision || lq.customer_decision,
+          agent_review: remote.agent_review || lq.agent_review,
+          customs_review: remote.customs_review || lq.customs_review,
+          pipeline_status: remote.pipeline_status || lq.pipeline_status
+        })
       }
     }
   }
 
-  const merged = Array.from(map.values())
+  const merged = Array.from(map.values()).map(q => ({
+    ...q,
+    status: resolveEffectiveQuoteStatus(q)
+  }))
 
-  // Keep local storage synchronized with any remote quotes discovered
-  if (merged.length > localList.length) {
-    try {
-      localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(merged))
-    } catch {}
-  }
+  // Keep local storage synchronized with true resolved quote statuses
+  try {
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(merged))
+  } catch {}
 
   if (email) {
     const emailLower = email.trim().toLowerCase()
@@ -741,7 +784,8 @@ export async function agentActionOnQuote(quoteId, action, comment, agentUser) {
   // Always update local storage
   try {
     const all = getSavedQuotes()
-    const updated = all.map(q => q.id === quoteId ? { ...q, agent_review: reviewObj, status: quote_status } : q)
+    const targetQid = (quoteId || '').trim().toUpperCase()
+    const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? { ...q, agent_review: reviewObj, status: quote_status } : q)
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
     const raw = localStorage.getItem(AGENT_ACTIONS_KEY)
     const actions = raw ? JSON.parse(raw) : {}
@@ -790,7 +834,8 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
   // Always update local storage
   try {
     const all = getSavedQuotes()
-    const updated = all.map(q => q.id === quoteId ? { ...q, customer_decision: record, status } : q)
+    const targetQid = (quoteId || '').trim().toUpperCase()
+    const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? { ...q, customer_decision: record, status, pipeline_status: status.toUpperCase() } : q)
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
   } catch {}
 
@@ -814,7 +859,8 @@ export async function selectQuoteRoute(quoteId, route, requestedBy = '') {
   // Always update local storage
   try {
     const all = getSavedQuotes()
-    const updated = all.map(q => q.id === quoteId ? {
+    const targetQid = (quoteId || '').trim().toUpperCase()
+    const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? {
       ...q,
       selected_route: route,
       indicativeTotal: route.cost || q.indicativeTotal,

@@ -26,7 +26,7 @@ import { useNavigate } from 'react-router-dom'
 import { FileText, Search, Plus, Lock } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
-import { fetchQuotes, clearAllQuotes } from '../lib/api'
+import { fetchQuotes, clearAllQuotes, resolveEffectiveQuoteStatus } from '../lib/api'
 import { useApp } from '../context/AppContext'
 
 export default function Quotes() {
@@ -55,6 +55,11 @@ export default function Quotes() {
 
     fetchQuotes(queryEmail).then((res) => {
       let list = Array.isArray(res) ? res : []
+      // Normalize effective quote status (ensure booked quotes reflect Accepted)
+      list = list.map(q => ({
+        ...q,
+        status: resolveEffectiveQuoteStatus(q)
+      }))
       // Sort newest first
       list.sort((a, b) => {
         const dateA = new Date(a.created_at || a.created || 0)
@@ -90,7 +95,7 @@ export default function Quotes() {
       const matchLane = laneFilter === 'All' || q.region === laneFilter
       const matchMode = modeFilter === 'All' || q.mode.toLowerCase().includes(modeFilter.toLowerCase())
       
-      const qStatus = (q.status || '').toLowerCase()
+      const qStatus = resolveEffectiveQuoteStatus(q).toLowerCase()
       const sf = statusFilter.toLowerCase()
       const matchStatus = 
         statusFilter === 'All' ||
@@ -355,7 +360,7 @@ export default function Quotes() {
                           {q.indicativeTotal ? `₹ ${q.indicativeTotal.toLocaleString('en-IN')}` : 'Not serviced'}
                         </td>
                         <td className="py-4 px-5">
-                          <StatusBadge status={q.status} />
+                          <StatusBadge status={resolveEffectiveQuoteStatus(q)} />
                         </td>
                         <td className="py-4 px-5 text-brand-slateLight">{formatRelativeTime(q.created_at, q.created)}</td>
                         <td className="py-4 px-5 text-right">
