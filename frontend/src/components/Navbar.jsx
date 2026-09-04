@@ -105,14 +105,18 @@ export default function Navbar() {
         }`}
       >
         <div className="mx-auto flex h-full max-w-[1220px] items-center justify-between gap-6 px-8 sm:px-5">
-          <Link to={getWorkspacePath()} className="flex items-center gap-2.5 font-display text-[19px] font-bold tracking-wide text-white">
-            <Container className="h-[34px] w-[34px] text-brand-orangeLight" strokeWidth={1.6} />
-            <span>
-              PORTLINE
-              <small className="mt-0.5 block font-mono text-[9px] font-normal tracking-[.18em] text-slate-400">
-                {isAdmin ? 'ADMIN CONSOLE' : isCustoms ? 'CUSTOMS DESK' : isAgentOp ? 'AI OPERATIONS' : isManager ? 'REVENUE & ANALYTICS' : isAgent ? 'BROKER PORTAL' : 'GLOBAL FREIGHT FORWARDING'}
+          <Link to={getWorkspacePath()} className="flex items-center gap-3 shrink-0 group py-1">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-orange to-brand-orangeLight/80 p-2 text-white shadow-md shadow-brand-orange/20 transition-transform group-hover:scale-105">
+              <Container className="h-6 w-6 text-white" strokeWidth={1.8} />
+            </div>
+            <div className="flex flex-col max-w-[200px] sm:max-w-[320px] md:max-w-[380px] lg:max-w-[460px]">
+              <span className="font-display text-[13px] sm:text-[14.5px] lg:text-[15.5px] font-bold tracking-tight text-white leading-tight group-hover:text-brand-orangeLight transition-colors line-clamp-1 sm:line-clamp-none">
+                Agentic AI for Maritime Freight Pricing and Route Optimization
+              </span>
+              <small className="mt-0.5 block font-mono text-[9px] font-bold uppercase tracking-[.2em] text-brand-orangeLight">
+                {isAdmin ? 'PORTLINE · ADMIN CONSOLE' : isCustoms ? 'PORTLINE · CUSTOMS DESK' : isAgentOp ? 'PORTLINE · AI OPERATIONS' : isManager ? 'PORTLINE · REVENUE & ANALYTICS' : isAgent ? 'PORTLINE · BROKER PORTAL' : 'PORTLINE'}
               </small>
-            </span>
+            </div>
           </Link>
 
           {/* Center Links ? Hidden for Admin to avoid duplicating Admin Panel tabs */}
@@ -187,11 +191,21 @@ export default function Navbar() {
           mobileOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="mb-10 flex items-center justify-between">
-          <span className="font-display text-[17px] font-bold text-white">
-            PORTLINE Freight
-          </span>
-          <button onClick={() => setMobileOpen(false)} className="flex h-10 w-10 items-center justify-center text-white" aria-label="Close menu">
+        <div className="mb-10 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-orange to-brand-orangeLight p-1.5 text-white">
+              <Container className="h-5 w-5 text-white" strokeWidth={1.8} />
+            </div>
+            <div>
+              <span className="font-display text-sm font-bold text-white block leading-tight">
+                Agentic AI for Maritime Freight Pricing and Route Optimization
+              </span>
+              <span className="font-mono text-[9.5px] font-bold uppercase tracking-[.18em] text-brand-orangeLight block mt-0.5">
+                PORTLINE
+              </span>
+            </div>
+          </div>
+          <button onClick={() => setMobileOpen(false)} className="flex h-10 w-10 items-center justify-center text-white shrink-0" aria-label="Close menu">
             <X className="h-6 w-6" />
           </button>
         </div>

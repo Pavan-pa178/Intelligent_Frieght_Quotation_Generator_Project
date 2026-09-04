@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Freight Quote Generator (PORTLINE) — React + Vite + Tailwind CSS frontend",
+  "description": "Agentic AI for Maritime Freight Pricing and Route Optimization (PORTLINE) — React + Vite + Tailwind CSS frontend",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
