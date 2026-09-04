@@ -724,20 +724,21 @@ export async function agentActionOnQuote(quoteId, action, comment, agentUser) {
     agent_email: agentUser?.email || '',
     reviewed_at: new Date().toISOString()
   }
+  const quote_status = action === 'approved' ? 'Agent Approved' : 'Rejected by Agent'
+
+  // Always update local storage
+  try {
+    const all = getSavedQuotes()
+    const updated = all.map(q => q.id === quoteId ? { ...q, agent_review: reviewObj, status: quote_status } : q)
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+    const raw = localStorage.getItem(AGENT_ACTIONS_KEY)
+    const actions = raw ? JSON.parse(raw) : {}
+    actions[quoteId] = reviewObj
+    localStorage.setItem(AGENT_ACTIONS_KEY, JSON.stringify(actions))
+  } catch {}
 
   if (MOCK_MODE) {
     await delay(300)
-    // Update saved quotes in localStorage
-    const all = getSavedQuotes()
-    const updated = all.map(q => q.id === quoteId ? { ...q, agent_review: reviewObj } : q)
-    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
-    // Also track in a separate agent actions store
-    try {
-      const raw = localStorage.getItem(AGENT_ACTIONS_KEY)
-      const actions = raw ? JSON.parse(raw) : {}
-      actions[quoteId] = reviewObj
-      localStorage.setItem(AGENT_ACTIONS_KEY, JSON.stringify(actions))
-    } catch {}
     return { ok: true, quoteId, review: reviewObj }
   }
 
@@ -771,13 +772,19 @@ export async function triggerQuotePipeline(shipmentId, payload = {}) {
 
 // Customer accepts or rejects a quote
 export async function customerDecisionOnQuote(quoteId, decision, notes = '', customerUser = null) {
+  const record = { status: decision.toUpperCase(), notes, decided_at: new Date().toISOString() }
+  const status = decision === 'accepted' ? 'Accepted' : 'Rejected'
+
+  // Always update local storage
+  try {
+    const all = getSavedQuotes()
+    const updated = all.map(q => q.id === quoteId ? { ...q, customer_decision: record, status } : q)
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+  } catch {}
+
   if (MOCK_MODE) {
     await delay(200)
-    const all = getSavedQuotes()
-    const record = { status: decision.toUpperCase(), notes, decided_at: new Date().toISOString() }
-    const updated = all.map(q => q.id === quoteId ? { ...q, customer_decision: record, status: decision === 'accepted' ? 'Accepted' : 'Rejected' } : q)
-    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
-    return { ok: true, quote_id: quoteId, status: decision === 'accepted' ? 'Accepted' : 'Rejected' }
+    return { ok: true, quote_id: quoteId, status }
   }
   return apiFetch(`/api/v1/quotes/${quoteId}/customer-decision/`, {
     method: 'POST',
@@ -792,8 +799,8 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
 
 // Customer selects a recommended route option
 export async function selectQuoteRoute(quoteId, route, requestedBy = '') {
-  if (MOCK_MODE) {
-    await delay(150)
+  // Always update local storage
+  try {
     const all = getSavedQuotes()
     const updated = all.map(q => q.id === quoteId ? {
       ...q,
@@ -802,6 +809,10 @@ export async function selectQuoteRoute(quoteId, route, requestedBy = '') {
       route_approval_status: 'PENDING_APPROVAL'
     } : q)
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+  } catch {}
+
+  if (MOCK_MODE) {
+    await delay(150)
     return { ok: true, quote_id: quoteId, selected_route: route }
   }
   return apiFetch(`/api/v1/quotes/${quoteId}/select-route/`, {
