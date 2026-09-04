@@ -22,15 +22,7 @@ class QuoteListCreateView(APIView):
                 else:
                     query = {}
                 db_quotes = list(col.find(query, {'_id': 0}))
-                if db_quotes:
-                    for dq in db_quotes:
-                        qid = dq.get('id')
-                        if qid and not any(m.get('id') == qid for m in IN_MEMORY_QUOTES):
-                            IN_MEMORY_QUOTES.append(dq)
-                    return Response(db_quotes)
-                elif user_email:
-                    # User specifically queried for their email and no quotes exist for this user in DB
-                    return Response([])
+                return Response(db_quotes)
         except Exception:
             pass
 
@@ -84,6 +76,7 @@ class QuoteListCreateView(APIView):
                 col.delete_many({})
         except Exception:
             pass
+        global IN_MEMORY_QUOTES
         IN_MEMORY_QUOTES.clear()
         return Response({'ok': True, 'message': 'All quotations cleared successfully'})
 
@@ -98,6 +91,7 @@ class QuoteDetailView(APIView):
                 found_db = col.find_one({'id': {'$regex': f'^{qid}$', '$options': 'i'}}, {'_id': 0})
                 if found_db:
                     return Response(found_db)
+                return Response({'detail': f'Quotation {quote_id} not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception:
             pass
 
@@ -105,6 +99,26 @@ class QuoteDetailView(APIView):
         if found:
             return Response(found)
         return Response({'detail': f'Quotation {quote_id} not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, quote_id):
+        qid = (quote_id or '').strip().upper()
+        deleted = False
+        try:
+            col = get_collection('quotes')
+            if col is not None:
+                res = col.delete_one({'id': {'$regex': f'^{qid}$', '$options': 'i'}})
+                if res.deleted_count > 0:
+                    deleted = True
+        except Exception:
+            pass
+
+        global IN_MEMORY_QUOTES
+        before_count = len(IN_MEMORY_QUOTES)
+        IN_MEMORY_QUOTES = [q for q in IN_MEMORY_QUOTES if (q.get('id') or '').strip().upper() != qid]
+        if len(IN_MEMORY_QUOTES) < before_count:
+            deleted = True
+
+        return Response({'ok': True, 'quote_id': quote_id, 'deleted': deleted, 'message': f'Quotation {quote_id} deleted successfully'}, status=status.HTTP_200_OK)
 
 
 def _find_quote_anywhere(qid):
