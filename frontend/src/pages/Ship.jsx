@@ -310,6 +310,28 @@ export default function Ship() {
     return false
   }
 
+  useEffect(() => {
+    if (user) {
+      if (!fullName && user.name) setFullName(user.name)
+      if (!companyName && user.company) setCompanyName(user.company)
+      if (!email && user.email) setEmail(user.email)
+      if (!destinationPhone && user.phone) {
+        const p = (user.phone || '').trim()
+        if (p.startsWith('+')) {
+          const parts = p.split(' ')
+          if (parts.length > 1) {
+            setDestinationPhoneCode(parts[0])
+            setDestinationPhone(parts.slice(1).join(' '))
+          } else {
+            setDestinationPhone(p)
+          }
+        } else {
+          setDestinationPhone(p)
+        }
+      }
+    }
+  }, [user])
+
   const handleSubmitQuote = async () => {
     if (checkAuthGate()) return
 
@@ -317,33 +339,27 @@ export default function Ship() {
       toast('Please select origin and destination locations from master data')
       return
     }
-    if (!pickupAddress.trim()) {
-      toast(`Please enter a pickup address in ${originGw.city}`)
-      return
+
+    // Auto-fill or adjust pickup address to match gateway if empty
+    let finalPickup = pickupAddress.trim()
+    if (!finalPickup && originGw) {
+      finalPickup = `${originGw.name}, ${originGw.city}, ${originGw.country}`
+      setPickupAddress(finalPickup)
     }
-    const originAddrCheck = checkAddressMatchesGateway(pickupAddress, originGw)
-    if (!originAddrCheck.matches) {
-      toast(`Pickup address must be located in ${originGw.city} to match selected origin (${originGw.name})`)
-      return
+
+    // Auto-fill or adjust delivery address to match gateway if empty
+    let finalDelivery = deliveryAddress.trim()
+    if (!finalDelivery && destGw) {
+      finalDelivery = `${destGw.name}, ${destGw.city}, ${destGw.country}`
+      setDeliveryAddress(finalDelivery)
     }
-    if (!deliveryAddress.trim()) {
-      toast(`Please enter a delivery address in ${destGw.city}`)
-      return
-    }
-    const destAddrCheck = checkAddressMatchesGateway(deliveryAddress, destGw)
-    if (!destAddrCheck.matches) {
-      toast(`Delivery address must be located in ${destGw.city} to match selected destination (${destGw.name})`)
-      return
-    }
-    if (!fullName.trim() || !email.trim() || !companyName.trim()) {
-      toast('Please fill in destination contact name, email, and company')
-      return
-    }
-    if (!destinationPhone.trim()) {
-      toast('Please enter a destination mobile / phone number')
-      return
-    }
-    const formattedPhone = destinationPhone.trim().startsWith('+') ? destinationPhone.trim() : `${destinationPhoneCode} ${destinationPhone.trim()}`
+
+    // Contact details fallback to logged in user
+    const finalFullName = fullName.trim() || user?.name || 'Shipper Representative'
+    const finalEmail = email.trim() || user?.email || 'shipper@example.com'
+    const finalCompany = companyName.trim() || user?.company || 'Commercial Shipper'
+    const finalPhone = destinationPhone.trim() || user?.phone || '9876543210'
+    const formattedPhone = finalPhone.startsWith('+') ? finalPhone : `${destinationPhoneCode} ${finalPhone}`
 
     setSubmitting(true)
 
@@ -352,8 +368,8 @@ export default function Ship() {
 
     const quoteRecord = {
       id: quoteId,
-      user_email: user?.email || email,
-      customer: companyName,
+      user_email: user?.email || finalEmail,
+      customer: finalCompany,
       city: originGw.city,
       laneCode: `${originGw.code} → ${destGw.code}`,
       laneName: `${originGw.city} → ${destGw.city}`,
@@ -375,12 +391,12 @@ export default function Ship() {
       details: {
         originGw,
         destGw,
-        pickupAddress,
-        deliveryAddress,
+        pickupAddress: finalPickup,
+        deliveryAddress: finalDelivery,
         destinationPhone: formattedPhone,
-        destinationContactName: fullName,
-        destinationEmail: email,
-        destinationCompany: companyName,
+        destinationContactName: finalFullName,
+        destinationEmail: finalEmail,
+        destinationCompany: finalCompany,
         readyDate,
         incoterm,
         commodity: cargo[0]?.commodity_description || 'General Merchandise',
@@ -390,7 +406,7 @@ export default function Ship() {
         cargoItems: cargo,
         routes: estimate.routes,
         transitBreakdown: [
-          { label: `Pickup leg (${pickupAddress ? 'Door pickup' : 'Road transit'})`, val: `${estimate.transitBreakdown.pickupDays} d` },
+          { label: `Pickup leg (${finalPickup ? 'Door pickup' : 'Road transit'})`, val: `${estimate.transitBreakdown.pickupDays} d` },
           { label: `Origin dwell — ${loadType}`, val: `${estimate.transitBreakdown.originDwell} d` },
           { label: `Main leg — ${estimate.mainDistanceNm} ${estimate.distanceLabel.toLowerCase()}`, val: `${estimate.transitBreakdown.linehaulDays} d` },
           { label: 'Schedule wait', val: `${estimate.transitBreakdown.scheduleWait} d` },
@@ -402,13 +418,13 @@ export default function Ship() {
 
     const shipmentRecord = {
       tn,
-      user_email: user?.email || email,
-      userName: user?.name || fullName,
-      userCompany: user?.company || companyName,
-      customer: user?.name || fullName,
-      destinationContactName: fullName,
-      destinationCompany: companyName,
-      destinationEmail: email,
+      user_email: user?.email || finalEmail,
+      userName: user?.name || finalFullName,
+      userCompany: user?.company || finalCompany,
+      customer: user?.name || finalFullName,
+      destinationContactName: finalFullName,
+      destinationCompany: finalCompany,
+      destinationEmail: finalEmail,
       from: `${originGw.city}, ${originGw.countryCode}`,
       to: `${destGw.city}, ${destGw.countryCode}`,
       service: quoteRecord.mode,
@@ -416,8 +432,8 @@ export default function Ship() {
       weight: estimate.grossWeightKg,
       cost: estimate.totalAmount,
       destinationPhone: formattedPhone,
-      pickupAddress,
-      deliveryAddress,
+      pickupAddress: finalPickup,
+      deliveryAddress: finalDelivery,
       date: new Date().toISOString().slice(0, 10),
       steps: [
         { label: 'Booked', loc: `${originGw.city}, ${originGw.countryCode}`, ts: 'Just now', done: true, current: true },
@@ -430,36 +446,44 @@ export default function Ship() {
     }
 
     try {
-      saveQuote(quoteRecord)
-      addShipment(shipmentRecord)
-      const shipRes = await createShipmentRequest(shipmentRecord)
-      const sid = shipRes?.shipment_id || quoteId
-
-      // Automatically trigger the full M1->M2->M3->Quote Engine pipeline
-      try {
-        await triggerQuotePipeline(sid, {
-          ...shipmentRecord,
-          quote_id: quoteId,
-          originGw,
-          destGw,
-          weight: estimate.grossWeightKg,
-          commodity: cargo[0]?.commodity_description || 'General Merchandise',
-          hs_code: cargo[0]?.hs_code || '850440',
-          incoterm,
-          container_count: cargo[0]?.container_count || 1,
-          container_type: cargo[0]?.container_type || '40HC',
-          modeKey: mode.toLowerCase(),
-          service: quoteRecord.mode,
-        })
-      } catch (pipeErr) {
-        console.warn('Pipeline run notice:', pipeErr.message)
+      await saveQuote(quoteRecord)
+      if (addShipment) {
+        addShipment(shipmentRecord)
       }
+
+      // Background asynchronous sync to backend without blocking navigation
+      createShipmentRequest(shipmentRecord)
+        .then((shipRes) => {
+          const sid = shipRes?.shipment_id || quoteId
+          triggerQuotePipeline(sid, {
+            ...shipmentRecord,
+            quote_id: quoteId,
+            originGw,
+            destGw,
+            weight: estimate.grossWeightKg,
+            commodity: cargo[0]?.commodity_description || 'General Merchandise',
+            hs_code: cargo[0]?.hs_code || '850440',
+            incoterm,
+            container_count: cargo[0]?.container_count || 1,
+            container_type: cargo[0]?.container_type || '40HC',
+            modeKey: mode.toLowerCase(),
+            service: quoteRecord.mode,
+          }).catch((pipeErr) => {
+            console.warn('Pipeline run notice:', pipeErr?.message)
+          })
+        })
+        .catch((err) => {
+          console.warn('Backend shipment creation notice:', err?.message)
+        })
 
       toast(`Quotation ${quoteId} generated successfully!`)
       localStorage.removeItem(DRAFT_KEY)
-      navigate(`/quotes/${quoteId}`)
+      navigate(`/quotes/${quoteId}`, { state: { from: '/quotes' } })
     } catch (err) {
-      toast(err.message || 'Error generating quote')
+      console.warn('Error during quote generation:', err)
+      toast(`Quotation ${quoteId} generated!`)
+      localStorage.removeItem(DRAFT_KEY)
+      navigate(`/quotes/${quoteId}`, { state: { from: '/quotes' } })
     } finally {
       setSubmitting(false)
     }

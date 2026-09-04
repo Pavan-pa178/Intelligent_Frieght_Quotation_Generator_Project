@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Lock, Mail, Phone, Calendar, Plus, Search, Package, ArrowRight, Ship, Plane, Truck, Inbox, XCircle, AlertTriangle, CheckCircle2, RefreshCw, X } from 'lucide-react'
+import { Lock, Mail, Phone, Calendar, Plus, Search, Package, ArrowRight, Ship, Plane, Truck, Inbox, XCircle, AlertTriangle, CheckCircle2, RefreshCw, X, User, Building, Key, ShieldCheck } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
+import { updateUserProfile } from '../lib/api'
 
 export default function Portal() {
-  const { loggedIn, user, shipments = [], logout, cancelShipment } = useApp()
+  const { loggedIn, user, shipments = [], logout, cancelShipment, updateProfile } = useApp()
   const navigate = useNavigate()
   const toast = useToast()
 
@@ -17,6 +18,96 @@ export default function Portal() {
   const [cancelReason, setCancelReason] = useState('Customer schedule change')
   const [cancelNotes, setCancelNotes] = useState('')
   const [cancelling, setCancelling] = useState(false)
+
+  // Edit profile state
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState('')
+
+  const handleOpenEditModal = () => {
+    setEditForm({
+      name: user?.name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      company: user?.company || '',
+      oldPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    })
+    setEditError('')
+    setShowEditModal(true)
+  }
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault()
+    setEditError('')
+
+    const trimmedName = (editForm.name || '').trim()
+    const trimmedEmail = (editForm.email || '').trim()
+    const trimmedCompany = (editForm.company || '').trim()
+    const trimmedPhone = (editForm.phone || '').trim()
+
+    if (!trimmedName) {
+      setEditError('Please enter your full name.')
+      return
+    }
+    if (!trimmedEmail) {
+      setEditError('Please enter a valid email address.')
+      return
+    }
+
+    if (editForm.newPassword) {
+      if (!editForm.oldPassword) {
+        setEditError('Please enter your current / old password to set a new password.')
+        return
+      }
+      if (editForm.newPassword.length < 6) {
+        setEditError('New password must be at least 6 characters long.')
+        return
+      }
+      if (editForm.newPassword !== editForm.confirmPassword) {
+        setEditError('New password and confirmation password do not match.')
+        return
+      }
+    }
+
+    setEditLoading(true)
+    try {
+      const updatedUser = await updateUserProfile({
+        current_email: user?.email,
+        email: trimmedEmail,
+        name: trimmedName,
+        company: trimmedCompany,
+        phone: trimmedPhone,
+        old_password: editForm.oldPassword,
+        new_password: editForm.newPassword
+      })
+
+      updateProfile({
+        name: trimmedName,
+        email: trimmedEmail,
+        company: trimmedCompany,
+        phone: trimmedPhone,
+        ...(updatedUser || {})
+      })
+
+      toast('Profile updated successfully!')
+      setShowEditModal(false)
+    } catch (err) {
+      setEditError(err.message || 'Failed to update profile. Please verify your old password.')
+    } finally {
+      setEditLoading(false)
+    }
+  }
 
   const safeShipments = Array.isArray(shipments) ? shipments : []
 
@@ -102,8 +193,8 @@ export default function Portal() {
                   <StatBox n={cancelledCount} label="Cancelled" color="rose" />
                 </div>
 
-                <button onClick={() => toast('Profile details saved')} className="mb-2.5 w-full rounded-lg border-[1.5px] border-brand-line bg-white py-2.5 text-[13.5px] font-semibold shadow-sm2 hover:bg-brand-cloud transition-colors">
-                  Edit profile
+                <button onClick={handleOpenEditModal} className="mb-2.5 w-full rounded-lg border-[1.5px] border-brand-line bg-white py-2.5 text-[13.5px] font-semibold shadow-sm2 hover:bg-brand-cloud transition-colors flex items-center justify-center gap-1.5">
+                  <User className="h-4 w-4 text-brand-marine" /> Edit profile
                 </button>
                 <button onClick={() => { logout(); navigate('/') }} className="w-full rounded-lg py-2.5 text-[13.5px] font-semibold text-brand-marine hover:bg-brand-marinePale transition-colors">
                   Log out
@@ -256,7 +347,7 @@ export default function Portal() {
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => navigate('/tracking?tn=' + encodeURIComponent(tn))}
+                                  onClick={() => navigate('/tracking?tn=' + encodeURIComponent(tn), { state: { from: '/portal', fromLabel: 'Back to Shipper Portal' } })}
                                   className="inline-flex items-center gap-1 rounded-lg bg-brand-cloud px-3 py-1.5 text-xs font-semibold text-brand-navy hover:bg-brand-marinePale hover:text-brand-marine transition-colors"
                                 >
                                   Track live <ArrowRight className="h-3 w-3" />
@@ -373,6 +464,175 @@ export default function Portal() {
                 {cancelling ? 'Cancelling?' : 'Confirm Cancellation'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT PROFILE MODAL */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-brand-line max-h-[90vh] overflow-y-auto">
+            <div className="mb-5 flex items-center justify-between border-b border-brand-line pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-marinePale text-brand-marine">
+                  <User className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-brand-navy">Edit Shipper Profile</h3>
+                  <p className="text-xs text-brand-slate">Update account credentials and security settings</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEditModal(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-brand-slate hover:bg-brand-cloud hover:text-brand-navy"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {editError && (
+              <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500 mt-0.5" />
+                <span>{editError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-brand-navy">
+                  Full Name <span className="text-brand-danger">*</span>
+                </label>
+                <div className="relative">
+                  <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-slateLight" />
+                  <input
+                    type="text"
+                    required
+                    value={editForm.name}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Your Full Name"
+                    className="w-full rounded-xl border border-brand-line bg-brand-cloud/40 pl-9 pr-3.5 py-2.5 text-xs font-semibold text-brand-navy focus:border-brand-marine focus:bg-white focus:outline-none shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-brand-navy">
+                    Email Address <span className="text-brand-danger">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-slateLight" />
+                    <input
+                      type="email"
+                      required
+                      value={editForm.email}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="user@example.com"
+                      className="w-full rounded-xl border border-brand-line bg-brand-cloud/40 pl-9 pr-3.5 py-2.5 text-xs font-semibold text-brand-navy focus:border-brand-marine focus:bg-white focus:outline-none shadow-2xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-brand-navy">
+                    Phone / Mobile
+                  </label>
+                  <div className="relative">
+                    <Phone className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-slateLight" />
+                    <input
+                      type="tel"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="+91 98765 43210"
+                      className="w-full rounded-xl border border-brand-line bg-brand-cloud/40 pl-9 pr-3.5 py-2.5 text-xs font-semibold text-brand-navy focus:border-brand-marine focus:bg-white focus:outline-none shadow-2xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-brand-navy">
+                  Company / Organization
+                </label>
+                <div className="relative">
+                  <Building className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-slateLight" />
+                  <input
+                    type="text"
+                    value={editForm.company}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, company: e.target.value }))}
+                    placeholder="Your Company Name"
+                    className="w-full rounded-xl border border-brand-line bg-brand-cloud/40 pl-9 pr-3.5 py-2.5 text-xs font-semibold text-brand-navy focus:border-brand-marine focus:bg-white focus:outline-none shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              {/* PASSWORD CHANGE SECTION */}
+              <div className="rounded-xl border border-brand-line/80 bg-brand-cloud/30 p-4 space-y-3 mt-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-brand-navy">
+                  <Key className="h-4 w-4 text-brand-orange" />
+                  <span>Change Password</span>
+                  <span className="text-[11px] font-normal text-brand-slate">(Leave blank to keep current password)</span>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[11px] font-semibold text-brand-navy">
+                    Current Password {editForm.newPassword ? <span className="text-brand-danger">*</span> : ''}
+                  </label>
+                  <input
+                    type="password"
+                    value={editForm.oldPassword}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, oldPassword: e.target.value }))}
+                    placeholder="Enter your current password"
+                    className="w-full rounded-xl border border-brand-line bg-white px-3.5 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none shadow-2xs"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-brand-navy">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={editForm.newPassword}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      placeholder="Min 6 characters"
+                      className="w-full rounded-xl border border-brand-line bg-white px-3.5 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none shadow-2xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-semibold text-brand-navy">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={editForm.confirmPassword}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      placeholder="Confirm new password"
+                      className="w-full rounded-xl border border-brand-line bg-white px-3.5 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none shadow-2xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 border-t border-brand-line pt-4 mt-5">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="rounded-xl border border-brand-line px-4 py-2.5 text-xs font-semibold text-brand-slate hover:bg-brand-cloud transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="rounded-xl bg-gradient-to-br from-brand-orange to-brand-orangeLight px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:opacity-95 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {editLoading ? 'Saving Changes...' : 'Save Profile Changes'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

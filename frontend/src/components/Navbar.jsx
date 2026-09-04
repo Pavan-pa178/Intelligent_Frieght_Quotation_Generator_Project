@@ -10,7 +10,6 @@ const CUSTOMER_NAV_ITEMS = [
   { to: '/quotes', label: 'Quotations' },
   { to: '/routes', label: 'Routes' },
   { to: '/tracking', label: 'Tracking' },
-  { to: '/portal', label: 'Portal' },
   { to: '/contact', label: 'Contact' },
 ]
 

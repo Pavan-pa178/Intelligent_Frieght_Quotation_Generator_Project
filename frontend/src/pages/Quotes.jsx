@@ -238,7 +238,7 @@ export default function Quotes() {
                         <td className="py-4 px-5 text-brand-slateLight">{formatRelativeTime(q.created_at, q.created)}</td>
                         <td className="py-4 px-5 text-right">
                           <button
-                            onClick={() => navigate(`/quotes/${q.id}`)}
+                            onClick={() => navigate(`/quotes/${q.id}`, { state: { from: '/quotes', fromLabel: 'Back to Quotations' } })}
                             className="rounded-lg border-[1.5px] border-brand-line bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-navy hover:border-brand-marine shadow-xs"
                           >
                             Open

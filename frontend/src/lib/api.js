@@ -398,6 +398,80 @@ export async function adminDeleteUser(email) {
   return { success: true }
 }
 
+export async function updateUserProfile(payload) {
+  const { current_email, email, old_password, new_password, name, company, phone } = payload
+  const cleanCurrentEmail = (current_email || '').trim().toLowerCase()
+  const cleanNewEmail = (email || current_email || '').trim().toLowerCase()
+
+  // 1. Try backend update first
+  let backendUser = null
+  try {
+    const res = await apiFetch('/api/v1/auth/profile/update/', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+    if (res && res.user) {
+      backendUser = res.user
+    }
+  } catch (err) {
+    console.warn('Backend profile update note:', err.message)
+    // If backend returns a validation error (like incorrect old password), propagate it
+    if (err.message && (err.message.includes('password') || err.message.includes('already exists') || err.message.includes('required'))) {
+      throw err
+    }
+  }
+
+  // 2. Update local storage and cached accounts
+  const updatedUserObj = {
+    name: name || '',
+    company: company || '',
+    phone: phone || '',
+    email: cleanNewEmail,
+    ...(backendUser || {})
+  }
+
+  // Update in BUILTIN_USERS
+  if (BUILTIN_USERS[cleanCurrentEmail]) {
+    const existing = BUILTIN_USERS[cleanCurrentEmail]
+    const updatedUser = { ...existing.user, ...updatedUserObj }
+    const updatedPw = new_password || existing.password
+    if (cleanNewEmail !== cleanCurrentEmail) {
+      delete BUILTIN_USERS[cleanCurrentEmail]
+      BUILTIN_USERS[cleanNewEmail] = { password: updatedPw, user: updatedUser }
+    } else {
+      BUILTIN_USERS[cleanCurrentEmail] = { password: updatedPw, user: updatedUser }
+    }
+  }
+
+  // Update in localStorage USERS_STORAGE_KEY
+  try {
+    const stored = getStoredUsers()
+    if (stored[cleanCurrentEmail]) {
+      const existing = stored[cleanCurrentEmail]
+      const updatedUser = { ...(existing.user || existing), ...updatedUserObj }
+      const updatedPw = new_password || existing.password
+      delete stored[cleanCurrentEmail]
+      stored[cleanNewEmail] = { password: updatedPw, user: updatedUser }
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(stored))
+    } else {
+      stored[cleanNewEmail] = { password: new_password || 'password', user: updatedUserObj }
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(stored))
+    }
+  } catch {}
+
+  // Update in portline_user_profile
+  try {
+    const raw = localStorage.getItem('portline_user_profile')
+    if (raw) {
+      const current = JSON.parse(raw)
+      const merged = { ...current, ...updatedUserObj }
+      localStorage.setItem('portline_user_profile', JSON.stringify(merged))
+    }
+  } catch {}
+
+  return backendUser || updatedUserObj
+}
+
 // ---------------- Shipments ----------------
 
 export async function fetchShipments(email = '') {

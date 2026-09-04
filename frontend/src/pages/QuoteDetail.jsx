@@ -32,6 +32,12 @@ export default function QuoteDetail() {
 
   const getBackNavigation = () => {
     const from = location.state?.from || (searchParams.get('view') === 'agent' ? '/agent' : null)
+    if (location.state?.from) {
+      return { 
+        path: location.state.from, 
+        label: location.state.fromLabel || (location.state.from === '/quotes' ? 'Back to Quotations' : location.state.from === '/portal' ? 'Back to Shipper Portal' : 'Back') 
+      }
+    }
     if (from === '/agent' || user?.role === 'agent' || user?.role === 'broker') {
       return { path: '/agent', label: 'Back to Agent Workspace' }
     }
@@ -42,11 +48,21 @@ export default function QuoteDetail() {
       return { path: '/admin', label: 'Back to Admin Console' }
     }
     if (user?.role === 'customer') {
-      return { path: '/portal', label: 'Back to Shipper Portal' }
+      return { path: '/quotes', label: 'Back to Quotations' }
     }
     return { path: '/quotes', label: 'Back to Quotations' }
   }
   const backNav = getBackNavigation()
+
+  const handleBack = () => {
+    if (location.state?.from) {
+      navigate(location.state.from)
+    } else if (window.history.length > 1) {
+      navigate(-1)
+    } else {
+      navigate(backNav.path)
+    }
+  }
   const toast = useToast()
   const [quote, setQuote] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -346,13 +362,21 @@ export default function QuoteDetail() {
   const canCustomerAccept = agentApproved && customsApproved
 
   const docReq = quote?.customs_document_request
+  const hasOfficerRequestedDocs = 
+    Boolean(docReq?.requested_docs && Array.isArray(docReq.requested_docs) && docReq.requested_docs.length > 0) ||
+    quote?.status === 'Documents Requested' ||
+    docReq?.status === 'REQUESTED'
+
   const pendingDocsList = useMemo(() => {
     if (docReq?.requested_docs && Array.isArray(docReq.requested_docs) && docReq.requested_docs.length > 0) {
       return docReq.requested_docs
     }
-    const customsChecklist = Array.isArray(customsData?.checklist) ? customsData.checklist : []
-    return customsChecklist.filter(c => c && !c.uploaded).map(c => c.name)
-  }, [docReq, customsData])
+    if (quote?.status === 'Documents Requested') {
+      const customsChecklist = Array.isArray(customsData?.checklist) ? customsData.checklist : []
+      return customsChecklist.filter(c => c && !c.uploaded).map(c => c.name)
+    }
+    return []
+  }, [docReq, customsData, quote?.status])
 
   if (loading) {
     return (
@@ -366,7 +390,7 @@ export default function QuoteDetail() {
     return (
       <div className="py-20 text-center">
         <h3 className="text-xl font-bold text-brand-navy">Quote not found</h3>
-        <button onClick={() => navigate(backNav.path)} className="mt-4 rounded-lg bg-brand-navy px-5 py-2 text-white">{backNav.label}</button>
+        <button onClick={handleBack} className="mt-4 rounded-lg bg-brand-navy px-5 py-2 text-white">{backNav.label}</button>
       </div>
     )
   }
@@ -388,7 +412,7 @@ export default function QuoteDetail() {
         <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
 
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <button onClick={() => navigate(backNav.path)} className="inline-flex items-center gap-2 text-xs font-semibold text-brand-slate hover:text-brand-navy">
+            <button onClick={handleBack} className="inline-flex items-center gap-2 text-xs font-semibold text-brand-slate hover:text-brand-navy">
               <ArrowLeft className="h-4 w-4" /> {backNav.label}
             </button>
             <div className="flex items-center gap-3">
@@ -422,8 +446,8 @@ export default function QuoteDetail() {
             </div>
           )}
 
-          {/* CUSTOMS DOCUMENT REQUEST ALERT BANNER (Only shown when NOT approved and docs are flagged) */}
-          {!customsApproved && pendingDocsList.length > 0 && docReq?.status !== 'DOCUMENTS_SUBMITTED' && (
+          {/* CUSTOMS DOCUMENT REQUEST ALERT BANNER (Only shown when officer has requested docs and NOT approved) */}
+          {!customsApproved && hasOfficerRequestedDocs && pendingDocsList.length > 0 && docReq?.status !== 'DOCUMENTS_SUBMITTED' && (
             <div className="mb-8 rounded-2xl border-2 border-amber-400 bg-amber-50/95 p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-3.5">
