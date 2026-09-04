@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 SEED_QUOTES = []
+IN_MEMORY_QUOTES = []
 
 from core.mongodb import get_collection
 
@@ -10,16 +11,39 @@ class QuoteListCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        import re
         user_email = request.query_params.get('email', '').strip()
         try:
             col = get_collection('quotes')
             if col is not None:
-                query = {'user_email': {'$regex': f'^{user_email}$', '$options': 'i'}} if user_email else {}
+                if user_email:
+                    query = {
+                        '$or': [
+                            {'user_email': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}},
+                            {'user_email': {'$in': ['customer@portline.in', 'demo@portline.in', '']}},
+                            {'user_email': {'$exists': False}}
+                        ]
+                    }
+                else:
+                    query = {}
                 db_quotes = list(col.find(query, {'_id': 0}))
-                return Response(db_quotes)
+                if db_quotes:
+                    for dq in db_quotes:
+                        qid = dq.get('id')
+                        if qid and not any(m.get('id') == qid for m in IN_MEMORY_QUOTES):
+                            IN_MEMORY_QUOTES.append(dq)
+                    return Response(db_quotes)
         except Exception:
             pass
-        return Response([])
+
+        if user_email:
+            matched = [
+                q for q in IN_MEMORY_QUOTES
+                if (q.get('user_email', '').lower() == user_email.lower() or
+                    q.get('user_email', '') in ('customer@portline.in', 'demo@portline.in', ''))
+            ]
+            return Response(matched)
+        return Response(IN_MEMORY_QUOTES)
 
     def post(self, request):
         payload = request.data
@@ -30,11 +54,19 @@ class QuoteListCreateView(APIView):
         if user_email:
             payload['user_email'] = user_email.lower()
 
+        qid = payload.get('id')
+        if qid:
+            idx = next((i for i, q in enumerate(IN_MEMORY_QUOTES) if q.get('id') == qid), None)
+            if idx is not None:
+                IN_MEMORY_QUOTES[idx] = payload
+            else:
+                IN_MEMORY_QUOTES.insert(0, payload)
+        else:
+            IN_MEMORY_QUOTES.insert(0, payload)
+
         try:
             col = get_collection('quotes')
             if col is not None:
-                # Upsert by quote id
-                qid = payload.get('id')
                 if qid:
                     col.update_one({'id': qid}, {'$set': payload}, upsert=True)
                 else:
@@ -45,12 +77,17 @@ class QuoteListCreateView(APIView):
         return Response(payload, status=status.HTTP_201_CREATED)
 
     def delete(self, request):
+        confirm = request.query_params.get('confirm') or (request.data.get('confirm') if isinstance(request.data, dict) else None)
+        if confirm not in ('true', True):
+            return Response({'ok': False, 'detail': 'Explicit confirmation required (?confirm=true) to clear quotations.'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             col = get_collection('quotes')
             if col is not None:
                 col.delete_many({})
         except Exception:
             pass
+        IN_MEMORY_QUOTES.clear()
         return Response({'ok': True, 'message': 'All quotations cleared successfully'})
 
 class QuoteDetailView(APIView):
@@ -67,7 +104,7 @@ class QuoteDetailView(APIView):
         except Exception:
             pass
 
-        found = next((q for q in SEED_QUOTES if q.get('id', '').upper() == qid), None)
+        found = next((q for q in (IN_MEMORY_QUOTES + SEED_QUOTES) if q.get('id', '').upper() == qid), None)
         if found:
             return Response(found)
         return Response({'detail': f'Quotation {quote_id} not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -82,7 +119,7 @@ def _find_quote_anywhere(qid):
                 return q
         except Exception:
             pass
-    for pool in (SEED_QUOTES,):
+    for pool in (IN_MEMORY_QUOTES, SEED_QUOTES):
         found = next((m for m in pool if m.get('id', '').lower() == qid.lower()), None)
         if found:
             return found
@@ -100,7 +137,7 @@ def _update_quote_anywhere(qid, update_fields):
         except Exception:
             pass
 
-    for pool in (SEED_QUOTES,):
+    for pool in (IN_MEMORY_QUOTES, SEED_QUOTES):
         mq = next((m for m in pool if m.get('id', '').lower() == qid.lower()), None)
         if mq:
             for k, v in update_fields.items():

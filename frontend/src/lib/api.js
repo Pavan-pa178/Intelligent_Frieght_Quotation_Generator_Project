@@ -7,32 +7,7 @@ const TOKEN_KEY = 'portline_access_token'
 const QUOTES_STORAGE_KEY = 'portline_saved_quotes'
 const USERS_STORAGE_KEY = 'portline_registered_users'
 
-// One-time clear of legacy test quotes and shipments across all dashboards
-if (typeof window !== 'undefined' && !localStorage.getItem('portline_clean_slate_v8')) {
-  try {
-    localStorage.removeItem(QUOTES_STORAGE_KEY)
-    localStorage.removeItem('portline_customer_shipments')
-    localStorage.removeItem('portline_agent_actions')
-    localStorage.removeItem('portline_agent_messages')
-    localStorage.removeItem('portline_customs_cases')
-    localStorage.removeItem('portline_ship_draft')
-    const keysToRemove = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)
-      if (k && (k.startsWith('portline_shipments_') || k.startsWith('portline_quotes_') || k.startsWith('portline_customs_'))) {
-        keysToRemove.push(k)
-      }
-    }
-    keysToRemove.forEach(k => localStorage.removeItem(k))
-    localStorage.setItem('portline_clean_slate_v8', 'true')
-  } catch (e) {}
-  if (!MOCK_MODE) {
-    try {
-      fetch(`${API_BASE}/api/v1/quotes/`, { method: 'DELETE' }).catch(() => {})
-      fetch(`${API_BASE}/api/v1/shipments/`, { method: 'DELETE' }).catch(() => {})
-    } catch (e) {}
-  }
-}
+
 
 
 export function getToken() {
@@ -605,30 +580,54 @@ export async function saveQuote(quote) {
 }
 
 export async function fetchQuotes(email) {
-  const getLocal = () => {
-    let list = getSavedQuotes()
-    if (email) {
-      list = list.filter(q => (q.user_email || '').toLowerCase() === email.toLowerCase())
-    }
-    return list
-  }
-  if (MOCK_MODE) {
-    await delay(20)
-    return getLocal()
-  }
-  const query = email ? `?email=${encodeURIComponent(email)}` : ''
-  try {
-    const res = await apiFetch(`/api/v1/quotes/${query}`)
-    if (Array.isArray(res)) {
-      if (email) {
-        return res.filter(q => (q.user_email || '').toLowerCase() === email.toLowerCase())
+  const localList = getSavedQuotes()
+  let remoteList = []
+
+  if (!MOCK_MODE) {
+    const query = email ? `?email=${encodeURIComponent(email)}` : ''
+    try {
+      const res = await apiFetch(`/api/v1/quotes/${query}`)
+      if (Array.isArray(res)) {
+        remoteList = res
       }
-      return res
+    } catch {
+      // fallback saved locally
     }
-    return getLocal()
-  } catch {
-    return getLocal()
   }
+
+  // Merge remote + local quotes, deduplicating by ID
+  const map = new Map()
+  for (const q of remoteList) {
+    if (q && q.id) map.set(q.id, q)
+  }
+  for (const q of localList) {
+    if (q && q.id) {
+      if (!map.has(q.id)) {
+        map.set(q.id, q)
+      } else {
+        map.set(q.id, { ...map.get(q.id), ...q })
+      }
+    }
+  }
+
+  const merged = Array.from(map.values())
+
+  // Keep local storage synchronized with any remote quotes discovered
+  if (merged.length > localList.length) {
+    try {
+      localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(merged))
+    } catch {}
+  }
+
+  if (email) {
+    const emailLower = email.toLowerCase()
+    return merged.filter(q => {
+      const qEmail = (q.user_email || '').toLowerCase()
+      return !qEmail || qEmail === emailLower || qEmail === 'customer@portline.in' || qEmail === 'demo@portline.in'
+    })
+  }
+
+  return merged
 }
 
 export async function clearAllQuotes() {
@@ -638,7 +637,7 @@ export async function clearAllQuotes() {
   localStorage.removeItem('portline_customs_cases')
   if (!MOCK_MODE) {
     try {
-      await apiFetch('/api/v1/quotes/', { method: 'DELETE' })
+      await apiFetch('/api/v1/quotes/?confirm=true', { method: 'DELETE' })
     } catch {
       // ignore
     }
@@ -693,17 +692,26 @@ export async function sendContactMessage(payload) {
 
 // Fetch ALL quotes (for admin panel — all users)
 export async function fetchAllQuotes() {
-  const getLocal = () => [...getSavedQuotes(), ...seedQuotes]
-  if (MOCK_MODE) {
-    await delay(20)
-    return getLocal()
+  const localList = getSavedQuotes()
+  let remoteList = []
+  if (!MOCK_MODE) {
+    try {
+      const res = await apiFetch('/api/v1/quotes/')
+      if (Array.isArray(res)) {
+        remoteList = res
+      }
+    } catch {}
   }
-  try {
-    const res = await apiFetch('/api/v1/quotes/')
-    return Array.isArray(res) ? res : getLocal()
-  } catch {
-    return getLocal()
+  const map = new Map()
+  for (const q of remoteList) {
+    if (q && q.id) map.set(q.id, q)
   }
+  for (const q of localList) {
+    if (q && q.id && !map.has(q.id)) {
+      map.set(q.id, q)
+    }
+  }
+  return Array.from(map.values())
 }
 
 // Agent approves or rejects a quote
