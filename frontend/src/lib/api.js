@@ -603,8 +603,8 @@ export function resolveEffectiveQuoteStatus(q) {
 }
 
 export async function fetchQuotes(email) {
-  const localList = getSavedQuotes()
-  let remoteList = []
+  let remoteList = null
+  let remoteSuccess = false
 
   if (!MOCK_MODE) {
     const query = email ? `?email=${encodeURIComponent(email)}` : ''
@@ -612,77 +612,69 @@ export async function fetchQuotes(email) {
       const res = await apiFetch(`/api/v1/quotes/${query}`)
       if (Array.isArray(res)) {
         remoteList = res
+        remoteSuccess = true
       }
     } catch {
-      // fallback saved locally
+      // Backend unavailable, fallback to local storage
     }
   }
 
-  // Merge remote + local quotes, deduplicating by ID (case-insensitive)
-  const map = new Map()
-  for (const rq of remoteList) {
-    if (rq && rq.id) {
-      const key = rq.id.trim().toUpperCase()
-      map.set(key, rq)
-    }
-  }
+  if (remoteSuccess && remoteList !== null) {
+    const resolvedRemote = remoteList.map(q => ({
+      ...q,
+      status: resolveEffectiveQuoteStatus(q)
+    }))
 
-  for (const lq of localList) {
-    if (lq && lq.id) {
-      const key = lq.id.trim().toUpperCase()
-      if (!map.has(key)) {
-        map.set(key, lq)
+    // Sync localStorage: remove any deleted quotes for this user, preserve other accounts and update remote
+    try {
+      const saved = getSavedQuotes()
+      if (email) {
+        const emailLower = email.trim().toLowerCase()
+        const remoteIds = new Set(resolvedRemote.map(r => (r.id || '').trim().toUpperCase()))
+        // Keep quotes belonging to other accounts, plus the valid remote quotes for this user
+        const otherUsersQuotes = saved.filter(s => (s.user_email || '').trim().toLowerCase() !== emailLower)
+        const updatedLocal = [...otherUsersQuotes, ...resolvedRemote]
+        localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updatedLocal))
       } else {
-        const remote = map.get(key)
-        // Combine records: Remote database takes precedence, and active statuses (Accepted/Approved/Rejected) are preserved
-        const resolvedStatus = resolveEffectiveQuoteStatus(remote) !== 'Draft' 
-          ? resolveEffectiveQuoteStatus(remote)
-          : (resolveEffectiveQuoteStatus(lq) !== 'Draft' ? resolveEffectiveQuoteStatus(lq) : (remote.status || lq.status || 'Draft'))
-
-        map.set(key, {
-          ...lq,
-          ...remote,
-          status: resolvedStatus,
-          customer_decision: remote.customer_decision || lq.customer_decision,
-          agent_review: remote.agent_review || lq.agent_review,
-          customs_review: remote.customs_review || lq.customs_review,
-          pipeline_status: remote.pipeline_status || lq.pipeline_status
-        })
+        localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(resolvedRemote))
       }
-    }
+    } catch {}
+
+    return resolvedRemote
   }
 
-  const merged = Array.from(map.values()).map(q => ({
+  // Fallback to local storage ONLY if backend is offline or unreachable
+  const localList = getSavedQuotes()
+  const resolvedLocal = localList.map(q => ({
     ...q,
     status: resolveEffectiveQuoteStatus(q)
   }))
 
-  // Keep local storage synchronized with true resolved quote statuses
-  try {
-    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(merged))
-  } catch {}
-
   if (email) {
     const emailLower = email.trim().toLowerCase()
-    const userQuotes = merged.filter(q => (q.user_email || '').trim().toLowerCase() === emailLower)
-
-    // Auto-sync: If any local quotes exist for this email that weren't yet on remote backend, push them
-    if (!MOCK_MODE && remoteList.length >= 0) {
-      const remoteIds = new Set(remoteList.map(r => r.id))
-      userQuotes.forEach(uq => {
-        if (uq && uq.id && !remoteIds.has(uq.id)) {
-          apiFetch('/api/v1/quotes/', {
-            method: 'POST',
-            body: JSON.stringify(uq)
-          }).catch(() => {})
-        }
-      })
-    }
-
-    return userQuotes
+    return resolvedLocal.filter(q => (q.user_email || '').trim().toLowerCase() === emailLower)
   }
 
-  return merged
+  return resolvedLocal
+}
+
+export async function deleteQuote(id) {
+  if (!id) return { ok: true }
+  const qid = id.trim().toUpperCase()
+  try {
+    const all = getSavedQuotes()
+    const updated = all.filter(q => (q.id || '').trim().toUpperCase() !== qid)
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+  } catch {}
+
+  if (!MOCK_MODE) {
+    try {
+      await apiFetch(`/api/v1/quotes/${encodeURIComponent(id)}/`, { method: 'DELETE' })
+    } catch (err) {
+      console.warn('Backend quote delete notice:', err.message)
+    }
+  }
+  return { ok: true }
 }
 
 export async function clearAllQuotes() {
@@ -690,11 +682,21 @@ export async function clearAllQuotes() {
   localStorage.removeItem('portline_agent_actions')
   localStorage.removeItem('portline_agent_messages')
   localStorage.removeItem('portline_customs_cases')
+  try {
+    const toRemove = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && (k.startsWith('portline_quotes_') || k.startsWith('portline_quote_'))) {
+        toRemove.push(k)
+      }
+    }
+    toRemove.forEach(k => localStorage.removeItem(k))
+  } catch {}
   if (!MOCK_MODE) {
     try {
       await apiFetch('/api/v1/quotes/?confirm=true', { method: 'DELETE' })
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('Backend clear all quotes notice:', err.message)
     }
   }
   return { ok: true }
@@ -747,26 +749,23 @@ export async function sendContactMessage(payload) {
 
 // Fetch ALL quotes (for admin panel — all users)
 export async function fetchAllQuotes() {
-  const localList = getSavedQuotes()
-  let remoteList = []
   if (!MOCK_MODE) {
     try {
       const res = await apiFetch('/api/v1/quotes/')
       if (Array.isArray(res)) {
-        remoteList = res
+        const resolved = res.map(q => ({
+          ...q,
+          status: resolveEffectiveQuoteStatus(q)
+        }))
+        try {
+          localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(resolved))
+        } catch {}
+        return resolved
       }
     } catch {}
   }
-  const map = new Map()
-  for (const q of remoteList) {
-    if (q && q.id) map.set(q.id, q)
-  }
-  for (const q of localList) {
-    if (q && q.id && !map.has(q.id)) {
-      map.set(q.id, q)
-    }
-  }
-  return Array.from(map.values())
+  const localList = getSavedQuotes()
+  return localList.map(q => ({ ...q, status: resolveEffectiveQuoteStatus(q) }))
 }
 
 // Agent approves or rejects a quote

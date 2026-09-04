@@ -14,7 +14,7 @@ import { useToast } from '../context/ToastContext'
 import {
   fetchAllQuotes, fetchShipments, clearAllShipments, fetchAllUsers,
   adminCreateUser, adminUpdateUser, adminDeleteUser,
-  agentActionOnQuote, clearAllQuotes
+  agentActionOnQuote, clearAllQuotes, deleteQuote
 } from '../lib/api'
 import { routeAnalytics } from '../lib/mockData'
 
@@ -907,12 +907,28 @@ export default function Admin() {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-right whitespace-nowrap">
-                            <button
-                              onClick={() => setInspectQuote(q)}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-marine hover:underline"
-                            >
-                              <Eye className="h-3.5 w-3.5" /> View
-                            </button>
+                            <div className="inline-flex items-center justify-end gap-2.5">
+                              <button
+                                onClick={() => setInspectQuote(q)}
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-brand-marine hover:underline"
+                              >
+                                <Eye className="h-3.5 w-3.5" /> View
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (window.confirm(`Are you sure you want to delete quotation ${q.id}? This cannot be undone.`)) {
+                                    await deleteQuote(q.id)
+                                    setQuotes(prev => prev.filter(item => item.id !== q.id))
+                                    toast(`Quotation ${q.id} deleted successfully.`)
+                                  }
+                                }}
+                                title={`Delete quotation ${q.id}`}
+                                className="p-1 rounded text-brand-slateLight hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )

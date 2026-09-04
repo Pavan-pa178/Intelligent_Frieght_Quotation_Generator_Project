@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, Upload, X, Loader2, AlertTriangle, Receipt, Lock, Sparkles } from 'lucide-react'
+import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, Upload, X, Loader2, AlertTriangle, Receipt, Lock, Sparkles, Trash2 } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import WeatherRiskPanel from '../components/WeatherRiskPanel'
@@ -13,6 +13,7 @@ import { computeCompositeRisk } from '../lib/riskEngine'
 import { predictMLFreightPrice } from '../lib/mlPricingEngine'
 import {
   fetchQuoteById,
+  deleteQuote,
   customerDecisionOnQuote,
   selectQuoteRoute,
   uploadQuoteDocuments,
@@ -584,6 +585,23 @@ export default function QuoteDetail() {
             <div className="flex items-center gap-3">
               <StatusBadge status={customsApproved && quote.status !== 'Accepted' ? 'Approved' : quote.status} />
               <span className="font-mono text-xs text-brand-slateLight">Generated {displayTimestamp}</span>
+              {(isOwner || isAgentOrAdmin) && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm(`Are you sure you want to delete quotation ${quote.id}? This cannot be undone.`)) {
+                      await deleteQuote(quote.id)
+                      toast(`Quotation ${quote.id} deleted successfully.`)
+                      navigate('/quotes', { replace: true })
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors shadow-2xs"
+                  title={`Delete ${quote.id}`}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </button>
+              )}
             </div>
           </div>
 

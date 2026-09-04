@@ -23,10 +23,10 @@ function formatRelativeTime(dateInput, fallbackInput) {
 }
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Search, Plus, Lock } from 'lucide-react'
+import { FileText, Search, Plus, Lock, Trash2 } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
-import { fetchQuotes, clearAllQuotes, resolveEffectiveQuoteStatus } from '../lib/api'
+import { fetchQuotes, clearAllQuotes, deleteQuote, resolveEffectiveQuoteStatus } from '../lib/api'
 import { useApp } from '../context/AppContext'
 
 export default function Quotes() {
@@ -261,10 +261,11 @@ export default function Quotes() {
 
                 <button
                   type="button"
-                  onClick={() => { setSearch(''); setLaneFilter('All'); setModeFilter('All'); setStatusFilter('All'); setActiveTab('all') }}
+                  onClick={() => { setSearch(''); setLaneFilter('All'); setModeFilter('All'); setStatusFilter('All'); setActiveTab(isElevated ? 'all' : 'mine') }}
                   className="rounded-[10px] border-[1.5px] border-brand-line px-4 py-2.5 text-xs font-semibold text-brand-slate hover:bg-brand-cloud"
+                  title="Reset search and filter selections"
                 >
-                  Clear
+                  Reset Filters
                 </button>
 
                 {isElevated && (
@@ -364,12 +365,28 @@ export default function Quotes() {
                         </td>
                         <td className="py-4 px-5 text-brand-slateLight">{formatRelativeTime(q.created_at, q.created)}</td>
                         <td className="py-4 px-5 text-right">
-                          <button
-                            onClick={() => navigate(`/quotes/${q.id}`, { state: { from: '/quotes', fromLabel: 'Back to Quotations' } })}
-                            className="rounded-lg border-[1.5px] border-brand-line bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-navy hover:border-brand-marine shadow-xs"
-                          >
-                            Open
-                          </button>
+                          <div className="inline-flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => navigate(`/quotes/${q.id}`, { state: { from: '/quotes', fromLabel: 'Back to Quotations' } })}
+                              className="rounded-lg border-[1.5px] border-brand-line bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-navy hover:border-brand-marine shadow-xs"
+                            >
+                              Open
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                if (window.confirm(`Are you sure you want to delete quotation ${q.id}? This cannot be undone.`)) {
+                                  await deleteQuote(q.id)
+                                  setQuotes(prev => prev.filter(item => item.id !== q.id))
+                                }
+                              }}
+                              title={`Delete ${q.id}`}
+                              className="rounded-lg border border-brand-line bg-white p-1.5 text-brand-slateLight hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 transition-colors shadow-2xs"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
