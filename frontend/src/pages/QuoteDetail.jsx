@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
-import { useParams, useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom'
-import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, AlertCircle, Clock, Send, ThumbsUp, ThumbsDown, Upload, X, Loader2, Phone, AlertTriangle } from 'lucide-react'
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
+import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, Upload, X, Loader2, AlertTriangle } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import WeatherRiskPanel from '../components/WeatherRiskPanel'
@@ -18,8 +18,7 @@ import {
   uploadQuoteDocuments,
   fetchBackendMLPrice,
   fetchBackendWeatherAssess,
-  fetchBackendCustomsValidate,
-  fetchBackendRiskAssess
+  fetchBackendCustomsValidate
 } from '../lib/api'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
@@ -64,7 +63,6 @@ export default function QuoteDetail() {
   const [liveML, setLiveML] = useState(null)
   const [liveWeather, setLiveWeather] = useState(null)
   const [liveCustoms, setLiveCustoms] = useState(null)
-  const [liveRisk, setLiveRisk] = useState(null)
 
   useEffect(() => {
     fetchQuoteById(id).then((res) => {
@@ -151,33 +149,35 @@ export default function QuoteDetail() {
     if (!quote) return null
     if (quote.m3_customs) {
       const c = quote.m3_customs
+      const checklistItems = Array.isArray(c.checklist) ? c.checklist : []
       return {
         hsCode: c.hs_code || d.hsCode || '850440',
         hsDescription: d.commodity || 'Standard Commercial Cargo',
         readinessScore: c.readiness_score || 85,
         complianceStatus: c.compliance_status || 'APPROVED',
-        checklist: (c.checklist || []).map(item => ({
-          name: item.item_name || item.name,
-          uploaded: item.document_uploaded ?? item.uploaded ?? true,
-          status: item.status || 'VERIFIED'
+        checklist: checklistItems.map(item => ({
+          name: item?.item_name || item?.name || 'Statutory Declaration',
+          uploaded: item?.document_uploaded ?? item?.uploaded ?? true,
+          status: item?.status || 'VERIFIED'
         })),
-        citations: c.retrieved_citations || [],
+        citations: Array.isArray(c.retrieved_citations) ? c.retrieved_citations : [],
         summary: c.summary || 'Customs trade classification verified against regulatory corpus.',
         requiresOfficerReview: c.requires_officer_review || false
       }
     }
     if (liveCustoms) {
+      const liveChecklist = Array.isArray(liveCustoms.document_checklist) ? liveCustoms.document_checklist : []
       return {
         hsCode: liveCustoms.hs_code || d.hsCode || '850440',
         hsDescription: d.commodity || 'Standard Commercial Cargo',
         readinessScore: liveCustoms.readiness_score || 85,
         complianceStatus: liveCustoms.compliance_status || 'APPROVED',
-        checklist: (liveCustoms.document_checklist || []).map(item => ({
-          name: item.item_name || item.name,
-          uploaded: item.document_uploaded ?? true,
-          status: item.status || 'VERIFIED'
+        checklist: liveChecklist.map(item => ({
+          name: item?.item_name || item?.name || 'Statutory Declaration',
+          uploaded: item?.document_uploaded ?? true,
+          status: item?.status || 'VERIFIED'
         })),
-        citations: liveCustoms.retrieved_citations || [],
+        citations: Array.isArray(liveCustoms.retrieved_citations) ? liveCustoms.retrieved_citations : [],
         summary: liveCustoms.summary,
         requiresOfficerReview: liveCustoms.requires_officer_review
       }
@@ -192,24 +192,25 @@ export default function QuoteDetail() {
 
   const compositeRiskData = useMemo(() => {
     if (!quote) return null
-    if (quote.m3_risk) {
-      const r = quote.m3_risk
+    const r = quote.m3_risk || quote.m3_composite_risk
+    if (r) {
+      const factors = Array.isArray(r.factor_breakdown) ? r.factor_breakdown : []
       return {
-        overallScore: r.overall_score,
-        riskLevel: r.risk_level,
+        overallScore: r.overall_score ?? 20,
+        riskLevel: r.risk_level || 'LOW',
         color: r.risk_level === 'CRITICAL' ? '#991B1B' : r.risk_level === 'HIGH' ? '#EF4444' : r.risk_level === 'MEDIUM' ? '#F59E0B' : '#10B981',
-        primaryDriver: r.primary_driver,
-        explanation: r.explanation,
-        guidance: r.guidance,
+        primaryDriver: r.primary_driver || 'Normal transit corridors',
+        explanation: r.explanation || 'Nominal operational risk profile.',
+        guidance: r.guidance || 'Standard dispatch schedule recommended.',
         formula: r.formula || 'Weather (30%) + Customs (25%) + Route (20%) + Port (15%) + Cargo (10%)',
-        factors: (r.factor_breakdown || []).map(f => ({
-          name: f.factor_name,
-          score: f.score,
-          weight: f.weight_pct,
-          contribution: f.contribution_pts,
-          severity: f.severity,
-          reason: f.reason,
-          source: f.source
+        factors: factors.map(f => ({
+          name: f?.factor_name || 'Risk Factor',
+          score: f?.score ?? 20,
+          weight: f?.weight_pct ?? 20,
+          contribution: f?.contribution_pts ?? 4,
+          severity: f?.severity || 'LOW',
+          reason: f?.reason || 'Clear baseline parameters',
+          source: f?.source || 'Analytical Assessment'
         }))
       }
     }
@@ -337,22 +338,26 @@ export default function QuoteDetail() {
   }
 
   const agentApproved = quote?.agent_review?.status === 'approved'
-  const customsApproved = quote?.customs_review?.status === 'approved' || quote?.status === 'Approved'
+  const customsApproved = 
+    quote?.customs_review?.status === 'approved' || 
+    quote?.status === 'Approved' ||
+    quote?.pipeline_status === 'CUSTOMS_APPROVED' ||
+    quote?.m3_customs?.compliance_status === 'APPROVED'
   const canCustomerAccept = agentApproved && customsApproved
 
   const docReq = quote?.customs_document_request
   const pendingDocsList = useMemo(() => {
-    if (docReq?.requested_docs && docReq.requested_docs.length > 0) {
+    if (docReq?.requested_docs && Array.isArray(docReq.requested_docs) && docReq.requested_docs.length > 0) {
       return docReq.requested_docs
     }
-    const customsChecklist = customsData?.checklist || []
-    return customsChecklist.filter(c => !c.uploaded).map(c => c.name)
+    const customsChecklist = Array.isArray(customsData?.checklist) ? customsData.checklist : []
+    return customsChecklist.filter(c => c && !c.uploaded).map(c => c.name)
   }, [docReq, customsData])
 
   if (loading) {
     return (
       <div className="py-20 text-center text-brand-slate">
-        <p>Loading quotation details?</p>
+        <p>Loading quotation details…</p>
       </div>
     )
   }
@@ -365,6 +370,10 @@ export default function QuoteDetail() {
       </div>
     )
   }
+
+  const displayTimestamp = quote.created_at 
+    ? new Date(quote.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+    : (quote.created && quote.created !== 'Just now' ? quote.created : 'Today')
 
   return (
     <>
@@ -383,13 +392,38 @@ export default function QuoteDetail() {
               <ArrowLeft className="h-4 w-4" /> {backNav.label}
             </button>
             <div className="flex items-center gap-3">
-              <StatusBadge status={quote.status} />
-              <span className="font-mono text-xs text-brand-slateLight">Generated {quote.created}</span>
+              <StatusBadge status={customsApproved && quote.status !== 'Accepted' ? 'Approved' : quote.status} />
+              <span className="font-mono text-xs text-brand-slateLight">Generated {displayTimestamp}</span>
             </div>
           </div>
 
-          {/* CUSTOMS DOCUMENT REQUEST ALERT BANNER */}
-          {pendingDocsList.length > 0 && docReq?.status !== 'DOCUMENTS_SUBMITTED' && !customsApproved && (
+          {/* CUSTOMS VERIFIED SUCCESS BANNER */}
+          {customsApproved && (
+            <div className="mb-8 rounded-2xl border-2 border-emerald-400 bg-emerald-50/95 p-5 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-emerald-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-950 block">
+                      Customs Compliance Cleared & Verified
+                    </span>
+                    <p className="mt-0.5 text-xs text-emerald-900 leading-relaxed">
+                      Customs Authorities have inspected and signed off all statutory compliance declarations for this consignment.
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 px-3.5 py-2 text-xs font-bold text-emerald-800 border border-emerald-300">
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  Verified by Customs
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* CUSTOMS DOCUMENT REQUEST ALERT BANNER (Only shown when NOT approved and docs are flagged) */}
+          {!customsApproved && pendingDocsList.length > 0 && docReq?.status !== 'DOCUMENTS_SUBMITTED' && (
             <div className="mb-8 rounded-2xl border-2 border-amber-400 bg-amber-50/95 p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-3.5">
@@ -408,7 +442,7 @@ export default function QuoteDetail() {
                     </p>
                     {docReq?.officer_notes && (
                       <p className="mt-2 rounded-lg border border-amber-300 bg-white/90 p-2.5 text-xs italic text-amber-950 font-medium">
-                        Customs Officer Message: "{docReq.officer_notes}"
+                        Customs Officer Message: &ldquo;{docReq.officer_notes}&rdquo;
                       </p>
                     )}
                     <div className="mt-3 flex flex-wrap gap-2">

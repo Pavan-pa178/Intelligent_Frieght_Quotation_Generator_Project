@@ -26,21 +26,32 @@ export class ErrorBoundary extends Component {
           <p className="mb-6 max-w-md text-xs text-brand-slate font-mono bg-brand-cloud p-3 rounded-lg border border-brand-line">
             {this.state.error?.message || 'An unexpected rendering error occurred.'}
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap justify-center gap-3">
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, error: null })
+                window.location.href = '/'
+              }}
+              className="rounded-lg bg-brand-navy px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-brand-marine transition-colors"
+            >
+              Return to Dashboard
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center gap-2 rounded-lg border border-brand-line bg-white px-5 py-2.5 text-xs font-semibold text-brand-navy shadow-xs hover:bg-brand-cloud transition-colors"
+            >
+              <RefreshCw className="h-4 w-4" /> Reload Page
+            </button>
+          </div>
+          <div className="mt-4">
             <button
               onClick={() => {
                 localStorage.clear()
                 window.location.href = '/login'
               }}
-              className="rounded-lg bg-brand-navy px-5 py-2.5 text-xs font-bold text-white shadow-xs"
+              className="text-[11px] text-brand-slate hover:text-rose-600 underline"
             >
-              Reset Session & Clear Storage
-            </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="inline-flex items-center gap-2 rounded-lg border border-brand-line bg-white px-5 py-2.5 text-xs font-semibold text-brand-navy shadow-xs"
-            >
-              <RefreshCw className="h-4 w-4" /> Reload Page
+              Troubleshoot: Clear cache & re-login
             </button>
           </div>
         </div>

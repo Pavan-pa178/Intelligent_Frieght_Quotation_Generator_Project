@@ -1,9 +1,33 @@
+
+function formatRelativeTime(dateInput, fallbackInput) {
+  const target = (dateInput && dateInput !== 'Just now') ? dateInput : (fallbackInput && fallbackInput !== 'Just now' ? fallbackInput : null)
+  if (!target) return 'Just now'
+  const date = new Date(target)
+  if (isNaN(date.getTime())) {
+    return target
+  }
+  const now = new Date()
+  const diffMs = now - date
+  if (diffMs < 0 && Math.abs(diffMs) < 60000) return 'Just now'
+  const diffSec = Math.floor(Math.max(0, diffMs) / 1000)
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHour = Math.floor(diffMin / 60)
+  const diffDay = Math.floor(diffHour / 24)
+
+  if (diffSec < 60) return 'Just now'
+  if (diffMin < 60) return `${diffMin}m ago`
+  if (diffHour < 24) return `${diffHour}h ago`
+  if (diffDay === 1) return 'Yesterday'
+  if (diffDay < 7) return `${diffDay}d ago`
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Search, Plus, ArrowRight } from 'lucide-react'
+import { FileText, Search, Plus } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
-import { fetchQuotes } from '../lib/api'
+import { fetchQuotes, clearAllQuotes } from '../lib/api'
+import { useApp } from '../context/AppContext'
 
 export default function Quotes() {
   const navigate = useNavigate()
@@ -15,12 +39,29 @@ export default function Quotes() {
   const [modeFilter, setModeFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
 
+  const { user } = useApp()
+  const isElevated = user?.role === 'admin' || user?.role === 'agent' || user?.role === 'broker' || user?.role === 'customs_officer'
+
   useEffect(() => {
-    fetchQuotes().then((res) => {
-      setQuotes(res || [])
+    const email = isElevated ? null : user?.email
+    fetchQuotes(email).then((res) => {
+      let list = Array.isArray(res) ? res : []
+      if (!isElevated) {
+        if (user?.email) {
+          const userEmail = user.email.toLowerCase()
+          const userName = (user.name || '').toLowerCase()
+          list = list.filter(q => 
+            (q.user_email && q.user_email.toLowerCase() === userEmail) ||
+            (q.customer && q.customer.toLowerCase() === userName)
+          )
+        } else {
+          list = []
+        }
+      }
+      setQuotes(list)
       setLoading(false)
     })
-  }, [])
+  }, [user, isElevated])
 
   const filteredQuotes = useMemo(() => {
     return quotes.filter((q) => {
@@ -116,6 +157,21 @@ export default function Quotes() {
                   Clear
                 </button>
 
+                {isElevated && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (window.confirm('Are you sure you want to clear all registered quotes? Counters will reset to zero.')) {
+                        await clearAllQuotes()
+                        setQuotes([])
+                      }
+                    }}
+                    className="rounded-[10px] border border-rose-300 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors shadow-2xs"
+                  >
+                    Clear All Quotes
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => navigate('/ship')}
@@ -179,7 +235,7 @@ export default function Quotes() {
                         <td className="py-4 px-5">
                           <StatusBadge status={q.status} />
                         </td>
-                        <td className="py-4 px-5 text-brand-slateLight">{q.created}</td>
+                        <td className="py-4 px-5 text-brand-slateLight">{formatRelativeTime(q.created_at, q.created)}</td>
                         <td className="py-4 px-5 text-right">
                           <button
                             onClick={() => navigate(`/quotes/${q.id}`)}

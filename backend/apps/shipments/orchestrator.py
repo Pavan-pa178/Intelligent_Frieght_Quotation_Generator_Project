@@ -124,7 +124,7 @@ def _assemble_quote(shipment_id, user_email, shipment_payload,
         'indicativeTotal': final_total,
         'status':          'QUOTED',
         'pipeline_status': STATUS_QUOTED,
-        'created':         'Just now',
+        'created':         shipment_payload.get('created') or now_str,
         'created_at':      now_str,
 
         # ── M1 outputs ──────────────────────────────────────────────────────

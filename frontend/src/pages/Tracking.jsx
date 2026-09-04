@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, AlertTriangle, Check, Clock, Upload, FileText, CheckCircle2, Phone, X, Loader2, ShieldCheck } from 'lucide-react'
+import { Search, AlertTriangle, Check, Clock, Upload, FileText, CheckCircle2, X, Loader2, ShieldCheck } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import { useApp } from '../context/AppContext'
@@ -172,34 +172,81 @@ export default function Tracking() {
 }
 
 function TrackResult({ shipment, onOpenUpload }) {
-  const doneCount = shipment.steps.filter((s) => s.done).length
-  const pct = Math.round(((doneCount - 0.5) / shipment.steps.length) * 100)
+  const isCustomsApproved = 
+    shipment?.customs_status === 'Approved' || 
+    shipment?.pipeline_status === 'CUSTOMS_APPROVED' || 
+    shipment?.status === 'Approved' || 
+    shipment?.customs_verified === true
+
+  const defaultSteps = [
+    { label: 'Booked', loc: shipment?.from || 'Origin Hub', ts: shipment?.date || 'Completed', done: true, current: false },
+    { label: 'Picked up', loc: 'Origin Gateway Port', ts: 'Completed', done: true, current: false },
+    { label: 'Customs clearance', loc: shipment?.to || 'Destination Port', ts: isCustomsApproved ? 'Verified & Cleared' : 'In Review', done: isCustomsApproved, current: !isCustomsApproved },
+    { label: 'In transit', loc: 'International Corridor', ts: 'En route', done: false, current: false },
+    { label: 'Out for delivery', loc: shipment?.to || 'Destination', ts: 'Pending', done: false, current: false },
+    { label: 'Delivered', loc: shipment?.to || 'Destination', ts: 'Pending', done: false, current: false },
+  ]
+
+  const rawSteps = Array.isArray(shipment?.steps) && shipment.steps.length > 0 ? shipment.steps : defaultSteps
+  const steps = (Array.isArray(rawSteps) ? rawSteps : defaultSteps).map(s => {
+    if (s?.label?.toLowerCase().includes('customs') && isCustomsApproved) {
+      return { ...s, done: true, ts: 'Verified & Cleared', current: false }
+    }
+    return s || { label: 'Checkpoint', loc: '—', ts: 'Pending', done: false }
+  })
+
+  const doneCount = Array.isArray(steps) ? steps.filter((s) => s?.done).length : 0
+  const pct = Math.max(10, Math.min(100, Math.round((doneCount / Math.max(1, steps.length)) * 100)))
 
   return (
     <div className="mx-auto mt-12 max-w-[820px]">
-      {/* Customs Documents Alert Banner */}
-      <div className="mb-6 rounded-2xl border-2 border-amber-400 bg-amber-50/95 p-5 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-amber-500 p-2.5 text-white shrink-0 mt-0.5">
-              <AlertTriangle className="h-5 w-5" />
+      {/* Customs Compliance Banner: Verified vs Upload Notice */}
+      {isCustomsApproved ? (
+        <div className="mb-6 rounded-2xl border-2 border-emerald-400 bg-emerald-50/95 p-5 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-emerald-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-950 block">
+                  Customs Trade Compliance Cleared & Verified
+                </span>
+                <p className="text-xs text-emerald-900 mt-0.5 leading-relaxed">
+                  All statutory import documentation and compliance declarations have been inspected and verified by Customs Authorities. Consignment authorized for expedited port release.
+                </p>
+              </div>
             </div>
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block">Customs Trade Compliance Notice</span>
-              <p className="text-xs text-amber-900 mt-0.5 leading-relaxed">
-                Ensure all required statutory certificates are filed to prevent detention at port border control.
-              </p>
-            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 px-3.5 py-2 text-xs font-bold text-emerald-800 border border-emerald-300">
+              <Check className="h-3.5 w-3.5 text-emerald-600" />
+              Clearance Verified
+            </span>
           </div>
-          <button
-            type="button"
-            onClick={onOpenUpload}
-            className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 shadow-sm transition-all"
-          >
-            <Upload className="h-4 w-4" /> Upload Required Documents
-          </button>
         </div>
-      </div>
+      ) : (
+        <div className="mb-6 rounded-2xl border-2 border-amber-400 bg-amber-50/95 p-5 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-amber-500 p-2.5 text-white shrink-0 mt-0.5">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block">Customs Trade Compliance Notice</span>
+                <p className="text-xs text-amber-900 mt-0.5 leading-relaxed">
+                  Ensure all required statutory certificates are filed to prevent detention at port border control.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenUpload}
+              className="flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 shadow-sm transition-all"
+            >
+              <Upload className="h-4 w-4" /> Upload Required Documents
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="mb-9 flex flex-wrap justify-between gap-5 rounded-md2 border border-brand-line bg-white p-7 shadow-xs">
         <Info label="Tracking number" value={shipment.tn} mono />
@@ -219,7 +266,7 @@ function TrackResult({ shipment, onOpenUpload }) {
         <div className="absolute bottom-2 left-[19px] top-2 w-0.5 bg-brand-line">
           <div className="w-full rounded-full bg-brand-orange transition-[height] duration-1000" style={{ height: `${pct}%` }} />
         </div>
-        {shipment.steps.map((step, i) => (
+        {steps.map((step, i) => (
           <div key={i} className="relative flex gap-5 pb-[34px] last:pb-0">
             <div
               className={`z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 ${
