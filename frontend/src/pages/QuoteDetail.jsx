@@ -452,19 +452,45 @@ export default function QuoteDetail() {
     }
   }
 
-  const agentApproved = quote?.agent_review?.status === 'approved'
+  const agentApproved = 
+    quote?.agent_review?.status === 'approved' || 
+    quote?.status === 'Approved' ||
+    quote?.pipeline_status === 'CUSTOMS_APPROVED' ||
+    quote?.status === 'Accepted'
+
+  const agentRejected = 
+    quote?.agent_review?.status === 'rejected' || 
+    (quote?.status === 'Rejected' && !quote?.customer_decision?.status && quote?.customs_review?.status !== 'rejected')
+
   const customsApproved = 
     quote?.customs_review?.status === 'approved' || 
     quote?.status === 'Approved' ||
     quote?.pipeline_status === 'CUSTOMS_APPROVED' ||
     quote?.m3_customs?.compliance_status === 'APPROVED'
-  const canCustomerAccept = agentApproved && customsApproved
+
+  const customsRejected = 
+    quote?.customs_review?.status === 'rejected' ||
+    quote?.status === 'Rejected by Customs' ||
+    quote?.pipeline_status === 'CUSTOMS_REJECTED' ||
+    quote?.m3_customs?.compliance_status === 'REJECTED'
+
+  const canCustomerAccept = (agentApproved || quote?.status === 'Approved') && customsApproved
+
+  const isAcceptedByCustomer = quote?.customer_decision?.status === 'ACCEPTED' || quote?.status === 'Accepted'
+  const isRejectedByCustomer = quote?.customer_decision?.status === 'REJECTED' || (quote?.status === 'Rejected' && quote?.customer_decision?.status === 'REJECTED')
 
   const docReq = quote?.customs_document_request
+  const docsSubmitted = 
+    docReq?.status === 'DOCUMENTS_SUBMITTED' || 
+    quote?.status === 'Documents Submitted (Pending Customs Sign-off)' || 
+    quote?.status?.toLowerCase()?.includes('submitted') ||
+    quote?.pipeline_status === 'DOCS_SUBMITTED'
+
   const hasOfficerRequestedDocs = 
     Boolean(docReq?.requested_docs && Array.isArray(docReq.requested_docs) && docReq.requested_docs.length > 0) ||
     quote?.status === 'Documents Requested' ||
-    docReq?.status === 'REQUESTED'
+    docReq?.status === 'REQUESTED' ||
+    docReq?.status === 'PENDING_CUSTOMER_UPLOAD'
 
   const pendingDocsList = useMemo(() => {
     if (docReq?.requested_docs && Array.isArray(docReq.requested_docs) && docReq.requested_docs.length > 0) {
@@ -520,8 +546,88 @@ export default function QuoteDetail() {
             </div>
           </div>
 
-          {/* CUSTOMS VERIFIED SUCCESS BANNER */}
-          {customsApproved && (
+          {/* DYNAMIC CONSIGNMENT LIFECYCLE UPDATE WINDOW */}
+          {isAcceptedByCustomer ? (
+            /* 1. POST-ACCEPTANCE: QUOTATION BOOKED SUCCESSFULLY */
+            <div className="mb-8 rounded-2xl border-2 border-emerald-500 bg-emerald-50/95 p-5 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-emerald-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-950 block">
+                      Quotation Booked Successfully
+                    </span>
+                    <p className="mt-0.5 text-xs text-emerald-900 leading-relaxed">
+                      Your quotation has been confirmed and booked. Our operations team is now coordinating carrier booking, container release, and dispatch.
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-100 px-3.5 py-2 text-xs font-bold text-emerald-800 border border-emerald-300">
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  Booked & Confirmed
+                </span>
+              </div>
+            </div>
+          ) : isRejectedByCustomer ? (
+            /* 2. CUSTOMER DECLINED */
+            <div className="mb-8 rounded-2xl border-2 border-rose-400 bg-rose-50/95 p-5 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-rose-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <XCircle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-rose-950 block">
+                      Quotation Declined by Customer
+                    </span>
+                    <p className="mt-0.5 text-xs text-rose-900 leading-relaxed">
+                      You have declined this quotation. You can generate a new quotation with revised cargo specifications or dates at any time.
+                    </p>
+                    {quote?.customer_decision?.notes && (
+                      <p className="mt-2 rounded-lg border border-rose-200 bg-white/90 p-2 text-xs italic text-rose-950 font-medium">
+                        Customer Note: &ldquo;{quote.customer_decision.notes}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-rose-100 px-3.5 py-2 text-xs font-bold text-rose-800 border border-rose-300">
+                  <XCircle className="h-3.5 w-3.5 text-rose-600" />
+                  Declined
+                </span>
+              </div>
+            </div>
+          ) : customsRejected ? (
+            /* 3. CUSTOMS REJECTED */
+            <div className="mb-8 rounded-2xl border-2 border-rose-400 bg-rose-50/95 p-5 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-rose-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <XCircle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-rose-950 block">
+                      Customs Compliance Rejected
+                    </span>
+                    <p className="mt-0.5 text-xs text-rose-900 leading-relaxed">
+                      Customs authorities have reviewed and rejected statutory compliance declarations for this consignment.
+                    </p>
+                    {(quote?.customs_review?.notes || quote?.customs_document_request?.officer_notes) && (
+                      <p className="mt-2 rounded-lg border border-rose-200 bg-white/90 p-2 text-xs italic text-rose-950 font-medium">
+                        Customs Officer Reason: &ldquo;{quote?.customs_review?.notes || quote?.customs_document_request?.officer_notes}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-rose-100 px-3.5 py-2 text-xs font-bold text-rose-800 border border-rose-300">
+                  <XCircle className="h-3.5 w-3.5 text-rose-600" />
+                  Rejected by Customs
+                </span>
+              </div>
+            </div>
+          ) : customsApproved ? (
+            /* 4. CUSTOMS CLEARED & VERIFIED (Ready for customer action) */
             <div className="mb-8 rounded-2xl border-2 border-emerald-400 bg-emerald-50/95 p-5 shadow-xs">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-start gap-3.5">
@@ -533,7 +639,7 @@ export default function QuoteDetail() {
                       Customs Compliance Cleared & Verified
                     </span>
                     <p className="mt-0.5 text-xs text-emerald-900 leading-relaxed">
-                      Customs Authorities have inspected and signed off all statutory compliance declarations for this consignment.
+                      Customs Authorities have inspected and signed off all statutory compliance declarations for this consignment. Please accept the quotation below to lock in your booking.
                     </p>
                   </div>
                 </div>
@@ -543,10 +649,31 @@ export default function QuoteDetail() {
                 </span>
               </div>
             </div>
-          )}
-
-          {/* CUSTOMS DOCUMENT REQUEST ALERT BANNER (Only shown when officer has requested docs and NOT approved) */}
-          {!customsApproved && hasOfficerRequestedDocs && pendingDocsList.length > 0 && docReq?.status !== 'DOCUMENTS_SUBMITTED' && (
+          ) : docsSubmitted ? (
+            /* 5. DOCUMENTS SUBMITTED · AWAITING CUSTOMS SIGN-OFF */
+            <div className="mb-8 rounded-2xl border-2 border-indigo-400 bg-indigo-50/95 p-5 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-indigo-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-indigo-950 block">
+                      Documents Uploaded · Awaiting Customs Approval
+                    </span>
+                    <p className="mt-0.5 text-xs text-indigo-900 leading-relaxed">
+                      Your required compliance documents have been submitted successfully. A customs compliance officer is reviewing your paperwork for final clearance.
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-100 px-3.5 py-2 text-xs font-bold text-indigo-800 border border-indigo-300">
+                  <Clock className="h-3.5 w-3.5 text-indigo-600" />
+                  Under Customs Review
+                </span>
+              </div>
+            </div>
+          ) : hasOfficerRequestedDocs && pendingDocsList.length > 0 ? (
+            /* 6. CUSTOMS ACTION REQUIRED · DOCUMENTS REQUESTED */
             <div className="mb-8 rounded-2xl border-2 border-amber-400 bg-amber-50/95 p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-3.5">
@@ -555,13 +682,13 @@ export default function QuoteDetail() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-bold text-amber-950 uppercase tracking-wider">Customs Compliance Action Required</span>
+                      <span className="text-sm font-bold text-amber-950 uppercase tracking-wider">Customs Action Required · Documents Requested</span>
                       <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">
-                        Documents Flagged
+                        Action Needed
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-amber-900 leading-relaxed">
-                      Customs compliance team requires specific trade documentation before this shipment can pass regulatory customs clearance.
+                      The customs compliance officer has inspected your consignment and requested specific statutory documents before clearance can be granted.
                     </p>
                     {docReq?.officer_notes && (
                       <p className="mt-2 rounded-lg border border-amber-300 bg-white/90 p-2.5 text-xs italic text-amber-950 font-medium">
@@ -584,6 +711,80 @@ export default function QuoteDetail() {
                 >
                   <Upload className="h-4 w-4" /> Upload Required Documents
                 </button>
+              </div>
+            </div>
+          ) : agentRejected ? (
+            /* 7. AGENT REJECTED */
+            <div className="mb-8 rounded-2xl border-2 border-rose-400 bg-rose-50/95 p-5 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-rose-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <XCircle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-rose-950 block">
+                      Quotation Declined by Freight Agent
+                    </span>
+                    <p className="mt-0.5 text-xs text-rose-900 leading-relaxed">
+                      The freight agent reviewed this quotation and could not approve it due to commercial tariff or carrier constraints.
+                    </p>
+                    {quote?.agent_review?.comment && (
+                      <p className="mt-2 rounded-lg border border-rose-200 bg-white/90 p-2 text-xs italic text-rose-950 font-medium">
+                        Agent Reason: &ldquo;{quote.agent_review.comment}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-rose-100 px-3.5 py-2 text-xs font-bold text-rose-800 border border-rose-300">
+                  <XCircle className="h-3.5 w-3.5 text-rose-600" />
+                  Rejected by Agent
+                </span>
+              </div>
+            </div>
+          ) : agentApproved ? (
+            /* 8. AGENT APPROVED · AWAITING CUSTOMS */
+            <div className="mb-8 rounded-2xl border-2 border-sky-400 bg-sky-50/95 p-5 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-sky-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-sky-950 block">
+                      Freight Agent Approved · Awaiting Customs Clearance
+                    </span>
+                    <p className="mt-0.5 text-xs text-sky-900 leading-relaxed">
+                      The freight agent has approved your commercial tariff and route schedule. Consignment details are now in queue for customs inspection and clearance.
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-sky-100 px-3.5 py-2 text-xs font-bold text-sky-800 border border-sky-300">
+                  <Check className="h-3.5 w-3.5 text-sky-600" />
+                  Agent Approved · Pending Customs
+                </span>
+              </div>
+            </div>
+          ) : (
+            /* 9. INITIAL: QUOTATION GENERATED · AWAITING AGENT REVIEW */
+            <div className="mb-8 rounded-2xl border-2 border-amber-300 bg-amber-50/90 p-5 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-amber-500 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block">
+                      Quotation Generated · Awaiting Freight Agent Review
+                    </span>
+                    <p className="mt-0.5 text-xs text-amber-900 leading-relaxed">
+                      Your quotation has been generated. A freight agent is currently reviewing the commercial tariff schedule, carrier allocation, and route feasibility.
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-amber-100 px-3.5 py-2 text-xs font-bold text-amber-800 border border-amber-300">
+                  <Clock className="h-3.5 w-3.5 text-amber-700" />
+                  Awaiting Agent Review
+                </span>
               </div>
             </div>
           )}
@@ -1013,11 +1214,13 @@ export default function QuoteDetail() {
                 <h4 className="mb-3 text-xs font-bold text-brand-navy uppercase tracking-wider">Approval Sequence</h4>
                 
                 <div className="space-y-3 text-xs">
-                  {/* Stage 1: Freight Agent */}
+                  {/* Stage 1: Freight Agent Review */}
                   <div className="flex items-start gap-2.5 p-2 rounded-lg bg-brand-cloud/60 border border-brand-line/60">
                     <div className="mt-0.5">
                       {agentApproved ? (
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      ) : agentRejected ? (
+                        <XCircle className="h-4 w-4 text-rose-600" />
                       ) : (
                         <Clock className="h-4 w-4 text-amber-500" />
                       )}
@@ -1026,26 +1229,38 @@ export default function QuoteDetail() {
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-brand-navy">1. Freight Agent Review</span>
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                          agentApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          agentApproved 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : agentRejected 
+                              ? 'bg-rose-100 text-rose-800' 
+                              : 'bg-amber-100 text-amber-800'
                         }`}>
-                          {agentApproved ? 'APPROVED' : 'PENDING'}
+                          {agentApproved ? 'APPROVED' : agentRejected ? 'REJECTED' : 'PENDING'}
                         </span>
                       </div>
                       <p className="text-[11px] text-brand-slate mt-0.5">
-                        {agentApproved ? `Verified by ${quote.agent_review?.agent_name || 'Agent'}` : 'Awaiting commercial tariff validation'}
+                        {agentApproved 
+                          ? `Verified by ${quote.agent_review?.agent_name || 'Agent'}` 
+                          : agentRejected 
+                            ? 'Commercial tariff rejected by agent' 
+                            : 'Awaiting commercial tariff validation'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Stage 2: Customs Officer */}
+                  {/* Stage 2: Customs Officer Check */}
                   <div className="flex items-start gap-2.5 p-2 rounded-lg bg-brand-cloud/60 border border-brand-line/60">
                     <div className="mt-0.5">
                       {customsApproved ? (
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      ) : docReq?.status === 'PENDING_CUSTOMER_UPLOAD' ? (
-                        <AlertTriangle className="h-4 w-4 text-rose-500" />
+                      ) : customsRejected ? (
+                        <XCircle className="h-4 w-4 text-rose-600" />
+                      ) : docsSubmitted ? (
+                        <Clock className="h-4 w-4 text-indigo-600" />
+                      ) : hasOfficerRequestedDocs ? (
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
                       ) : (
-                        <Clock className="h-4 w-4 text-amber-500" />
+                        <Clock className="h-4 w-4 text-brand-slateLight" />
                       )}
                     </div>
                     <div className="flex-1">
@@ -1054,19 +1269,35 @@ export default function QuoteDetail() {
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                           customsApproved 
                             ? 'bg-emerald-100 text-emerald-800' 
-                            : docReq?.status === 'PENDING_CUSTOMER_UPLOAD' 
+                            : customsRejected 
                               ? 'bg-rose-100 text-rose-800' 
-                              : 'bg-amber-100 text-amber-800'
+                              : docsSubmitted 
+                                ? 'bg-indigo-100 text-indigo-800' 
+                                : hasOfficerRequestedDocs 
+                                  ? 'bg-amber-100 text-amber-800' 
+                                  : 'bg-slate-100 text-slate-700'
                         }`}>
-                          {customsApproved ? 'APPROVED' : docReq?.status === 'PENDING_CUSTOMER_UPLOAD' ? 'DOCS REQUIRED' : 'PENDING'}
+                          {customsApproved 
+                            ? 'APPROVED' 
+                            : customsRejected 
+                              ? 'REJECTED' 
+                              : docsSubmitted 
+                                ? 'DOCS SUBMITTED' 
+                                : hasOfficerRequestedDocs 
+                                  ? 'DOCS REQUIRED' 
+                                  : 'PENDING'}
                         </span>
                       </div>
                       <p className="text-[11px] text-brand-slate mt-0.5">
                         {customsApproved 
                           ? 'Regulatory compliance signed off' 
-                          : docReq?.status === 'PENDING_CUSTOMER_UPLOAD'
-                            ? 'Upload requested docs below'
-                            : 'Awaiting customs document inspection'}
+                          : customsRejected 
+                            ? 'Customs compliance rejected' 
+                            : docsSubmitted 
+                              ? 'Documents under customs review' 
+                              : hasOfficerRequestedDocs 
+                                ? 'Upload requested docs below' 
+                                : 'Awaiting customs inspection'}
                       </p>
                     </div>
                   </div>
@@ -1074,8 +1305,10 @@ export default function QuoteDetail() {
                   {/* Stage 3: Customer Final Acceptance */}
                   <div className="flex items-start gap-2.5 p-2 rounded-lg bg-brand-cloud/60 border border-brand-line/60">
                     <div className="mt-0.5">
-                      {quote.customer_decision?.status === 'ACCEPTED' ? (
+                      {isAcceptedByCustomer ? (
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      ) : isRejectedByCustomer ? (
+                        <XCircle className="h-4 w-4 text-rose-600" />
                       ) : (
                         <Clock className="h-4 w-4 text-brand-slateLight" />
                       )}
@@ -1084,13 +1317,25 @@ export default function QuoteDetail() {
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-brand-navy">3. Customer Acceptance</span>
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                          quote.customer_decision?.status === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                          isAcceptedByCustomer 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : isRejectedByCustomer 
+                              ? 'bg-rose-100 text-rose-800' 
+                              : canCustomerAccept 
+                                ? 'bg-emerald-100 text-emerald-800 animate-pulse' 
+                                : 'bg-slate-100 text-slate-700'
                         }`}>
-                          {quote.customer_decision?.status === 'ACCEPTED' ? 'ACCEPTED' : canCustomerAccept ? 'READY' : 'LOCKED'}
+                          {isAcceptedByCustomer ? 'ACCEPTED' : isRejectedByCustomer ? 'DECLINED' : canCustomerAccept ? 'READY' : 'LOCKED'}
                         </span>
                       </div>
                       <p className="text-[11px] text-brand-slate mt-0.5">
-                        {quote.customer_decision?.status === 'ACCEPTED' ? 'Quotation booked' : canCustomerAccept ? 'All approvals granted. You can accept now!' : 'Requires Agent & Customs approvals first'}
+                        {isAcceptedByCustomer 
+                          ? 'Quotation booked successfully' 
+                          : isRejectedByCustomer 
+                            ? 'Quotation declined' 
+                            : canCustomerAccept 
+                              ? 'All approvals granted. You can accept now!' 
+                              : 'Requires Agent & Customs approvals first'}
                       </p>
                     </div>
                   </div>
