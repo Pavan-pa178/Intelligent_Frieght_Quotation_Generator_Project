@@ -110,7 +110,12 @@ export default function CustomsWorkspace() {
       }
     }
 
-    setCases(prev => prev.map(c => c.checkId === selectedCase.checkId ? { ...c, status: newStatus, requiresOfficer: false } : c))
+    setCases(prev => prev.map(c => c.checkId === selectedCase.checkId ? {
+      ...c,
+      status: newStatus,
+      requiresOfficer: false,
+      notes: officerComments || (decision === 'APPROVE' ? 'Full statutory documentation verified. HS Classification accepted. Cargo released for port loading and maritime transit.' : 'Rejected by customs officer.')
+    } : c))
 
     setAuditLogs(prev => [
       {
@@ -197,10 +202,24 @@ export default function CustomsWorkspace() {
     setDocRequestNotes('')
   }
 
-  const filteredCases = cases.filter(c => {
-    const q = searchQuery.toLowerCase()
-    return c.checkId.toLowerCase().includes(q) || c.commodity.toLowerCase().includes(q) || c.hsCode.includes(q) || c.shipmentId.toLowerCase().includes(q)
-  })
+  const pendingCases = cases.filter(c => c.status !== 'APPROVED')
+  const approvedCases = cases.filter(c => c.status === 'APPROVED')
+
+  const matchesSearch = (c) => {
+    if (!searchQuery) return true
+    const q = searchQuery.toLowerCase().trim()
+    return (
+      (c.checkId || '').toLowerCase().includes(q) ||
+      (c.commodity || '').toLowerCase().includes(q) ||
+      (c.hsCode || '').includes(q) ||
+      (c.shipmentId || '').toLowerCase().includes(q) ||
+      (c.origin || '').toLowerCase().includes(q) ||
+      (c.destination || '').toLowerCase().includes(q)
+    )
+  }
+
+  const filteredPendingCases = pendingCases.filter(matchesSearch)
+  const filteredApprovedCases = approvedCases.filter(matchesSearch)
 
   return (
     <div className="min-h-screen bg-brand-cloud pb-16">
@@ -226,14 +245,24 @@ export default function CustomsWorkspace() {
           </div>
 
           <div className="flex gap-3">
-            <div className="rounded-xl bg-brand-cloud border border-brand-line px-4 py-2 text-center shadow-xs">
-              <span className="text-[11px] text-brand-slate uppercase font-semibold">Pending Review</span>
-              <p className="text-xl font-bold text-amber-600 font-display">{cases.filter(c => c.requiresOfficer).length}</p>
-            </div>
-            <div className="rounded-xl bg-brand-cloud border border-brand-line px-4 py-2 text-center shadow-xs">
-              <span className="text-[11px] text-brand-slate uppercase font-semibold">Auto-Passed</span>
-              <p className="text-xl font-bold text-emerald-600 font-display">{cases.filter(c => c.status === 'APPROVED').length}</p>
-            </div>
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`rounded-xl border px-4 py-2 text-center shadow-xs transition-all ${
+                activeTab === 'pending' ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400/40' : 'bg-brand-cloud border-brand-line hover:bg-white'
+              }`}
+            >
+              <span className="text-[11px] text-brand-slate uppercase font-semibold block">Pending Review</span>
+              <p className="text-xl font-bold text-amber-600 font-display">{pendingCases.length}</p>
+            </button>
+            <button
+              onClick={() => setActiveTab('approved')}
+              className={`rounded-xl border px-4 py-2 text-center shadow-xs transition-all ${
+                activeTab === 'approved' ? 'bg-emerald-50 border-emerald-300 ring-2 ring-emerald-400/40' : 'bg-brand-cloud border-brand-line hover:bg-white'
+              }`}
+            >
+              <span className="text-[11px] text-brand-slate uppercase font-semibold block">Approved / Cleared</span>
+              <p className="text-xl font-bold text-emerald-600 font-display">{approvedCases.length}</p>
+            </button>
           </div>
         </div>
 
@@ -241,11 +270,23 @@ export default function CustomsWorkspace() {
         <div className="mt-6 flex flex-wrap gap-2 border-b border-brand-line pb-3">
           <button
             onClick={() => setActiveTab('pending')}
-            className={`rounded-xl px-4 py-2.5 text-xs font-semibold transition-all shadow-xs ${
+            className={`rounded-xl px-4 py-2.5 text-xs font-semibold transition-all shadow-xs flex items-center gap-2 ${
               activeTab === 'pending' ? 'bg-brand-navy text-white' : 'bg-white border border-brand-line text-brand-slate hover:text-brand-navy hover:bg-brand-cloud'
             }`}
           >
-            Pending Reviews ({cases.filter(c => c.requiresOfficer).length})
+            <span>Pending Reviews ({pendingCases.length})</span>
+            {pendingCases.length > 0 && (
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('approved')}
+            className={`rounded-xl px-4 py-2.5 text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 ${
+              activeTab === 'approved' ? 'bg-emerald-700 text-white shadow-xs' : 'bg-white border border-brand-line text-brand-slate hover:text-brand-navy hover:bg-brand-cloud'
+            }`}
+          >
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Approved & Cleared ({approvedCases.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('regulations')}
@@ -268,17 +309,20 @@ export default function CustomsWorkspace() {
         {/* TAB 1: PENDING REVIEWS */}
         {activeTab === 'pending' && (
           <div className="mt-6">
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-brand-slate" />
                 <input
                   type="text"
-                  placeholder="Search by HS code, commodity, or shipment ID..."
+                  placeholder="Search pending cases by HS code, commodity, shipment ID..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full rounded-xl border border-brand-line bg-white py-2 pl-9 pr-3 text-xs text-brand-navy placeholder-brand-slate focus:border-brand-marine focus:outline-none shadow-xs"
                 />
               </div>
+              <span className="text-xs text-brand-slate font-medium">
+                Showing <strong className="text-brand-navy">{filteredPendingCases.length}</strong> pending case{filteredPendingCases.length === 1 ? '' : 's'}
+              </span>
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-brand-line bg-white shadow-sm">
@@ -295,16 +339,29 @@ export default function CustomsWorkspace() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-brand-line/50">
-                  {filteredCases.length === 0 ? (
+                  {filteredPendingCases.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-4 py-12 text-center text-brand-slate">
-                        <FileCheck className="mx-auto h-8 w-8 text-brand-slateLight mb-2 opacity-50" />
-                        <p className="font-semibold text-brand-navy">No customs clearance cases found</p>
-                        <p className="text-xs text-brand-slate mt-0.5">Approved quotations requiring regulatory clearance will populate here automatically.</p>
+                        <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500 mb-2" />
+                        <p className="font-semibold text-brand-navy text-sm">No Pending Customs Reviews in Queue</p>
+                        <p className="text-xs text-brand-slate mt-0.5 max-w-md mx-auto">
+                          {approvedCases.length > 0
+                            ? `All ${approvedCases.length} active consignment${approvedCases.length > 1 ? 's have' : ' has'} been regulatory cleared and approved.`
+                            : 'Approved freight quotations requiring customs documentation clearance will populate here automatically.'}
+                        </p>
+                        {approvedCases.length > 0 && (
+                          <button
+                            onClick={() => setActiveTab('approved')}
+                            className="mt-3.5 inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 shadow-xs transition-colors"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            View Approved & Cleared ({approvedCases.length})
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ) : (
-                    filteredCases.map(c => (
+                    filteredPendingCases.map(c => (
                       <tr key={c.checkId} className="hover:bg-brand-cloud/40 transition-colors">
                         <td className="px-4 py-3.5">
                           <span className="font-semibold text-brand-navy font-mono text-xs">{c.checkId}</span>
@@ -332,7 +389,6 @@ export default function CustomsWorkspace() {
                         </td>
                         <td className="px-4 py-3.5">
                           <span className={`inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold border ${
-                            c.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                             c.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200' :
                             c.status === 'DOCS_SUBMITTED' ? 'bg-blue-50 text-blue-700 border-blue-300' :
                             c.status === 'DOCS_FLAGGED' ? 'bg-purple-50 text-purple-700 border-purple-200' :
@@ -352,6 +408,97 @@ export default function CustomsWorkspace() {
                           >
                             {c.status === 'DOCS_SUBMITTED' ? <FileCheck className="h-3.5 w-3.5" /> : null}
                             {c.status === 'DOCS_SUBMITTED' ? 'Inspect Docs & Sign' : 'Inspect & Sign-Off'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: APPROVED & CLEARED */}
+        {activeTab === 'approved' && (
+          <div className="mt-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-brand-slate" />
+                <input
+                  type="text"
+                  placeholder="Search approved consignments by HS code, commodity, shipment ID..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full rounded-xl border border-brand-line bg-white py-2 pl-9 pr-3 text-xs text-brand-navy placeholder-brand-slate focus:border-brand-marine focus:outline-none shadow-xs"
+                />
+              </div>
+              <span className="text-xs text-brand-slate font-medium">
+                Showing <strong className="text-emerald-700">{filteredApprovedCases.length}</strong> approved consignment{filteredApprovedCases.length === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-brand-line bg-white shadow-sm">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-brand-line bg-emerald-50/50 text-[11px] uppercase tracking-wider text-brand-slate font-semibold">
+                  <tr>
+                    <th className="px-4 py-3.5">Case ID / Shipment</th>
+                    <th className="px-4 py-3.5">Corridor</th>
+                    <th className="px-4 py-3.5">HS Code & Cargo</th>
+                    <th className="px-4 py-3.5">Readiness</th>
+                    <th className="px-4 py-3.5">Risk Level</th>
+                    <th className="px-4 py-3.5">Compliance Status</th>
+                    <th className="px-4 py-3.5 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-brand-line/50">
+                  {filteredApprovedCases.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-12 text-center text-brand-slate">
+                        <FileCheck className="mx-auto h-8 w-8 text-brand-slateLight mb-2 opacity-50" />
+                        <p className="font-semibold text-brand-navy text-sm">No Approved Consignments Yet</p>
+                        <p className="text-xs text-brand-slate mt-0.5 max-w-md mx-auto">
+                          Consignments that pass regulatory screening or officer sign-off will appear here with full clearance files.
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredApprovedCases.map(c => (
+                      <tr key={c.checkId} className="hover:bg-emerald-50/20 transition-colors">
+                        <td className="px-4 py-3.5">
+                          <span className="font-semibold text-brand-navy font-mono text-xs">{c.checkId}</span>
+                          <div className="text-[11px] text-brand-slate">{c.shipmentId}</div>
+                        </td>
+                        <td className="px-4 py-3.5 font-medium text-brand-navy">{c.origin} → {c.destination}</td>
+                        <td className="px-4 py-3.5">
+                          <span className="inline-block rounded-md bg-emerald-100/80 px-2 py-0.5 font-mono text-[11px] text-emerald-900 font-bold">{c.hsCode}</span>
+                          <div className="text-[11px] text-brand-slate max-w-[200px] truncate mt-0.5">{c.commodity}</div>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 w-14 rounded-full bg-slate-200 overflow-hidden">
+                              <div className="h-full bg-emerald-500 w-full" />
+                            </div>
+                            <span className="font-mono font-bold text-[11px] text-emerald-700">100%</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <span className="inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">
+                            {c.riskLevel}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                            APPROVED
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5 text-right">
+                          <button
+                            onClick={() => setSelectedCase(c)}
+                            className="rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 shadow-xs flex items-center gap-1.5 ml-auto transition-colors"
+                          >
+                            <FileCheck className="h-3.5 w-3.5" /> View Clearance File
                           </button>
                         </td>
                       </tr>
@@ -477,8 +624,17 @@ export default function CustomsWorkspace() {
             <div className="w-full max-w-2xl rounded-2xl border border-brand-line bg-white p-6 shadow-2xl animate-in zoom-in-95 max-h-[85vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-brand-line pb-4">
                 <div>
-                  <h3 className="font-display text-base font-bold text-brand-navy">Customs Clearance File & Sign-Off</h3>
-                  <p className="text-xs text-brand-slate">{selectedCase.checkId} ? {selectedCase.shipmentId}</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display text-base font-bold text-brand-navy">
+                      {selectedCase.status === 'APPROVED' ? 'Customs Regulatory Clearance Certificate' : 'Customs Clearance File & Sign-Off'}
+                    </h3>
+                    {selectedCase.status === 'APPROVED' && (
+                      <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 font-mono text-[10px] font-bold border border-emerald-300">
+                        CLEARED & GRANTED
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-brand-slate">{selectedCase.checkId} • {selectedCase.shipmentId}</p>
                 </div>
                 <button onClick={() => setSelectedCase(null)} className="rounded-lg p-1.5 text-brand-slate hover:bg-brand-cloud hover:text-brand-navy font-bold">
                   <X className="h-4 w-4" />
@@ -486,9 +642,26 @@ export default function CustomsWorkspace() {
               </div>
 
               <div className="mt-4 space-y-4 text-xs">
+                {selectedCase.status === 'APPROVED' && (
+                  <div className="flex items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50/90 p-3.5 text-emerald-950 shadow-2xs">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs mt-0.5">
+                      <CheckCircle2 className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-xs uppercase tracking-wider text-emerald-950">Statutory Customs Clearance Granted</h4>
+                        <span className="rounded bg-emerald-200 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-900">PERMIT ACTIVE</span>
+                      </div>
+                      <p className="text-[11.5px] text-emerald-850 mt-0.5 leading-relaxed">
+                        This consignment has satisfied all mandatory Harmonized System (HS) regulations, trade documentation filings, and CBIC electronic sign-off requirements. Cargo is certified for port entry and maritime transit.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3 bg-brand-cloud/60 p-3 rounded-xl border border-brand-line">
-                  <div><span className="text-brand-slate">Corridor:</span> <strong className="text-brand-navy block text-[13px]">{selectedCase.origin} ? {selectedCase.destination}</strong></div>
-                  <div><span className="text-brand-slate">HS Code:</span> <strong className="text-brand-navy block text-[13px]">{selectedCase.hsCode} ? {selectedCase.commodity}</strong></div>
+                  <div><span className="text-brand-slate">Corridor:</span> <strong className="text-brand-navy block text-[13px]">{selectedCase.origin} → {selectedCase.destination}</strong></div>
+                  <div><span className="text-brand-slate">HS Code:</span> <strong className="text-brand-navy block text-[13px]">{selectedCase.hsCode} • {selectedCase.commodity}</strong></div>
                   <div><span className="text-brand-slate">Statutory Citation:</span> <strong className="text-brand-marine block font-mono text-[11px]">{selectedCase.citation}</strong></div>
                   <div><span className="text-brand-slate">Regulatory Readiness:</span> <strong className="text-brand-navy block text-base font-display font-bold">{selectedCase.readinessScore}%</strong></div>
                 </div>
@@ -522,7 +695,7 @@ export default function CustomsWorkspace() {
                             <div className="min-w-0">
                               <span className="font-semibold text-brand-navy text-xs block truncate">{doc.name}</span>
                               <span className="text-[11px] font-mono text-brand-slateLight block">
-                                {doc.file_name || 'certificate.pdf'} ? {doc.file_size || '245 KB'} ? Uploaded {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleTimeString() : 'Recently'}
+                                {doc.file_name || 'certificate.pdf'} • {doc.file_size || '245 KB'} • Uploaded {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleTimeString() : 'Recently'}
                               </span>
                             </div>
                           </div>
@@ -571,48 +744,78 @@ export default function CustomsWorkspace() {
                 </div>
 
                 <div>
-                  <label className="block text-brand-navy font-semibold mb-1">Customs Officer Findings & Sign-off Notes</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Enter clearance remarks, conditional waivers, or tariff verification notes..."
-                    value={officerComments}
-                    onChange={e => setOfficerComments(e.target.value)}
-                    className="w-full rounded-xl border border-brand-line p-2.5 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
-                  />
+                  <label className="block text-brand-navy font-semibold mb-1">
+                    {selectedCase.status === 'APPROVED' ? 'Official Customs Clearance Findings & Sign-off Record' : 'Customs Officer Findings & Sign-off Notes'}
+                  </label>
+                  {selectedCase.status === 'APPROVED' ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-mono text-emerald-800 font-bold uppercase tracking-wider">CBIC Electronic Endorsement</span>
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-2 py-0.2 rounded font-semibold">STATUS: RELEASED</span>
+                      </div>
+                      <p className="text-xs text-brand-navy font-medium bg-white p-2.5 rounded-lg border border-emerald-100 shadow-2xs leading-relaxed">
+                        {selectedCase.notes || officerComments || 'Full statutory documentation verified. HS Classification accepted under standard tariff schedule. Consignment authorized for export/import clearance and port dispatch.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <textarea
+                      rows={3}
+                      placeholder="Enter clearance remarks, conditional waivers, or tariff verification notes..."
+                      value={officerComments}
+                      onChange={e => setOfficerComments(e.target.value)}
+                      className="w-full rounded-xl border border-brand-line p-2.5 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                    />
+                  )}
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-brand-line pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const chk = Array.isArray(selectedCase?.checklist) ? selectedCase.checklist : []
-                    const missing = chk.filter(c => c && !c.uploaded).map(c => c.name)
-                    setSelectedDocsToRequest(missing.length > 0 ? missing : [chk[0]?.name || 'Commercial Invoice'])
-                    setShowDocRequestModal(true)
-                  }}
-                  className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs"
-                >
-                  <FileText className="h-3.5 w-3.5 text-amber-600" />
-                  Flag / Request Specific Documents
-                </button>
-
-                <div className="flex items-center gap-2.5">
+              {selectedCase.status === 'APPROVED' ? (
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-brand-line pt-4">
+                  <div className="flex items-center gap-2 text-xs text-emerald-850 font-semibold">
+                    <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                    <span>Consignment Cleared • Official Port Entry Permit Active</span>
+                  </div>
                   <button
-                    onClick={() => handleDecision('REJECT')}
-                    className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-600 hover:text-white transition-colors"
+                    type="button"
+                    onClick={() => setSelectedCase(null)}
+                    className="rounded-xl bg-brand-navy px-5 py-2 text-xs font-bold text-white hover:bg-brand-marine transition-colors shadow-xs"
                   >
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => handleDecision('APPROVE')}
-                    className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-colors shadow-xs"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Approve Documentation Sign-Off
+                    Close Clearance File
                   </button>
                 </div>
-              </div>
+              ) : (
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-brand-line pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const chk = Array.isArray(selectedCase?.checklist) ? selectedCase.checklist : []
+                      const missing = chk.filter(c => c && !c.uploaded).map(c => c.name)
+                      setSelectedDocsToRequest(missing.length > 0 ? missing : [chk[0]?.name || 'Commercial Invoice'])
+                      setShowDocRequestModal(true)
+                    }}
+                    className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs"
+                  >
+                    <FileText className="h-3.5 w-3.5 text-amber-600" />
+                    Flag / Request Specific Documents
+                  </button>
+
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => handleDecision('REJECT')}
+                      className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-600 hover:text-white transition-colors"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      onClick={() => handleDecision('APPROVE')}
+                      className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-colors shadow-xs"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Approve Documentation Sign-Off
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
