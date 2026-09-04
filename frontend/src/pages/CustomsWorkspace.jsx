@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FileCheck, ShieldCheck, AlertTriangle, Clock, XCircle, Search, Check, ExternalLink, ShieldAlert, History, X, FileText, Send, CheckCircle2, Eye, Download, CheckSquare } from 'lucide-react'
+import { FileCheck, ShieldCheck, Search, Check, X, FileText, Send, CheckCircle2, Eye } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
 import { REGULATION_CORPUS, HS_CODE_CATALOG } from '../lib/customsRAG'
@@ -221,7 +221,7 @@ export default function CustomsWorkspace() {
         }
       }
 
-      const updatedChecklist = prev.checklist.map(ci => 
+      const updatedChecklist = (Array.isArray(prev?.checklist) ? prev.checklist : []).map(ci => 
         (ci.name || '').toLowerCase() === (docName || '').toLowerCase() ? { ...ci, status: 'VERIFIED', uploaded: true } : ci
       )
 
@@ -624,7 +624,7 @@ export default function CustomsWorkspace() {
                 <div>
                   <h4 className="font-semibold text-brand-navy mb-2 uppercase text-[11px]">Required Trade Documentation Checklist</h4>
                   <div className="space-y-2 rounded-xl bg-brand-cloud/20 p-3 border border-brand-line">
-                    {selectedCase.checklist.map((doc, idx) => (
+                    {(Array.isArray(selectedCase?.checklist) ? selectedCase.checklist : []).map((doc, idx) => (
                       <div key={idx} className="flex items-center justify-between border-b border-brand-line/40 py-1.5 last:border-0">
                         <span className="text-brand-navy font-medium">{doc.name}</span>
                         <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded ${
@@ -653,8 +653,9 @@ export default function CustomsWorkspace() {
                 <button
                   type="button"
                   onClick={() => {
-                    const missing = selectedCase.checklist.filter(c => !c.uploaded).map(c => c.name)
-                    setSelectedDocsToRequest(missing.length > 0 ? missing : [selectedCase.checklist[0]?.name || 'Commercial Invoice'])
+                    const chk = Array.isArray(selectedCase?.checklist) ? selectedCase.checklist : []
+                    const missing = chk.filter(c => c && !c.uploaded).map(c => c.name)
+                    setSelectedDocsToRequest(missing.length > 0 ? missing : [chk[0]?.name || 'Commercial Invoice'])
                     setShowDocRequestModal(true)
                   }}
                   className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors shadow-2xs"
@@ -719,7 +720,7 @@ export default function CustomsWorkspace() {
                 </div>
 
                 <div className="rounded-lg bg-white p-3 border border-brand-line/60 font-mono text-[10.5px] text-brand-slate leading-relaxed">
-                  "This document certifies that the consignment under Case {selectedCase?.checkId} matches the statutory technical file and complies with all mandatory customs import regulations."
+                  &ldquo;This document certifies that the consignment under Case {selectedCase?.checkId} matches the statutory technical file and complies with all mandatory customs import regulations.&rdquo;
                 </div>
               </div>
 
@@ -766,7 +767,7 @@ export default function CustomsWorkspace() {
               </p>
 
               <div className="mt-4 space-y-2 max-h-[40vh] overflow-y-auto">
-                {selectedCase.checklist.map((doc, idx) => {
+                {(Array.isArray(selectedCase?.checklist) ? selectedCase.checklist : []).map((doc, idx) => {
                   const isChecked = selectedDocsToRequest.includes(doc.name)
                   return (
                     <label key={idx} className="flex items-center justify-between p-2.5 rounded-xl border border-brand-line bg-brand-cloud/30 hover:bg-brand-cloud cursor-pointer">

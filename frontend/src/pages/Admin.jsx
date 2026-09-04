@@ -14,7 +14,7 @@ import { useToast } from '../context/ToastContext'
 import {
   fetchAllQuotes, fetchShipments, fetchAllUsers,
   adminCreateUser, adminUpdateUser, adminDeleteUser,
-  agentActionOnQuote
+  agentActionOnQuote, clearAllQuotes
 } from '../lib/api'
 import { routeAnalytics } from '../lib/mockData'
 
@@ -829,6 +829,19 @@ export default function Admin() {
               <div className="flex flex-wrap items-center gap-3 border-b border-brand-line px-6 py-4">
                 <h3 className="text-lg font-bold text-brand-navy">All Quotations</h3>
                 <span className="rounded-full bg-brand-cloud px-3 py-1 text-xs font-semibold text-brand-slate">{filteredQuotes.length}</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to clear all registered quotes across all accounts? This cannot be undone.')) {
+                      await clearAllQuotes()
+                      setQuotes([])
+                      toast('All registered quotations cleared successfully.')
+                    }
+                  }}
+                  className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors shadow-2xs"
+                >
+                  Clear All Quotes
+                </button>
                 <input
                   value={quoteSearch}
                   onChange={e => setQuoteSearch(e.target.value)}

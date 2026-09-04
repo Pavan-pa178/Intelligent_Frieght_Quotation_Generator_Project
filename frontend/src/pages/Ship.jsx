@@ -370,7 +370,8 @@ export default function Ship() {
       transit: estimate.transitRange,
       indicativeTotal: estimate.totalAmount,
       status: 'Draft',
-      created: 'Just now',
+      created: new Date().toISOString(),
+      created_at: new Date().toISOString(),
       details: {
         originGw,
         destGw,

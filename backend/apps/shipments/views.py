@@ -3,44 +3,7 @@ from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-SEED_SHIPMENTS = [
-  {
-    'tn': 'PORT-58213-IN',
-    'from': 'Mumbai, IN',
-    'to': 'Dubai, AE',
-    'service': 'Ocean Freight',
-    'status': 'In Transit',
-    'pipeline_status': 'QUOTED',
-    'weight': 18400,
-    'cost': 384500,
-    'date': '2026-07-14',
-    'steps': [
-      { 'label': 'Booked', 'loc': 'Mumbai, IN', 'ts': 'Jul 14, 09:02', 'done': True },
-      { 'label': 'Picked up', 'loc': 'JNPT Port, Mumbai', 'ts': 'Jul 15, 14:20', 'done': True },
-      { 'label': 'Departed origin port', 'loc': 'Mumbai, IN', 'ts': 'Jul 16, 22:10', 'done': True },
-      { 'label': 'In transit — ocean', 'loc': 'Arabian Sea', 'ts': 'Jul 20, 06:00', 'done': True, 'current': True },
-      { 'label': 'Customs clearance', 'loc': 'Dubai, AE', 'ts': 'Est. Aug 01', 'done': False },
-      { 'label': 'Out for delivery', 'loc': 'Dubai, AE', 'ts': 'Est. Aug 02', 'done': False },
-      { 'label': 'Delivered', 'loc': 'Dubai, AE', 'ts': 'Est. Aug 03', 'done': False },
-    ],
-  },
-  {
-    'tn': 'PORT-77410-IN',
-    'from': 'Bengaluru, IN',
-    'to': 'Singapore, SG',
-    'service': 'Air Freight',
-    'status': 'Delivered',
-    'pipeline_status': 'QUOTED',
-    'weight': 84,
-    'cost': 48200,
-    'date': '2026-06-30',
-    'steps': [
-      { 'label': 'Booked', 'loc': 'Bengaluru, IN', 'ts': 'Jun 30, 08:11', 'done': True },
-      { 'label': 'Picked up', 'loc': 'Kempegowda Intl Cargo', 'ts': 'Jun 30, 15:40', 'done': True },
-      { 'label': 'Delivered', 'loc': 'Singapore, SG', 'ts': 'Jul 02, 13:47', 'done': True, 'current': True },
-    ],
-  }
-]
+SEED_SHIPMENTS = []
 
 from core.mongodb import get_collection
 
@@ -62,7 +25,7 @@ class ShipmentListCreateView(APIView):
             pass
         if user_email and user_email != 'demo@portline.in':
             return Response([])
-        return Response(SEED_SHIPMENTS)
+        return Response([])
 
     def post(self, request):
         payload = request.data

@@ -7,6 +7,16 @@ const TOKEN_KEY = 'portline_access_token'
 const QUOTES_STORAGE_KEY = 'portline_saved_quotes'
 const USERS_STORAGE_KEY = 'portline_registered_users'
 
+// One-time clear of legacy test quotes and shipments across all dashboards
+if (typeof window !== 'undefined' && !localStorage.getItem('portline_zero_reset_done')) {
+  try {
+    localStorage.removeItem(QUOTES_STORAGE_KEY)
+    localStorage.removeItem('portline_customer_shipments')
+    localStorage.setItem('portline_zero_reset_done', 'true')
+  } catch (e) {}
+}
+
+
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY)
 }
@@ -480,7 +490,13 @@ export async function saveQuote(quote) {
 }
 
 export async function fetchQuotes(email) {
-  const getLocal = () => [...getSavedQuotes(), ...seedQuotes]
+  const getLocal = () => {
+    let list = getSavedQuotes()
+    if (email) {
+      list = list.filter(q => (q.user_email || '').toLowerCase() === email.toLowerCase())
+    }
+    return list
+  }
   if (MOCK_MODE) {
     await delay(20)
     return getLocal()
@@ -488,23 +504,45 @@ export async function fetchQuotes(email) {
   const query = email ? `?email=${encodeURIComponent(email)}` : ''
   try {
     const res = await apiFetch(`/api/v1/quotes/${query}`)
-    return Array.isArray(res) ? res : getLocal()
+    if (Array.isArray(res)) {
+      if (email) {
+        return res.filter(q => (q.user_email || '').toLowerCase() === email.toLowerCase())
+      }
+      return res
+    }
+    return getLocal()
   } catch {
     return getLocal()
   }
 }
 
+export async function clearAllQuotes() {
+  localStorage.removeItem(QUOTES_STORAGE_KEY)
+  if (!MOCK_MODE) {
+    try {
+      await apiFetch('/api/v1/quotes/', { method: 'DELETE' })
+    } catch {
+      // ignore
+    }
+  }
+  return { ok: true }
+}
+
 export async function fetchQuoteById(id) {
+  if (!id) return null
   if (MOCK_MODE) {
     await delay(20)
     const all = [...getSavedQuotes(), ...seedQuotes]
-    return all.find(q => q.id.toUpperCase() === (id || '').toUpperCase()) || seedQuotes[0]
+    return all.find(q => q.id?.toUpperCase() === id.toUpperCase()) || null
   }
   try {
-    return await apiFetch(`/api/v1/quotes/${id}/`)
+    const res = await apiFetch(`/api/v1/quotes/${id}/`)
+    if (res && res.id) return res
+    const all = [...getSavedQuotes(), ...seedQuotes]
+    return all.find(q => q.id?.toUpperCase() === id.toUpperCase()) || null
   } catch {
     const all = [...getSavedQuotes(), ...seedQuotes]
-    return all.find(q => q.id.toUpperCase() === (id || '').toUpperCase()) || seedQuotes[0]
+    return all.find(q => q.id?.toUpperCase() === id.toUpperCase()) || null
   }
 }
 
@@ -648,17 +686,53 @@ export async function selectQuoteRoute(quoteId, route, requestedBy = '') {
 
 // Customs Officer approves documentation or requests specific documents
 export async function customsActionOnQuote(quoteId, action, { requestedDocs = [], comment = '', officerUser = null } = {}) {
-  if (MOCK_MODE) {
-    await delay(200)
+  const status = action === 'approve' ? 'Approved' : action === 'reject' ? 'Rejected by Customs' : 'Documents Requested'
+  const pipeline_status = action === 'approve' ? 'CUSTOMS_APPROVED' : action === 'reject' ? 'CUSTOMS_REJECTED' : 'CUSTOMS_DOCS_REQUESTED'
+  
+  // Always update local storage quotes
+  try {
     const all = getSavedQuotes()
-    const status = action === 'approve' ? 'Approved' : 'Documents Requested'
     const updated = all.map(q => q.id === quoteId ? {
       ...q,
       status,
-      customs_review: action === 'approve' ? { status: 'approved', officer_name: officerUser?.name, reviewed_at: new Date().toISOString(), notes: comment } : null,
+      customs_status: status,
+      pipeline_status,
+      customs_review: action === 'approve' ? { status: 'approved', officer_name: officerUser?.name || 'Customs Officer', reviewed_at: new Date().toISOString(), notes: comment } : null,
       customs_document_request: action === 'request_documents' ? { requested_docs: requestedDocs, officer_notes: comment, status: 'PENDING_CUSTOMER_UPLOAD', requested_at: new Date().toISOString() } : q.customs_document_request
     } : q)
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+  } catch {}
+
+  // Also update any matching shipments in localStorage across user keys
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('portline_shipments_')) {
+        const raw = localStorage.getItem(k)
+        if (raw) {
+          const arr = JSON.parse(raw)
+          if (Array.isArray(arr)) {
+            const updatedArr = arr.map(s => {
+              if (s.quote_id === quoteId || s.id === quoteId || s.tn?.includes(quoteId)) {
+                return {
+                  ...s,
+                  customs_status: status,
+                  customs_verified: action === 'approve',
+                  pipeline_status,
+                  status: action === 'approve' ? 'Approved' : s.status
+                }
+              }
+              return s
+            })
+            localStorage.setItem(k, JSON.stringify(updatedArr))
+          }
+        }
+      }
+    }
+  } catch {}
+
+  if (MOCK_MODE) {
+    await delay(200)
     return { ok: true, quote_id: quoteId, action, status }
   }
   return apiFetch(`/api/v1/quotes/${quoteId}/customs-action/`, {

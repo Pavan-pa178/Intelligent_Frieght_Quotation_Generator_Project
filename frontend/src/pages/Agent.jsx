@@ -60,8 +60,9 @@ export default function Agent() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  const pending = quotes.filter(q => !q.agent_review || q.agent_review.status === 'pending')
-  const reviewed = quotes.filter(q => q.agent_review && q.agent_review.status !== 'pending')
+  const safeQuotes = Array.isArray(quotes) ? quotes : []
+  const pending = safeQuotes.filter(q => !q.agent_review || q.agent_review.status === 'pending')
+  const reviewed = safeQuotes.filter(q => q.agent_review && q.agent_review.status !== 'pending')
 
   const getState = (id) => actionStates[id] || { loading: false, comment: '', showComment: false }
   const setState = (id, patch) => setActionStates(prev => ({ ...prev, [id]: { ...getState(id), ...patch } }))
