@@ -428,12 +428,28 @@ export default function QuoteDetail() {
   const handleUploadSubmit = async () => {
     setIsUploading(true)
     try {
-      const docsList = Object.entries(uploadedFiles).map(([name, file]) => ({
-        name,
-        file_name: file.name,
-        file_size: `${Math.round(file.size / 1024)} KB`,
-        file_type: file.type || 'application/pdf'
-      }))
+      const docsList = await Promise.all(
+        Object.entries(uploadedFiles).map(async ([name, file]) => {
+          let fileData = null
+          try {
+            fileData = await new Promise((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result)
+              reader.onerror = reject
+              reader.readAsDataURL(file)
+            })
+          } catch (e) {
+            console.error('Failed reading file data URL', e)
+          }
+          return {
+            name,
+            file_name: file.name,
+            file_size: `${Math.round(file.size / 1024)} KB`,
+            file_type: file.type || (file.name.match(/\.(png|jpe?g|webp|gif)$/i) ? 'image/jpeg' : 'application/pdf'),
+            file_data: fileData
+          }
+        })
+      )
       await uploadQuoteDocuments(quote.id, docsList, user?.name || 'Customer')
       toast('Customs documents uploaded successfully! Customs compliance desk notified.')
       setShowUploadModal(false)
@@ -443,7 +459,11 @@ export default function QuoteDetail() {
         customs_document_request: {
           ...(prev.customs_document_request || {}),
           status: 'DOCUMENTS_SUBMITTED'
-        }
+        },
+        customer_uploaded_documents: [
+          ...(prev.customer_uploaded_documents || []),
+          ...docsList
+        ]
       }))
     } catch (err) {
       toast(`Document upload failed: ${err.message}`)
@@ -534,7 +554,7 @@ export default function QuoteDetail() {
       />
 
       <section className="pt-10 pb-20">
-        <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
 
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <button onClick={handleBack} className="inline-flex items-center gap-2 text-xs font-semibold text-brand-slate hover:text-brand-navy">

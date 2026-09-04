@@ -155,7 +155,7 @@ export default function Portal() {
     <>
       <PageBanner crumb="Customer Portal" title="Customer Portal" subtitle="Manage bookings, cancel active requests, and track your global shipments." icon={Package} />
       <section className="pt-14 pb-20">
-        <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           {!loggedIn || !user ? (
             <div className="mx-auto max-w-[460px] rounded-lg2 border border-brand-line bg-white px-9 py-11 text-center shadow-sm2">
               <div className="mx-auto mb-5 flex h-[58px] w-[58px] items-center justify-center rounded-2xl bg-brand-marinePale text-brand-marine">

@@ -26,7 +26,7 @@ export default function AnalyticsManagement() {
         icon={BarChart3}
       />
 
-      <div className="mx-auto max-w-[1220px] px-8 sm:px-5 pt-8">
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 pt-8">
         
         {/* KPI Summary Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

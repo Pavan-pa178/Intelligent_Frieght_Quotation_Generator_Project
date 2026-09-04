@@ -97,7 +97,7 @@ export default function AgentOperations() {
         icon={Cpu}
       />
 
-      <div className="mx-auto max-w-[1220px] px-8 sm:px-5 pt-8">
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 pt-8">
         
         {/* Top Controls Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-brand-line bg-white p-5 rounded-2xl shadow-xs">

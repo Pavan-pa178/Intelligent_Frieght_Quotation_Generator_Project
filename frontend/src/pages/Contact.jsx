@@ -37,7 +37,7 @@ export default function Contact() {
     <>
       <PageBanner crumb="Contact" title="Talk to our freight team" subtitle="Questions about a rate, a route, or an existing shipment — we usually reply within a few hours." icon={Mail} />
       <section className="py-16">
-        <div className="mx-auto grid max-w-[1220px] grid-cols-1 gap-10 px-8 sm:px-5 md:grid-cols-2">
+        <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-10 px-4 sm:px-6 lg:px-8 md:grid-cols-2">
           <Reveal>
             <InfoRow icon={Phone} title="Call us" text="+91 22 4890 1200 · Mon–Sat, 9:30am–7pm IST" />
             <InfoRow icon={Mail} title="Email us" text="hello@portline.in" />

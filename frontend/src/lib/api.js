@@ -8,20 +8,30 @@ const QUOTES_STORAGE_KEY = 'portline_saved_quotes'
 const USERS_STORAGE_KEY = 'portline_registered_users'
 
 // One-time clear of legacy test quotes and shipments across all dashboards
-if (typeof window !== 'undefined' && !localStorage.getItem('portline_zero_reset_v5')) {
+if (typeof window !== 'undefined' && !localStorage.getItem('portline_clean_slate_v8')) {
   try {
     localStorage.removeItem(QUOTES_STORAGE_KEY)
     localStorage.removeItem('portline_customer_shipments')
+    localStorage.removeItem('portline_agent_actions')
+    localStorage.removeItem('portline_agent_messages')
+    localStorage.removeItem('portline_customs_cases')
+    localStorage.removeItem('portline_ship_draft')
     const keysToRemove = []
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)
-      if (k && (k.startsWith('portline_shipments_') || k.startsWith('portline_quotes_'))) {
+      if (k && (k.startsWith('portline_shipments_') || k.startsWith('portline_quotes_') || k.startsWith('portline_customs_'))) {
         keysToRemove.push(k)
       }
     }
     keysToRemove.forEach(k => localStorage.removeItem(k))
-    localStorage.setItem('portline_zero_reset_v5', 'true')
+    localStorage.setItem('portline_clean_slate_v8', 'true')
   } catch (e) {}
+  if (!MOCK_MODE) {
+    try {
+      fetch(`${API_BASE}/api/v1/quotes/`, { method: 'DELETE' }).catch(() => {})
+      fetch(`${API_BASE}/api/v1/shipments/`, { method: 'DELETE' }).catch(() => {})
+    } catch (e) {}
+  }
 }
 
 
@@ -623,6 +633,9 @@ export async function fetchQuotes(email) {
 
 export async function clearAllQuotes() {
   localStorage.removeItem(QUOTES_STORAGE_KEY)
+  localStorage.removeItem('portline_agent_actions')
+  localStorage.removeItem('portline_agent_messages')
+  localStorage.removeItem('portline_customs_cases')
   if (!MOCK_MODE) {
     try {
       await apiFetch('/api/v1/quotes/', { method: 'DELETE' })
@@ -870,6 +883,7 @@ export async function uploadQuoteDocuments(quoteId, uploadedDocs = [], uploadedB
           file_name: d.file_name || `${d.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_signed.pdf`,
           file_size: d.file_size || '248 KB',
           file_type: d.file_type || 'application/pdf',
+          file_data: d.file_data || null,
           uploaded_by: uploadedBy,
           uploaded_at: nowStr
         }))

@@ -55,7 +55,7 @@ export default function Tracking() {
     <>
       <PageBanner crumb="Tracking" title="Track your shipment" subtitle="Enter your tracking number for live status, checkpoint history and estimated arrival." extraPadding icon={Search} />
 
-      <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
         <div className="relative z-10 -mt-[70px] mx-auto max-w-[680px] rounded-lg2 bg-white p-8 shadow-md2">
           <form
             onSubmit={(e) => { e.preventDefault(); runSearch(input) }}

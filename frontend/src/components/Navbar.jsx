@@ -67,6 +67,15 @@ export default function Navbar() {
     return 'Shipper'
   }
 
+  const getBrandHomeLink = () => {
+    if (isAdmin) return '/admin'
+    if (isCustoms) return '/customs'
+    if (isAgentOp) return '/agents'
+    if (isManager) return '/analytics'
+    if (isAgent) return '/agent'
+    return '/'
+  }
+
   const getRoleBadgeColor = () => {
     if (isAdmin) return 'bg-amber-500 text-white'
     if (isCustoms) return 'bg-orange-600 text-white'
@@ -104,12 +113,12 @@ export default function Navbar() {
           scrolled ? 'shadow-[0_12px_30px_-14px_rgba(0,0,0,.5)]' : ''
         }`}
       >
-        <div className="mx-auto flex h-full max-w-[1220px] items-center justify-between gap-6 px-8 sm:px-5">
-          <Link to={getWorkspacePath()} className="flex items-center gap-3 shrink-0 group py-1">
+        <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
+          <Link to={getBrandHomeLink()} className="flex items-center gap-3 shrink-0 group py-1">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-orange to-brand-orangeLight/80 p-2 text-white shadow-md shadow-brand-orange/20 transition-transform group-hover:scale-105">
               <Container className="h-6 w-6 text-white" strokeWidth={1.8} />
             </div>
-            <div className="flex flex-col max-w-[200px] sm:max-w-[320px] md:max-w-[380px] lg:max-w-[460px]">
+            <div className="flex flex-col max-w-[220px] sm:max-w-[340px] md:max-w-[420px] lg:max-w-[500px]">
               <span className="font-display text-[13px] sm:text-[14.5px] lg:text-[15.5px] font-bold tracking-tight text-white leading-tight group-hover:text-brand-orangeLight transition-colors line-clamp-1 sm:line-clamp-none">
                 Agentic AI for Maritime Freight Pricing and Route Optimization
               </span>

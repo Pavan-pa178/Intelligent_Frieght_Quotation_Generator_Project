@@ -33,14 +33,14 @@ export default function PageBanner({ crumb, title, subtitle, extraPadding = fals
         />
       )}
 
-      <div className="relative z-10 mx-auto max-w-[1220px] px-8 sm:px-5">
+      <div className="relative z-10 mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
         <div className="mb-[18px] flex items-center gap-2 font-mono text-xs text-slate-400">
           <Link to="/" className="hover:text-white">Home</Link>
           <ChevronRight className="h-3 w-3" />
           <span>{crumb}</span>
         </div>
-        <h1 className="text-[28px] sm:text-[36px] md:text-[42px]">{title}</h1>
-        {subtitle && <p className="mt-3 max-w-[540px] text-[15.5px] text-slate-300">{subtitle}</p>}
+        <h1 className="text-white text-[28px] sm:text-[36px] md:text-[42px] font-bold tracking-tight">{title}</h1>
+        {subtitle && <p className="mt-3 max-w-[640px] text-[15.5px] text-slate-300">{subtitle}</p>}
       </div>
     </div>
   )
