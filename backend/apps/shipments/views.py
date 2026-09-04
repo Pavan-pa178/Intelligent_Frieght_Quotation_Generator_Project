@@ -89,6 +89,19 @@ class TrackingDetailView(APIView):
             return Response(found)
         return Response({'detail': f'Shipment {tracking_number} not found'}, status=status.HTTP_404_NOT_FOUND)
 
+    def delete(self, request, tracking_number):
+        tn = (tracking_number or '').strip().upper()
+        deleted = False
+        try:
+            col = get_collection('shipments')
+            if col is not None:
+                res = col.delete_one({'tn': {'$regex': f'^{tn}$', '$options': 'i'}})
+                if res.deleted_count > 0:
+                    deleted = True
+        except Exception:
+            pass
+        return Response({'ok': True, 'tracking_number': tracking_number, 'deleted': deleted, 'message': f'Shipment {tracking_number} deleted successfully'}, status=status.HTTP_200_OK)
+
 
 class GenerateQuoteView(APIView):
     """

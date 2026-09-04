@@ -1,6 +1,6 @@
 import { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react'
 import { seedShipments, demoUser } from '../lib/mockData'
-import { loginRequest, signupRequest, logoutRequest, trackShipmentRequest, fetchShipments, cancelShipmentRequest } from '../lib/api'
+import { loginRequest, signupRequest, logoutRequest, trackShipmentRequest, fetchShipments, cancelShipmentRequest, deleteShipmentRequest } from '../lib/api'
 
 const AppContext = createContext(null)
 
@@ -143,6 +143,22 @@ export function AppProvider({ children }) {
     })
   }, [user])
 
+  const deleteShipment = useCallback(async (trackingNumber) => {
+    try {
+      await deleteShipmentRequest(trackingNumber)
+    } catch {}
+    setShipments((prev) => {
+      const updated = (Array.isArray(prev) ? prev : []).filter((s) => {
+        const matchTn = (s.tn || s.trackingNumber || '').trim().toUpperCase()
+        return matchTn !== (trackingNumber || '').trim().toUpperCase()
+      })
+      if (user) {
+        saveUserShipments(user, updated)
+      }
+      return updated
+    })
+  }, [user])
+
   const findShipment = useCallback(
     async (trackingNumber) => trackShipmentRequest(trackingNumber, shipments),
     [shipments]
@@ -159,8 +175,8 @@ export function AppProvider({ children }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, cancelShipment, findShipment, updateProfile }),
-    [user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, cancelShipment, findShipment, updateProfile]
+    () => ({ user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, cancelShipment, deleteShipment, findShipment, updateProfile }),
+    [user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, cancelShipment, deleteShipment, findShipment, updateProfile]
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

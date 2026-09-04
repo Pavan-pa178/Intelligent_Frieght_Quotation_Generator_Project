@@ -534,6 +534,22 @@ export async function cancelShipmentRequest(trackingNumber, reason = 'Cancelled 
   }
 }
 
+export async function deleteShipmentRequest(trackingNumber) {
+  if (!trackingNumber) return { ok: true }
+  if (MOCK_MODE) {
+    await delay(30)
+    return { ok: true, trackingNumber }
+  }
+  try {
+    return await apiFetch('/api/v1/shipments/' + encodeURIComponent(trackingNumber.trim()) + '/', {
+      method: 'DELETE'
+    })
+  } catch (err) {
+    console.warn('Backend shipment delete notice:', err.message)
+    return { ok: true }
+  }
+}
+
 export async function trackShipmentRequest(trackingNumber, localShipments = []) {
   if (MOCK_MODE) {
     await delay(30)
@@ -586,18 +602,25 @@ export function resolveEffectiveQuoteStatus(q) {
   const rawStatusUpper = rawStatus.toUpperCase()
   const pipeStatus = (q.pipeline_status || '').toUpperCase()
   const agentStatus = (q.agent_review?.status || '').toLowerCase()
+  const customsStatus = (q.customs_review?.status || '').toLowerCase()
 
   if (rawStatusUpper === 'ACCEPTED' || custDec === 'ACCEPTED' || pipeStatus === 'ACCEPTED' || rawStatusUpper === 'BOOKED') {
     return 'Accepted'
   }
-  if (rawStatusUpper.includes('REJECT') || custDec === 'REJECTED' || agentStatus === 'rejected') {
+  if (rawStatusUpper.includes('REJECT') || custDec === 'REJECTED' || agentStatus === 'rejected' || customsStatus === 'rejected') {
     return rawStatus || 'Rejected'
   }
-  if (rawStatusUpper === 'APPROVED' || agentStatus === 'approved' || pipeStatus === 'CUSTOMS_APPROVED') {
+  if (customsStatus === 'approved' || pipeStatus === 'CUSTOMS_APPROVED') {
     return 'Approved'
   }
-  if (rawStatusUpper.includes('DOCUMENT') || rawStatusUpper.includes('DOC') || q.customs_document_request?.status === 'REQUESTED') {
-    return rawStatus || 'Documents Requested'
+  if (rawStatusUpper.includes('DOCUMENT') || rawStatusUpper.includes('DOC') || q.customs_document_request?.status === 'REQUESTED' || pipeStatus === 'CUSTOMS_DOCS_REQUESTED') {
+    return 'Documents Requested'
+  }
+  if (agentStatus === 'approved' || pipeStatus === 'AGENT_APPROVED' || rawStatusUpper === 'AGENT APPROVED') {
+    return 'Agent Approved'
+  }
+  if (rawStatusUpper === 'APPROVED' && (customsStatus === 'approved' || pipeStatus === 'CUSTOMS_APPROVED')) {
+    return 'Approved'
   }
   return rawStatus || 'Draft'
 }

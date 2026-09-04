@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Lock, Mail, Phone, Calendar, Plus, Search, Package, ArrowRight, Ship, Plane, Truck, Inbox, XCircle, AlertTriangle, CheckCircle2, RefreshCw, X, User, Building, Key, ShieldCheck } from 'lucide-react'
+import { Lock, Mail, Phone, Calendar, Plus, Search, Package, ArrowRight, Ship, Plane, Truck, Inbox, XCircle, AlertTriangle, CheckCircle2, RefreshCw, X, User, Building, Key, ShieldCheck, Trash2 } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import { useApp } from '../context/AppContext'
@@ -8,7 +8,7 @@ import { useToast } from '../context/ToastContext'
 import { updateUserProfile } from '../lib/api'
 
 export default function Portal() {
-  const { loggedIn, user, shipments = [], logout, cancelShipment, updateProfile } = useApp()
+  const { loggedIn, user, shipments = [], logout, cancelShipment, deleteShipment, updateProfile } = useApp()
   const navigate = useNavigate()
   const toast = useToast()
 
@@ -207,7 +207,7 @@ export default function Portal() {
                   <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h3 className="text-[20px] font-bold text-brand-navy">Manage Shipments</h3>
-                      <p className="text-xs text-brand-slate mt-0.5">Track, review, or cancel your active bookings and quotations</p>
+                      <p className="text-xs text-brand-slate mt-0.5">Track, review, or cancel your active booked shipments and dispatches</p>
                     </div>
                     <button onClick={() => navigate('/ship')} className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-brand-orange to-brand-orangeLight px-4 py-2.5 text-[13.5px] font-semibold text-white shadow-xs hover:opacity-95 transition-opacity">
                       <Plus className="h-4 w-4" /> New shipment
@@ -365,6 +365,19 @@ export default function Portal() {
                                     <XCircle className="h-3.5 w-3.5" /> Cancel Shipment
                                   </button>
                                 )}
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (window.confirm(`Are you sure you want to remove shipment ${tn} from your account? This cannot be undone.`)) {
+                                      await deleteShipment(tn)
+                                      toast(`Shipment ${tn} removed.`)
+                                    }
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-brand-line bg-white p-1.5 text-xs text-brand-slateLight hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition-colors shadow-2xs"
+                                  title={`Remove shipment ${tn}`}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
                               </div>
                             </div>
                           </div>

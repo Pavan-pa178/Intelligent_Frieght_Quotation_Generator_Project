@@ -6,6 +6,7 @@ const STYLES = {
   Booked: 'bg-brand-marinePale text-brand-marine',
   Accepted: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
   Approved: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+  'Agent Approved': 'bg-purple-50 text-purple-700 border border-purple-200',
   Rejected: 'bg-rose-50 text-rose-700 border border-rose-200',
   'Rejected by Customs': 'bg-rose-50 text-rose-700 border border-rose-200',
   Cancelled: 'bg-rose-50 text-rose-700 border border-rose-200',
