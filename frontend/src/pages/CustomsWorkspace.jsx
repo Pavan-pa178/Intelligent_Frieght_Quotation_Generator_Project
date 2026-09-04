@@ -54,7 +54,7 @@ export default function CustomsWorkspace() {
             { name: 'EU Declaration of Conformity', uploaded: false, status: 'MISSING' },
             { name: 'RoHS 3 Compliance Certificate', uploaded: false, status: 'MISSING' }
           ]
-          const isApproved = q.customs_review?.status === 'approved' || q.status === 'Approved'
+          const isApproved = q.customs_review?.status === 'approved' || q.pipeline_status === 'CUSTOMS_APPROVED'
           return {
             quoteId: q.id,
             checkId: `CUST-${q.id.replace('QT-', '')}`,
