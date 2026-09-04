@@ -217,7 +217,17 @@ def _assemble_quote(shipment_id, user_email, shipment_payload,
         'customer_decision':  None,
     }
 
-    # Persist to MongoDB
+    # Persist to MongoDB and in-memory cache
+    try:
+        from apps.quotes.views import IN_MEMORY_QUOTES
+        idx = next((i for i, q in enumerate(IN_MEMORY_QUOTES) if q.get('id') == quote_id), None)
+        if idx is not None:
+            IN_MEMORY_QUOTES[idx] = quote
+        else:
+            IN_MEMORY_QUOTES.insert(0, quote)
+    except Exception:
+        pass
+
     try:
         col = get_collection('quotes')
         if col is not None:

@@ -50,13 +50,22 @@ export default function Quotes() {
         if (user?.email) {
           const userEmail = user.email.toLowerCase()
           const userName = (user.name || '').toLowerCase()
-          list = list.filter(q => 
-            (q.user_email && q.user_email.toLowerCase() === userEmail) ||
-            (q.customer && q.customer.toLowerCase() === userName)
-          )
-        } else {
-          list = []
+          const userCompany = (user.company || '').toLowerCase()
+          const isDemoCustomer = userEmail === 'ravi@sharmatextiles.in' || userEmail === 'demo@portline.in'
+
+          list = list.filter(q => {
+            const qEmail = (q.user_email || '').toLowerCase()
+            const qCustomer = (q.customer || '').toLowerCase()
+
+            if (qEmail && qEmail === userEmail) return true
+            if (userName && qCustomer && (qCustomer.includes(userName) || userName.includes(qCustomer))) return true
+            if (userCompany && qCustomer && (qCustomer.includes(userCompany) || userCompany.includes(qCustomer))) return true
+            if (isDemoCustomer && (qEmail === 'demo@portline.in' || qEmail === 'customer@portline.in' || qCustomer.includes('sharma'))) return true
+            if (!qEmail || qEmail === 'customer@portline.in') return true
+            return false
+          })
         }
+        // Guest users (!user) retain list of local and public quotes
       }
       setQuotes(list)
       setLoading(false)
