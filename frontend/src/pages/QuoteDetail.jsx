@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, Upload, X, Loader2, AlertTriangle, Receipt, Lock } from 'lucide-react'
+import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, Upload, X, Loader2, AlertTriangle, Receipt, Lock, Sparkles } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import WeatherRiskPanel from '../components/WeatherRiskPanel'
@@ -588,6 +588,49 @@ export default function QuoteDetail() {
             </div>
           )}
 
+          {/* PROMINENT CUSTOMER ACTION HERO BANNER (When approved & ready to book) */}
+          {!isAgentOrAdmin && canCustomerAccept && !quote.customer_decision?.status && quote.status !== 'Accepted' && quote.status !== 'Rejected' && (
+            <div className="mb-8 overflow-hidden rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-700 text-white shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="p-6 sm:p-7 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                <div className="space-y-2 max-w-2xl">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/40 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-100 border border-emerald-400/30">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                    Approvals Granted · Ready For Booking
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold font-display tracking-tight text-white">
+                    Accept & Confirm Your Shipment Booking
+                  </h2>
+                  <p className="text-xs sm:text-sm text-emerald-100 leading-relaxed">
+                    Both Freight Agent and Customs Authorities have verified and cleared all compliance and statutory tariffs. 
+                    Confirm now to lock in your carrier slot with <b>{quote.selected_route?.carrier || 'your chosen carrier'}</b> for 
+                    <span className="font-bold text-white ml-1">₹ {(quote.indicativeTotal || 0).toLocaleString('en-IN')}</span>.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto shrink-0">
+                  <button
+                    type="button"
+                    disabled={deciding}
+                    onClick={() => handleCustomerDecision('accepted')}
+                    className="flex-1 lg:flex-initial flex items-center justify-center gap-2.5 rounded-xl bg-white px-7 py-4 text-sm font-bold text-emerald-900 shadow-lg hover:bg-emerald-50 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                  >
+                    <ThumbsUp className="h-4 w-4 text-emerald-600 stroke-[2.5]" />
+                    {deciding ? 'Confirming Booking...' : 'Accept & Book Quotation'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deciding}
+                    onClick={() => setShowDeclineModal(true)}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700/60 border border-emerald-400/40 px-5 py-4 text-xs font-semibold text-white hover:bg-rose-600 hover:border-rose-500 transition-all"
+                  >
+                    <ThumbsDown className="h-3.5 w-3.5" />
+                    Decline / Revision
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
 
             {/* LEFT DETAILS */}
@@ -852,6 +895,89 @@ export default function QuoteDetail() {
                 </div>
               )}
 
+              {/* Customer Booking Action Box directly in the main flow */}
+              {!isAgentOrAdmin && (
+                <div className="rounded-2xl border-2 border-brand-navy/15 bg-white p-7 shadow-sm2 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-line pb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                        <h3 className="text-lg font-bold text-brand-navy">Customer Quotation Decision & Booking</h3>
+                      </div>
+                      <p className="text-xs text-brand-slate mt-0.5">
+                        Confirm your freight quote and finalize carrier dispatch instructions.
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[11px] font-semibold text-brand-slate uppercase">All-Inclusive Total</div>
+                      <div className="font-display text-2xl font-bold text-brand-navy">
+                        ₹ {(quote.indicativeTotal || 0).toLocaleString('en-IN')}
+                      </div>
+                    </div>
+                  </div>
+
+                  {quote.customer_decision?.status === 'ACCEPTED' || quote.status === 'Accepted' ? (
+                    <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-5 text-center">
+                      <CheckCircle2 className="h-9 w-9 text-emerald-600 mx-auto mb-2" />
+                      <h4 className="text-base font-bold text-emerald-900">Quotation Booked Successfully</h4>
+                      <p className="text-xs text-emerald-700 mt-1">
+                        Carrier allocation secured with {quote.selected_route?.carrier || 'Carrier'}. Operations team notified.
+                      </p>
+                    </div>
+                  ) : quote.customer_decision?.status === 'REJECTED' || quote.status === 'Rejected' ? (
+                    <div className="rounded-xl bg-rose-50 border border-rose-200 p-5 text-center">
+                      <XCircle className="h-9 w-9 text-rose-600 mx-auto mb-2" />
+                      <h4 className="text-base font-bold text-rose-900">Quotation Declined</h4>
+                      <p className="text-xs text-rose-700 mt-1">This quotation was declined by customer.</p>
+                    </div>
+                  ) : canCustomerAccept ? (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-5 p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-emerald-50/50 to-white border-2 border-emerald-300">
+                      <div className="flex items-start gap-3.5">
+                        <div className="rounded-xl bg-emerald-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                          <Check className="h-5 w-5 stroke-[2.5]" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-emerald-950">Approvals Complete · Ready For Your Booking</div>
+                          <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
+                            Selected Carrier: <span className="font-bold text-emerald-950">{quote.selected_route?.carrier || 'Standard Route'}</span> · 
+                            Click below to confirm your consignment.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
+                        <button
+                          type="button"
+                          disabled={deciding}
+                          onClick={() => handleCustomerDecision('accepted')}
+                          className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-7 py-3.5 text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                        >
+                          <ThumbsUp className="h-4 w-4" />
+                          {deciding ? 'Confirming...' : 'Accept & Book Quotation'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={deciding}
+                          onClick={() => setShowDeclineModal(true)}
+                          className="rounded-xl border border-slate-300 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 px-5 py-3.5 text-xs font-semibold text-slate-700 transition-all"
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                      <Clock className="h-5 w-5 text-amber-600 shrink-0" />
+                      <span>
+                        {!agentApproved 
+                          ? 'Freight Agent is validating the commercial tariff schedule.' 
+                          : 'Customs Authorities are inspecting trade documentation.'} The booking buttons will activate as soon as approvals are granted.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
 
             {/* RIGHT SIDEBAR */}
@@ -971,20 +1097,52 @@ export default function QuoteDetail() {
                 </div>
               </div>
 
-              {/* Customer Decision & Quote Acceptance */}
+              {/* Customer Decision & Booking Status */}
               <div className="rounded-lg2 border border-brand-line bg-white p-6 shadow-sm2">
-                <h4 className="mb-3 text-xs font-bold text-brand-navy uppercase tracking-wider">Customer Action</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-bold text-brand-navy uppercase tracking-wider">
+                    {isAgentOrAdmin ? 'Customer Booking Status' : 'Customer Action'}
+                  </h4>
+                  {isAgentOrAdmin && (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-600 border border-slate-200">
+                      Staff View
+                    </span>
+                  )}
+                </div>
+
                 {quote.customer_decision?.status === 'ACCEPTED' || quote.status === 'Accepted' ? (
                   <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 text-center">
                     <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto mb-1.5" />
                     <span className="text-sm font-bold text-emerald-800 block">Quotation Accepted</span>
-                    <p className="text-xs text-emerald-600 mt-1">Confirmed booking dispatch. Documentation team notified.</p>
+                    <p className="text-xs text-emerald-600 mt-1">
+                      {isAgentOrAdmin 
+                        ? 'Customer has accepted the quote. Consignment dispatched to operations.' 
+                        : 'Confirmed booking dispatch. Documentation team notified.'}
+                    </p>
                   </div>
                 ) : quote.customer_decision?.status === 'REJECTED' || quote.status === 'Rejected' ? (
                   <div className="rounded-lg bg-rose-50 border border-rose-200 p-4 text-center">
                     <XCircle className="h-8 w-8 text-rose-600 mx-auto mb-1.5" />
                     <span className="text-sm font-bold text-rose-800 block">Quotation Declined</span>
                     <p className="text-xs text-rose-600 mt-1">This quotation was declined by customer.</p>
+                  </div>
+                ) : isAgentOrAdmin ? (
+                  /* FOR AGENTS & ADMINS: Strictly informational, NO action buttons */
+                  <div className="space-y-2 p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <Clock className="h-6 w-6 text-brand-slate mx-auto" />
+                    <span className="text-xs font-bold text-brand-navy block">
+                      {canCustomerAccept ? 'Awaiting Customer Decision' : 'Approval In Progress'}
+                    </span>
+                    <p className="text-[11px] text-brand-slate leading-relaxed">
+                      {canCustomerAccept 
+                        ? `Agent and Customs sign-offs are complete. Awaiting final acceptance and booking confirmation from ${quote.customer}.` 
+                        : 'Verification sequence must complete before customer can accept.'}
+                    </p>
+                    {canCustomerAccept && (
+                      <span className="inline-block rounded-md bg-blue-100 px-2.5 py-1 text-[10px] font-bold text-blue-800 border border-blue-200">
+                        Customer Acceptance Pending
+                      </span>
+                    )}
                   </div>
                 ) : !canCustomerAccept ? (
                   <div className="space-y-3 text-center p-3 rounded-xl bg-amber-50/70 border border-amber-200">
