@@ -27,6 +27,18 @@ class ShipmentListCreateView(APIView):
             return Response([])
         return Response([])
 
+    def delete(self, request):
+        user_email = request.query_params.get('email', '').strip().lower()
+        try:
+            col = get_collection('shipments')
+            if col is not None:
+                query = {'user_email': user_email} if user_email else {}
+                res = col.delete_many(query)
+                return Response({'ok': True, 'message': 'Shipments cleared successfully', 'deleted_count': res.deleted_count})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'ok': True, 'message': 'Shipments cleared successfully'})
+
     def post(self, request):
         payload = request.data
         if not payload:

@@ -12,7 +12,7 @@ import AdminMasterData from '../components/AdminMasterData'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import {
-  fetchAllQuotes, fetchShipments, fetchAllUsers,
+  fetchAllQuotes, fetchShipments, clearAllShipments, fetchAllUsers,
   adminCreateUser, adminUpdateUser, adminDeleteUser,
   agentActionOnQuote, clearAllQuotes
 } from '../lib/api'
@@ -330,7 +330,14 @@ export default function Admin() {
   const filteredShipments = shipments.filter(s => {
     if (!shipSearch) return true
     const q = shipSearch.toLowerCase()
-    return (s.tn || '').toLowerCase().includes(q) || (s.from || '').toLowerCase().includes(q) || (s.to || '').toLowerCase().includes(q)
+    return (s.tn || '').toLowerCase().includes(q) || 
+           (s.from || '').toLowerCase().includes(q) || 
+           (s.to || '').toLowerCase().includes(q) ||
+           (s.userName || '').toLowerCase().includes(q) ||
+           (s.userCompany || '').toLowerCase().includes(q) ||
+           (s.user_email || '').toLowerCase().includes(q) ||
+           (s.destinationContactName || '').toLowerCase().includes(q) ||
+           (s.destinationCompany || '').toLowerCase().includes(q)
   })
 
   const filteredUsers = usersList.filter(u => {
@@ -925,10 +932,23 @@ export default function Admin() {
               <div className="flex flex-wrap items-center gap-3 border-b border-brand-line px-6 py-4">
                 <h3 className="text-lg font-bold text-brand-navy">All Shipments</h3>
                 <span className="rounded-full bg-brand-cloud px-3 py-1 text-xs font-semibold text-brand-slate">{filteredShipments.length}</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to wipe all shipments across all accounts? This cannot be undone.')) {
+                      await clearAllShipments()
+                      setShipments([])
+                      toast('All shipments wiped successfully across all accounts.')
+                    }
+                  }}
+                  className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors shadow-2xs"
+                >
+                  Clear All Shipments
+                </button>
                 <input
                   value={shipSearch}
                   onChange={e => setShipSearch(e.target.value)}
-                  placeholder="Search tracking #, origin, destination..."
+                  placeholder="Search tracking #, user, origin, destination..."
                   className="ml-auto rounded-lg border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none w-64"
                 />
               </div>
@@ -936,7 +956,7 @@ export default function Admin() {
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-brand-line bg-brand-cloud/50">
-                      {['Tracking #', 'Route', 'Service', 'Weight', 'Cost', 'Date', 'Status'].map(h => (
+                      {['Tracking #', 'Booked By', 'Route', 'Service', 'Weight', 'Cost', 'Date', 'Status'].map(h => (
                         <th key={h} className="px-4 py-3 font-semibold text-brand-slate text-xs uppercase tracking-wide whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -945,6 +965,17 @@ export default function Admin() {
                     {filteredShipments.map((s, i) => (
                       <tr key={s.tn || i} className="border-b border-brand-line/50 hover:bg-brand-cloud/30">
                         <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-marine">{s.tn || 'N/A'}</td>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-brand-navy text-[13px]">
+                            {s.userName || s.destinationContactName || s.customer || (s.user_email ? s.user_email.split('@')[0] : 'Customer')}
+                          </div>
+                          <div className="text-[11px] text-brand-slate">
+                            {s.userCompany || s.destinationCompany || s.user_email || '—'}
+                          </div>
+                          {s.user_email && (s.userCompany || s.destinationCompany) && (
+                            <div className="text-[10px] text-brand-slateLight font-mono">{s.user_email}</div>
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <div className="text-[13px] font-medium text-brand-navy">{s.from} to {s.to}</div>
                         </td>
@@ -958,7 +989,7 @@ export default function Admin() {
                       </tr>
                     ))}
                     {filteredShipments.length === 0 && (
-                      <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-brand-slateLight">No shipments found</td></tr>
+                      <tr><td colSpan={8} className="px-6 py-10 text-center text-sm text-brand-slateLight">No shipments found</td></tr>
                     )}
                   </tbody>
                 </table>

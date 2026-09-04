@@ -403,6 +403,12 @@ export default function Ship() {
     const shipmentRecord = {
       tn,
       user_email: user?.email || email,
+      userName: user?.name || fullName,
+      userCompany: user?.company || companyName,
+      customer: user?.name || fullName,
+      destinationContactName: fullName,
+      destinationCompany: companyName,
+      destinationEmail: email,
       from: `${originGw.city}, ${originGw.countryCode}`,
       to: `${destGw.city}, ${destGw.countryCode}`,
       service: quoteRecord.mode,
