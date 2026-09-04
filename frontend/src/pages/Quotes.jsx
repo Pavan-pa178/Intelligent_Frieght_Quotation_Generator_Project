@@ -39,55 +39,69 @@ export default function Quotes() {
   const [modeFilter, setModeFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
 
+  const [activeTab, setActiveTab] = useState('all')
+
   const { user } = useApp()
   const isElevated = user?.role === 'admin' || user?.role === 'agent' || user?.role === 'broker' || user?.role === 'customs_officer'
 
   useEffect(() => {
-    const email = isElevated ? null : user?.email
-    fetchQuotes(email).then((res) => {
+    fetchQuotes().then((res) => {
       let list = Array.isArray(res) ? res : []
-      if (!isElevated) {
-        if (user?.email) {
-          const userEmail = user.email.toLowerCase()
-          const userName = (user.name || '').toLowerCase()
-          const userCompany = (user.company || '').toLowerCase()
-          const isDemoCustomer = userEmail === 'ravi@sharmatextiles.in' || userEmail === 'demo@portline.in'
-
-          list = list.filter(q => {
-            const qEmail = (q.user_email || '').toLowerCase()
-            const qCustomer = (q.customer || '').toLowerCase()
-
-            if (qEmail && qEmail === userEmail) return true
-            if (userName && qCustomer && (qCustomer.includes(userName) || userName.includes(qCustomer))) return true
-            if (userCompany && qCustomer && (qCustomer.includes(userCompany) || userCompany.includes(qCustomer))) return true
-            if (isDemoCustomer && (qEmail === 'demo@portline.in' || qEmail === 'customer@portline.in' || qCustomer.includes('sharma'))) return true
-            if (!qEmail || qEmail === 'customer@portline.in') return true
-            return false
-          })
-        }
-        // Guest users (!user) retain list of local and public quotes
-      }
+      // Sort newest first
+      list.sort((a, b) => {
+        const dateA = new Date(a.created_at || a.created || 0)
+        const dateB = new Date(b.created_at || b.created || 0)
+        return dateB - dateA
+      })
       setQuotes(list)
       setLoading(false)
     })
-  }, [user, isElevated])
+  }, [user])
 
   const filteredQuotes = useMemo(() => {
+    const userEmail = (user?.email || '').toLowerCase()
+    const userName = (user?.name || '').toLowerCase()
+    const userCompany = (user?.company || '').toLowerCase()
+
     return quotes.filter((q) => {
+      // Tab filter
+      if (activeTab === 'mine' && userEmail) {
+        const qEmail = (q.user_email || '').toLowerCase()
+        const qCust = (q.customer || '').toLowerCase()
+        const isMatch =
+          qEmail === userEmail ||
+          (userName && qCust.includes(userName)) ||
+          (userCompany && qCust.includes(userCompany)) ||
+          qEmail === 'customer@portline.in' ||
+          qEmail === 'demo@portline.in' ||
+          !qEmail
+        if (!isMatch) return false
+      }
+
       const matchSearch =
         !search ||
         q.id.toLowerCase().includes(search.toLowerCase()) ||
-        q.customer.toLowerCase().includes(search.toLowerCase()) ||
-        q.laneName.toLowerCase().includes(search.toLowerCase()) ||
-        q.laneCode.toLowerCase().includes(search.toLowerCase())
+        (q.customer && q.customer.toLowerCase().includes(search.toLowerCase())) ||
+        (q.laneName && q.laneName.toLowerCase().includes(search.toLowerCase())) ||
+        (q.laneCode && q.laneCode.toLowerCase().includes(search.toLowerCase()))
 
       const matchLane = laneFilter === 'All' || q.region === laneFilter
       const matchMode = modeFilter === 'All' || q.mode.toLowerCase().includes(modeFilter.toLowerCase())
-      const matchStatus = statusFilter === 'All' || q.status.toLowerCase() === statusFilter.toLowerCase()
+      
+      const qStatus = (q.status || '').toLowerCase()
+      const sf = statusFilter.toLowerCase()
+      const matchStatus = 
+        statusFilter === 'All' ||
+        qStatus === sf ||
+        (sf === 'draft' && (qStatus === 'draft' || qStatus === 'quoted' || qStatus.includes('awaiting'))) ||
+        (sf === 'approved' && (qStatus === 'approved' || qStatus === 'agent approved')) ||
+        (sf === 'accepted' && (qStatus === 'accepted' || qStatus === 'booked')) ||
+        (sf === 'rejected' && (qStatus.includes('reject') || qStatus === 'declined')) ||
+        (sf === 'documents requested' && qStatus.includes('doc'))
 
       return matchSearch && matchLane && matchMode && matchStatus
     })
-  }, [quotes, search, laneFilter, modeFilter, statusFilter])
+  }, [quotes, search, laneFilter, modeFilter, statusFilter, activeTab, user])
 
   return (
     <>
@@ -114,6 +128,34 @@ export default function Quotes() {
             
             {/* Filters bar */}
             <div className="p-6 border-b border-brand-line bg-white">
+              {/* Tab Selector */}
+              <div className="flex items-center gap-2 mb-4 border-b border-brand-line/50 pb-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('all')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    activeTab === 'all'
+                      ? 'bg-brand-navy text-white shadow-xs'
+                      : 'text-brand-slate hover:text-brand-navy hover:bg-brand-cloud'
+                  }`}
+                >
+                  All Quotations ({quotes.length})
+                </button>
+                {user && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('mine')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      activeTab === 'mine'
+                        ? 'bg-brand-navy text-white shadow-xs'
+                        : 'text-brand-slate hover:text-brand-navy hover:bg-brand-cloud'
+                    }`}
+                  >
+                    My Enquiries
+                  </button>
+                )}
+              </div>
+
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative flex-1 min-w-[220px] max-w-[320px]">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-slateLight" />
@@ -135,6 +177,7 @@ export default function Quotes() {
                   <option value="Asia–Europe">Asia–Europe</option>
                   <option value="Middle East">Middle East</option>
                   <option value="Intra-Asia">Intra-Asia</option>
+                  <option value="India–India">Domestic (India–India)</option>
                 </select>
 
                 <select
@@ -153,14 +196,16 @@ export default function Quotes() {
                   className="rounded-[10px] border-[1.5px] border-brand-line px-3.5 py-2.5 text-xs font-medium bg-white text-brand-navy focus:border-brand-marine"
                 >
                   <option value="All">All statuses</option>
-                  <option value="Draft">Draft</option>
-                  <option value="Issued">Issued</option>
-                  <option value="No routing">No routing</option>
+                  <option value="Draft">Draft / Quoted</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Accepted">Accepted / Booked</option>
+                  <option value="Documents Requested">Documents Requested</option>
+                  <option value="Rejected">Rejected</option>
                 </select>
 
                 <button
                   type="button"
-                  onClick={() => { setSearch(''); setLaneFilter('All'); setModeFilter('All'); setStatusFilter('All') }}
+                  onClick={() => { setSearch(''); setLaneFilter('All'); setModeFilter('All'); setStatusFilter('All'); setActiveTab('all') }}
                   className="rounded-[10px] border-[1.5px] border-brand-line px-4 py-2.5 text-xs font-semibold text-brand-slate hover:bg-brand-cloud"
                 >
                   Clear
