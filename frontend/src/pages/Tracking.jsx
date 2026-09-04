@@ -178,6 +178,13 @@ function TrackResult({ shipment, onOpenUpload }) {
     shipment?.status === 'Approved' || 
     shipment?.customs_verified === true
 
+  const docReq = shipment?.customs_document_request
+  const hasCustomsDocRequest = !!(
+    (docReq && Array.isArray(docReq.requested_docs) && docReq.requested_docs.length > 0 && docReq.status !== 'DOCUMENTS_SUBMITTED') ||
+    shipment?.pipeline_status === 'CUSTOMS_DOCS_REQUESTED' ||
+    shipment?.customs_status === 'DOCS_FLAGGED'
+  )
+
   const defaultSteps = [
     { label: 'Booked', loc: shipment?.from || 'Origin Hub', ts: shipment?.date || 'Completed', done: true, current: false },
     { label: 'Picked up', loc: 'Origin Gateway Port', ts: 'Completed', done: true, current: false },
@@ -200,7 +207,7 @@ function TrackResult({ shipment, onOpenUpload }) {
 
   return (
     <div className="mx-auto mt-12 max-w-[820px]">
-      {/* Customs Compliance Banner: Verified vs Upload Notice */}
+      {/* Customs Compliance Banner: Verified vs Upload Notice (Only when requested by customs) */}
       {isCustomsApproved ? (
         <div className="mb-6 rounded-2xl border-2 border-emerald-400 bg-emerald-50/95 p-5 shadow-xs">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -223,7 +230,7 @@ function TrackResult({ shipment, onOpenUpload }) {
             </span>
           </div>
         </div>
-      ) : (
+      ) : hasCustomsDocRequest ? (
         <div className="mb-6 rounded-2xl border-2 border-amber-400 bg-amber-50/95 p-5 shadow-xs">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -246,7 +253,7 @@ function TrackResult({ shipment, onOpenUpload }) {
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
       <div className="mb-9 flex flex-wrap justify-between gap-5 rounded-md2 border border-brand-line bg-white p-7 shadow-xs">
         <Info label="Tracking number" value={shipment.tn} mono />

@@ -166,9 +166,19 @@ export function AppProvider({ children }) {
     [shipments]
   )
 
+  const updateProfile = useCallback((updatedUserData) => {
+    setUser((prev) => {
+      const merged = { ...(prev || {}), ...updatedUserData }
+      try {
+        localStorage.setItem('portline_user_profile', JSON.stringify(merged))
+      } catch {}
+      return merged
+    })
+  }, [])
+
   const value = useMemo(
-    () => ({ user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, cancelShipment, findShipment }),
-    [user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, cancelShipment, findShipment]
+    () => ({ user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, cancelShipment, findShipment, updateProfile }),
+    [user, loggedIn, shipments, login, loginDemo, signup, logout, addShipment, cancelShipment, findShipment, updateProfile]
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
