@@ -8,11 +8,19 @@ const QUOTES_STORAGE_KEY = 'portline_saved_quotes'
 const USERS_STORAGE_KEY = 'portline_registered_users'
 
 // One-time clear of legacy test quotes and shipments across all dashboards
-if (typeof window !== 'undefined' && !localStorage.getItem('portline_zero_reset_done')) {
+if (typeof window !== 'undefined' && !localStorage.getItem('portline_zero_reset_v5')) {
   try {
     localStorage.removeItem(QUOTES_STORAGE_KEY)
     localStorage.removeItem('portline_customer_shipments')
-    localStorage.setItem('portline_zero_reset_done', 'true')
+    const keysToRemove = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && (k.startsWith('portline_shipments_') || k.startsWith('portline_quotes_'))) {
+        keysToRemove.push(k)
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k))
+    localStorage.setItem('portline_zero_reset_v5', 'true')
   } catch (e) {}
 }
 
@@ -402,7 +410,7 @@ export async function fetchShipments(email = '') {
         return []
       }
     }
-    return seedShipments
+    return []
   }
 
   if (MOCK_MODE) {
@@ -416,6 +424,29 @@ export async function fetchShipments(email = '') {
   } catch {
     return getLocalShipments()
   }
+}
+
+export async function clearAllShipments() {
+  try {
+    localStorage.removeItem('portline_customer_shipments')
+    const toRemove = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('portline_shipments_')) {
+        toRemove.push(k)
+      }
+    }
+    toRemove.forEach(k => localStorage.removeItem(k))
+  } catch {}
+
+  if (!MOCK_MODE) {
+    try {
+      await apiFetch('/api/v1/shipments/', { method: 'DELETE' })
+    } catch {
+      // ignore
+    }
+  }
+  return { ok: true }
 }
 
 export async function createShipmentRequest(payload) {
