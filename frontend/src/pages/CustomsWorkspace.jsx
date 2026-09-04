@@ -18,84 +18,7 @@ export default function CustomsWorkspace() {
   const [docRequestNotes, setDocRequestNotes] = useState('')
   const [previewDoc, setPreviewDoc] = useState(null)
 
-  const [cases, setCases] = useState([
-    {
-      checkId: 'CUST-CHK-78210',
-      shipmentId: 'SHP-7821',
-      origin: 'Chennai (INMAA)',
-      destination: 'Rotterdam (NLRTM)',
-      hsCode: '850440',
-      commodity: 'Static Converters & Solar Inverters',
-      readinessScore: 88,
-      riskLevel: 'HIGH',
-      status: 'PENDING_REVIEW',
-      requiresOfficer: true,
-      summary: 'EU Union Customs Code Art 127 advance filing verified. CE / Low Voltage Directive declaration pending sign-off.',
-      checklist: [
-        { name: 'Commercial Invoice (USD/EUR)', uploaded: true, status: 'VERIFIED' },
-        { name: 'Packing List with Net/Gross Weight', uploaded: true, status: 'VERIFIED' },
-        { name: 'Ocean Bill of Lading (B/L)', uploaded: true, status: 'VERIFIED' },
-        { name: 'EU Declaration of Conformity (DoC)', uploaded: true, status: 'PENDING_SIGN_OFF' },
-        { name: 'RoHS 3 Compliance Certificate', uploaded: true, status: 'VERIFIED' }
-      ],
-      citation: 'UCC Regulation (EU) No 952/2013 Art 127',
-      customerUploadedDocuments: [
-        {
-          name: 'EU Declaration of Conformity (DoC)',
-          file_name: 'eu_declaration_of_conformity_signed.pdf',
-          file_size: '284 KB',
-          uploaded_by: 'Consignor Exporter',
-          uploaded_at: '2026-09-02T16:20:00Z'
-        },
-        {
-          name: 'RoHS 3 Compliance Certificate',
-          file_name: 'rohs_compliance_cert_2026.pdf',
-          file_size: '192 KB',
-          uploaded_by: 'Consignor Exporter',
-          uploaded_at: '2026-09-02T16:22:00Z'
-        }
-      ]
-    },
-    {
-      checkId: 'CUST-CHK-41902',
-      shipmentId: 'SHP-4190',
-      origin: 'Nhava Sheva (INNSA)',
-      destination: 'Singapore (SGSIN)',
-      hsCode: '290511',
-      commodity: 'Industrial Methanol (Chemical)',
-      readinessScore: 65,
-      riskLevel: 'CRITICAL',
-      status: 'PENDING_REVIEW',
-      requiresOfficer: true,
-      summary: 'IMO Class 3 Flammable Liquid. Dangerous goods declaration and UN packaging certificate mandatory.',
-      checklist: [
-        { name: 'IMO Multimodal DG Declaration', uploaded: true, status: 'VERIFIED' },
-        { name: '16-Point Material Safety Data Sheet (MSDS)', uploaded: true, status: 'VERIFIED' },
-        { name: 'Singapore SCDF Chemical Import Permit', uploaded: false, status: 'MISSING' },
-        { name: 'UN Approved Packaging Certificate', uploaded: true, status: 'PENDING_SIGN_OFF' }
-      ],
-      citation: 'SOLAS Convention Chap VII & Singapore Fire Safety Act'
-    },
-    {
-      checkId: 'CUST-CHK-63024',
-      shipmentId: 'SHP-6302',
-      origin: 'Chennai (INMAA)',
-      destination: 'Singapore (SGSIN)',
-      hsCode: '851762',
-      commodity: 'Enterprise Network Switches',
-      readinessScore: 100,
-      riskLevel: 'LOW',
-      status: 'APPROVED',
-      requiresOfficer: false,
-      summary: 'Full trade documentation set auto-verified under India-Singapore CECA treaty.',
-      checklist: [
-        { name: 'Commercial Invoice', uploaded: true, status: 'VERIFIED' },
-        { name: 'Packing List', uploaded: true, status: 'VERIFIED' },
-        { name: 'Preferential Certificate of Origin (CECA)', uploaded: true, status: 'VERIFIED' }
-      ],
-      citation: 'India-Singapore Comprehensive Economic Cooperation Agreement (CECA)'
-    }
-  ])
+  const [cases, setCases] = useState([])
 
   const [auditLogs, setAuditLogs] = useState([
     {
@@ -288,7 +211,7 @@ export default function CustomsWorkspace() {
         icon={ShieldCheck}
       />
 
-      <div className="mx-auto max-w-[1220px] px-8 sm:px-5 pt-8">
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 pt-8">
         
         {/* Top Header Controls */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-brand-line bg-white p-5 rounded-2xl shadow-xs">
@@ -372,58 +295,68 @@ export default function CustomsWorkspace() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-brand-line/50">
-                  {filteredCases.map(c => (
-                    <tr key={c.checkId} className="hover:bg-brand-cloud/40 transition-colors">
-                      <td className="px-4 py-3.5">
-                        <span className="font-semibold text-brand-navy font-mono text-xs">{c.checkId}</span>
-                        <div className="text-[11px] text-brand-slate">{c.shipmentId}</div>
-                      </td>
-                      <td className="px-4 py-3.5 font-medium text-brand-navy">{c.origin} ? {c.destination}</td>
-                      <td className="px-4 py-3.5">
-                        <span className="inline-block rounded-md bg-brand-navy/10 px-2 py-0.5 font-mono text-[11px] text-brand-navy font-bold">{c.hsCode}</span>
-                        <div className="text-[11px] text-brand-slate max-w-[200px] truncate mt-0.5">{c.commodity}</div>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-1.5 w-14 rounded-full bg-slate-200 overflow-hidden">
-                            <div className={`h-full ${c.readinessScore > 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${c.readinessScore}%` }} />
-                          </div>
-                          <span className="font-mono font-bold text-[11px] text-brand-navy">{c.readinessScore}%</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span className={`inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold border ${
-                          c.riskLevel === 'CRITICAL' ? 'bg-rose-50 text-rose-700 border-rose-200' : c.riskLevel === 'HIGH' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        }`}>
-                          {c.riskLevel}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <span className={`inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold border ${
-                          c.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                          c.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                          c.status === 'DOCS_SUBMITTED' ? 'bg-blue-50 text-blue-700 border-blue-300' :
-                          c.status === 'DOCS_FLAGGED' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                          'bg-amber-50 text-amber-700 border-amber-200'
-                        }`}>
-                          {c.status === 'DOCS_SUBMITTED' ? 'DOCS SUBMITTED' : c.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3.5 text-right">
-                        <button
-                          onClick={() => setSelectedCase(c)}
-                          className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold shadow-xs flex items-center gap-1.5 ml-auto transition-colors ${
-                            c.status === 'DOCS_SUBMITTED'
-                              ? 'bg-blue-600 text-white hover:bg-blue-700'
-                              : 'bg-brand-navy text-white hover:bg-brand-marine'
-                          }`}
-                        >
-                          {c.status === 'DOCS_SUBMITTED' ? <FileCheck className="h-3.5 w-3.5" /> : null}
-                          {c.status === 'DOCS_SUBMITTED' ? 'Inspect Docs & Sign' : 'Inspect & Sign-Off'}
-                        </button>
+                  {filteredCases.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-12 text-center text-brand-slate">
+                        <FileCheck className="mx-auto h-8 w-8 text-brand-slateLight mb-2 opacity-50" />
+                        <p className="font-semibold text-brand-navy">No customs clearance cases found</p>
+                        <p className="text-xs text-brand-slate mt-0.5">Approved quotations requiring regulatory clearance will populate here automatically.</p>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredCases.map(c => (
+                      <tr key={c.checkId} className="hover:bg-brand-cloud/40 transition-colors">
+                        <td className="px-4 py-3.5">
+                          <span className="font-semibold text-brand-navy font-mono text-xs">{c.checkId}</span>
+                          <div className="text-[11px] text-brand-slate">{c.shipmentId}</div>
+                        </td>
+                        <td className="px-4 py-3.5 font-medium text-brand-navy">{c.origin} → {c.destination}</td>
+                        <td className="px-4 py-3.5">
+                          <span className="inline-block rounded-md bg-brand-navy/10 px-2 py-0.5 font-mono text-[11px] text-brand-navy font-bold">{c.hsCode}</span>
+                          <div className="text-[11px] text-brand-slate max-w-[200px] truncate mt-0.5">{c.commodity}</div>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 w-14 rounded-full bg-slate-200 overflow-hidden">
+                              <div className={`h-full ${c.readinessScore > 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${c.readinessScore}%` }} />
+                            </div>
+                            <span className="font-mono font-bold text-[11px] text-brand-navy">{c.readinessScore}%</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <span className={`inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold border ${
+                            c.riskLevel === 'CRITICAL' ? 'bg-rose-50 text-rose-700 border-rose-200' : c.riskLevel === 'HIGH' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          }`}>
+                            {c.riskLevel}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <span className={`inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold border ${
+                            c.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                            c.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                            c.status === 'DOCS_SUBMITTED' ? 'bg-blue-50 text-blue-700 border-blue-300' :
+                            c.status === 'DOCS_FLAGGED' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                            'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}>
+                            {c.status === 'DOCS_SUBMITTED' ? 'DOCS SUBMITTED' : c.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5 text-right">
+                          <button
+                            onClick={() => setSelectedCase(c)}
+                            className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold shadow-xs flex items-center gap-1.5 ml-auto transition-colors ${
+                              c.status === 'DOCS_SUBMITTED'
+                                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                : 'bg-brand-navy text-white hover:bg-brand-marine'
+                            }`}
+                          >
+                            {c.status === 'DOCS_SUBMITTED' ? <FileCheck className="h-3.5 w-3.5" /> : null}
+                            {c.status === 'DOCS_SUBMITTED' ? 'Inspect Docs & Sign' : 'Inspect & Sign-Off'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -704,25 +637,72 @@ export default function CustomsWorkspace() {
                 </button>
               </div>
 
-              {/* Simulated Certificate Display */}
-              <div className="mt-4 rounded-xl border border-brand-line bg-brand-cloud/40 p-5 font-serif text-xs text-brand-navy shadow-inner space-y-3">
-                <div className="text-center border-b border-brand-line pb-3">
-                  <span className="text-[10px] tracking-widest uppercase font-mono font-bold text-brand-slate">Statutory International Trade Certificate</span>
-                  <h4 className="text-sm font-bold mt-1 text-brand-navy">{previewDoc.name}</h4>
-                  <p className="text-[11px] italic text-brand-slate">Compliance Reference: {selectedCase?.hsCode ? `HS ${selectedCase.hsCode}` : 'ISO / CE Standard'}</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-sans">
-                  <div><strong>Issuer / Signatory:</strong> <span className="text-brand-slate">Authorized Quality & Safety Lab</span></div>
-                  <div><strong>Standard:</strong> <span className="text-brand-slate">Directives 2014/35/EU / RoHS 3</span></div>
-                  <div><strong>Status:</strong> <span className="text-emerald-700 font-bold">DIGITALLY SIGNED & VERIFIED</span></div>
-                  <div><strong>Submission Date:</strong> <span className="text-brand-slate">{previewDoc.uploaded_at ? new Date(previewDoc.uploaded_at).toLocaleDateString() : 'Active'}</span></div>
-                </div>
+              {/* Real Uploaded File Inspection Viewer */}
+              {previewDoc.file_data && (previewDoc.file_type?.startsWith('image/') || previewDoc.file_data?.startsWith('data:image/') || (previewDoc.file_name && /\.(png|jpe?g|webp|gif)$/i.test(previewDoc.file_name))) ? (
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs text-brand-slate bg-brand-cloud/40 p-2.5 rounded-xl border border-brand-line">
+                    <span className="truncate max-w-[320px]"><strong>File:</strong> {previewDoc.file_name}</span>
+                    <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
+                      {previewDoc.file_size || 'Image File'}
+                    </span>
+                  </div>
 
-                <div className="rounded-lg bg-white p-3 border border-brand-line/60 font-mono text-[10.5px] text-brand-slate leading-relaxed">
-                  &ldquo;This document certifies that the consignment under Case {selectedCase?.checkId} matches the statutory technical file and complies with all mandatory customs import regulations.&rdquo;
+                  <div className="rounded-xl border border-brand-line bg-slate-950 p-2 flex items-center justify-center min-h-[260px] max-h-[480px] overflow-auto shadow-inner">
+                    <img
+                      src={previewDoc.file_data}
+                      alt={previewDoc.file_name || previewDoc.name}
+                      className="max-h-[460px] w-auto max-w-full rounded object-contain"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-brand-slate px-1">
+                    <span>Uploaded by: <strong className="text-brand-navy">{previewDoc.uploaded_by || 'Customer'}</strong></span>
+                    <span>Submission: <strong className="font-mono text-brand-navy">{previewDoc.uploaded_at ? new Date(previewDoc.uploaded_at).toLocaleString() : 'Recent'}</strong></span>
+                  </div>
                 </div>
-              </div>
+              ) : previewDoc.file_data && (previewDoc.file_type === 'application/pdf' || previewDoc.file_data?.startsWith('data:application/pdf')) ? (
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs text-brand-slate bg-brand-cloud/40 p-2.5 rounded-xl border border-brand-line">
+                    <span className="truncate max-w-[320px]"><strong>PDF Document:</strong> {previewDoc.file_name}</span>
+                    <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
+                      {previewDoc.file_size || 'PDF'}
+                    </span>
+                  </div>
+                  <iframe
+                    src={previewDoc.file_data}
+                    className="w-full h-[450px] rounded-xl border border-brand-line bg-white shadow-inner"
+                    title={previewDoc.name}
+                  />
+                </div>
+              ) : (
+                /* Fallback preview for documents without binary data url */
+                <div className="mt-4 rounded-xl border border-brand-line bg-brand-cloud/40 p-5 text-xs text-brand-navy space-y-4">
+                  <div className="flex items-center justify-between border-b border-brand-line pb-3">
+                    <div>
+                      <span className="text-[10px] tracking-widest uppercase font-mono font-bold text-brand-slate">Customer Uploaded Compliance Attachment</span>
+                      <h4 className="text-sm font-bold mt-0.5 text-brand-navy">{previewDoc.name}</h4>
+                    </div>
+                    <span className="rounded-full bg-blue-100 text-blue-800 font-bold px-2.5 py-0.5 text-[10px] font-mono">
+                      ATTACHED
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-[11px]">
+                    <div><strong>Original Filename:</strong> <span className="font-mono text-brand-navy block truncate">{previewDoc.file_name || 'document.pdf'}</span></div>
+                    <div><strong>File Size:</strong> <span className="font-mono text-brand-navy block">{previewDoc.file_size || '245 KB'}</span></div>
+                    <div><strong>Uploaded By:</strong> <span className="text-brand-slate block">{previewDoc.uploaded_by || 'Shipper / Consignor'}</span></div>
+                    <div><strong>Submission Timestamp:</strong> <span className="font-mono text-brand-slate block">{previewDoc.uploaded_at ? new Date(previewDoc.uploaded_at).toLocaleString() : 'Active Session'}</span></div>
+                  </div>
+
+                  <div className="rounded-lg bg-white p-4 border border-brand-line/60 font-mono text-[11px] text-brand-slate leading-relaxed shadow-xs flex items-center gap-3">
+                    <FileText className="h-8 w-8 text-blue-600 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-brand-navy">File Verified & Registered with Customs Broker Desk</p>
+                      <p className="text-[10.5px] mt-0.5">Statutory declaration on file for Case {selectedCase?.checkId || 'CUST-CLEARANCE'}. Document complies with CBIC electronic filing guidelines.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="mt-5 flex items-center justify-between border-t border-brand-line pt-4">
                 <button

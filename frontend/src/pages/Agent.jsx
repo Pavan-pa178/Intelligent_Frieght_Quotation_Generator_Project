@@ -125,7 +125,7 @@ export default function Agent() {
       <PageBanner crumb="Agent" title="Agent Panel" subtitle={`Welcome, ${user?.name?.split(' ')[0]}. Review and action pending freight quotations.`} icon={UserCheck} />
 
       <section className="pt-8 pb-20">
-        <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
 
           {/* Tab Bar */}
           <div className="mb-8 flex flex-wrap gap-2 rounded-xl border border-brand-line bg-white p-1.5 shadow-sm">

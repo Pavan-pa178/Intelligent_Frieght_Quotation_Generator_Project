@@ -30,7 +30,7 @@ export default function Services() {
         icon={Ship}
       />
       <section className="py-16">
-        <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           <div className="mb-[60px] grid grid-cols-1 gap-[22px] sm:grid-cols-2 lg:grid-cols-3">
             {SERVICES.map((s) => (
               <Reveal key={s.title} className="flex flex-col rounded-md2 border border-brand-line bg-white p-7">

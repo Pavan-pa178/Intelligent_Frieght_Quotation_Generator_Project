@@ -372,7 +372,7 @@ export default function Admin() {
       />
 
       <section className="pt-10 pb-20">
-        <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
 
           {/* ADMIN SESSION & LOGOUT BAR */}
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-brand-line bg-white p-4 shadow-xs">

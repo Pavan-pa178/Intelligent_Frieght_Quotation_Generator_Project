@@ -577,7 +577,7 @@ export default function Ship() {
       />
       
       <section className="pt-10 pb-20">
-        <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_360px]">
             
             {/* FORM LEFT PANEL */}

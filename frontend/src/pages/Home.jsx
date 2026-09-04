@@ -33,7 +33,7 @@ export default function Home() {
       {/* HERO */}
       <div className="chart-grid relative overflow-hidden bg-brand-navy text-white">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_900px_500px_at_78%_15%,rgba(46,109,168,.35),transparent_60%)]" />
-        <div className="relative z-10 mx-auto grid max-w-[1220px] grid-cols-1 items-center gap-10 px-8 py-16 sm:px-5 md:grid-cols-[1.05fr_0.95fr] md:py-24">
+        <div className="relative z-10 mx-auto grid max-w-[1440px] grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:px-8 py-16 md:grid-cols-[1.05fr_0.95fr] md:py-24">
           <div className="reveal in">
             <div className="mb-4 flex items-center gap-2 font-mono text-[11.5px] font-semibold uppercase tracking-[.16em] text-brand-orangeLight">
               <span className="h-px w-[22px] bg-brand-orangeLight" />
@@ -69,7 +69,7 @@ export default function Home() {
 
       {/* STATS */}
       <div className="bg-brand-navy2 text-white">
-        <div className="mx-auto grid max-w-[1220px] grid-cols-2 gap-6 px-8 py-11 sm:px-5 md:grid-cols-4">
+        <div className="mx-auto grid max-w-[1440px] grid-cols-2 gap-6 px-4 sm:px-6 lg:px-8 py-11 md:grid-cols-4">
           {STATS.map((s, i) => (
             <StatBlock key={s.label} stat={s} first={i === 0} />
           ))}
@@ -78,7 +78,7 @@ export default function Home() {
 
       {/* SERVICES PREVIEW */}
       <section className="py-16 md:py-[88px]">
-        <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           <Reveal className="mb-[52px] max-w-[640px]">
             <Eyebrow>What we move</Eyebrow>
             <h2 className="mb-3.5 text-[28px] md:text-[40px]">One partner, every mode of transport</h2>
@@ -105,7 +105,7 @@ export default function Home() {
 
       {/* HOW IT WORKS */}
       <section className="bg-white py-20">
-        <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           <Reveal className="mx-auto mb-[52px] max-w-[640px] text-center">
             <Eyebrow center>How it works</Eyebrow>
             <h2 className="text-[28px] md:text-[40px]">From quote to delivery in five steps</h2>
@@ -129,7 +129,7 @@ export default function Home() {
 
       {/* CTA */}
       <section className="py-16 md:py-[88px]">
-        <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           <Reveal className="chart-grid relative flex flex-col items-center gap-6 overflow-hidden rounded-lg2 bg-gradient-to-br from-brand-navy to-brand-marine px-6 py-10 text-center text-white sm:flex-row sm:justify-between sm:text-left md:px-12 md:py-14">
             <div className="relative z-10">
               <h3 className="max-w-[420px] text-[22px] md:text-[30px]">Ready to move your cargo?</h3>

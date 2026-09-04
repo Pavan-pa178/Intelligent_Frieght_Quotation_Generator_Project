@@ -90,7 +90,7 @@ export default function Quotes() {
       />
       
       <section className="pt-10 pb-20">
-        <div className="mx-auto max-w-[1220px] px-8 sm:px-5">
+        <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
           
           {/* KPI Cards */}
           <div className="grid grid-cols-2 gap-4 mb-7 md:grid-cols-4">
