@@ -108,7 +108,7 @@ export default function Agent() {
                 <AlertTriangle className="h-7 w-7" />
               </div>
               <h3 className="mb-2 text-xl font-bold text-brand-navy">Agent Access Required</h3>
-              <p className="mb-2 text-sm text-brand-slate">This area is restricted to PORTLINE agents.</p>
+              <p className="mb-2 text-sm text-brand-slate">This area is restricted to Agentic AI for Maritime Freight Pricing and Route Optimization agents.</p>
               <p className="mb-6 font-mono text-xs text-brand-slateLight">Login: agent@portline.in / agent123</p>
               <button onClick={() => navigate('/login')} className="rounded-xl bg-brand-navy px-6 py-3 text-sm font-semibold text-white hover:bg-brand-marine">
                 Log in as Agent

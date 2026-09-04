@@ -14,10 +14,13 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2.5 font-display text-lg font-bold text-white">
               <Container className="h-8 w-8 text-brand-orangeLight" strokeWidth={1.6} />
-              <span>Freight Quote Generator</span>
+              <div className="flex flex-col">
+                <span className="text-base font-bold leading-tight">Agentic AI for Maritime Freight Pricing and Route Optimization</span>
+                <span className="font-mono text-[10px] font-semibold tracking-wider text-brand-orangeLight">PORTLINE</span>
+              </div>
             </div>
-            <p className="my-3.5 max-w-[280px] text-[13.5px]">
-              Global freight forwarding across ocean, air and ground — with live tracking on every shipment.
+            <p className="my-3.5 max-w-[340px] text-[13.5px]">
+              PORTLINE — Autonomous multi-agent maritime freight pricing, multi-factor risk assessment, and dynamic route optimization across global shipping lanes.
             </p>
             <div className="flex max-w-[300px] gap-2">
               <input type="email" placeholder="Your email" className="flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-[13px] text-white placeholder:text-slate-500" />
@@ -36,7 +39,7 @@ export default function Footer() {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2.5 py-6 text-[12.5px]">
-          <span>© 2026 Freight Quote Generator. All rights reserved.</span>
+          <span>© 2026 Agentic AI for Maritime Freight Pricing and Route Optimization · PORTLINE. All rights reserved.</span>
           <div className="flex gap-2.5">
             {[Linkedin, Twitter, Instagram].map((Icon, i) => (
               <a key={i} href="#" className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white/5 hover:bg-brand-orange" aria-label="Social link">

@@ -96,9 +96,18 @@ export default function Login() {
       {/* LEFT — brand panel */}
       <div className="chart-grid relative hidden h-full flex-col justify-between overflow-hidden bg-brand-navy p-10 text-white md:flex">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_700px_400px_at_20%_90%,rgba(217,80,10,.25),transparent_60%)]" />
-        <Link to="/" className="relative z-10 flex items-center gap-2.5 font-display text-lg font-bold">
-          <Container className="h-[34px] w-[34px] text-brand-orangeLight" strokeWidth={1.6} />
-          Freight Quote Generator
+        <Link to="/" className="relative z-10 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-orange to-brand-orangeLight p-2 text-white">
+            <Container className="h-6 w-6 text-white" strokeWidth={1.8} />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-display text-sm sm:text-base font-bold text-white leading-tight">
+              Agentic AI for Maritime Freight Pricing and Route Optimization
+            </span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-brand-orangeLight">
+              PORTLINE
+            </span>
+          </div>
         </Link>
         <div className="relative z-10 max-w-[400px]">
           <p className="font-display text-[22px] leading-snug">
@@ -106,7 +115,7 @@ export default function Login() {
           </p>
           <div className="mt-4 font-mono text-[13px] text-slate-400">— Head of Logistics, Mehta Exports Pvt. Ltd.</div>
         </div>
-        <div className="relative z-10 font-mono text-[11px] tracking-wide text-slate-500">© 2026 FREIGHT QUOTE GENERATOR</div>
+        <div className="relative z-10 font-mono text-[11px] tracking-wide text-slate-500">© 2026 AGENTIC AI FOR MARITIME FREIGHT PRICING AND ROUTE OPTIMIZATION · PORTLINE</div>
       </div>
 
       {/* RIGHT — form panel */}

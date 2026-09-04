@@ -37,7 +37,7 @@ export default function Home() {
           <div className="reveal in">
             <div className="mb-4 flex items-center gap-2 font-mono text-[11.5px] font-semibold uppercase tracking-[.16em] text-brand-orangeLight">
               <span className="h-px w-[22px] bg-brand-orangeLight" />
-              Global Freight Forwarding
+              PORTLINE
             </div>
             <h1 className="text-[34px] leading-[1.06] tracking-tight text-white sm:text-[46px] md:text-[58px]">
               Freight, routed<br /><em className="not-italic text-brand-orangeLight">precisely.</em>

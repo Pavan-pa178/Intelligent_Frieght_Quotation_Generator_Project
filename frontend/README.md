@@ -1,6 +1,6 @@
-# Freight Quote Generator (PORTLINE) — Frontend
+# Agentic AI for Maritime Freight Pricing and Route Optimization (PORTLINE) — Frontend
 
-The **frontend half** of the Freight Quote Generator platform: instant freight quotes, live shipment tracking, a customer portal, and login/signup — built with **React + Vite + Tailwind CSS**, ready to connect to the team's **Django REST Framework + MongoDB** backend over a JWT-secured API.
+The **frontend** of the Agentic AI for Maritime Freight Pricing and Route Optimization (PORTLINE) platform: instant freight quotes, live shipment tracking, a customer portal, role-based workspaces (Agent, Customs, AI Ops, Analytics, Admin), and authentication — built with **React + Vite + Tailwind CSS**, connected to the Django REST Framework + MongoDB backend.
 
 ```
 FRONTEND (React + Vite + Tailwind)  --JWT + CORS-->  BACKEND (Django REST Framework)  --mongoengine-->  MongoDB

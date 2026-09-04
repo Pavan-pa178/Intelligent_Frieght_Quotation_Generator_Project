@@ -571,8 +571,8 @@ export default function Ship() {
     <>
       <PageBanner
         crumb="Ship"
-        title="Freight Quote Generator"
-        subtitle="Everything we need is on this one page — fill it in and get a live estimate as you go."
+        title="Agentic AI for Maritime Freight Pricing and Route Optimization"
+        subtitle="PORTLINE autonomous multimodal quote engine — live ML pricing, composite risk index, and dynamic route optimization."
         icon={ShipIcon}
       />
       
