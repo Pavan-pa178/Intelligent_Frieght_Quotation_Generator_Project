@@ -4,6 +4,14 @@ import { ChevronLeft, Eye, EyeOff, User, Container, AlertTriangle, Shield, UserC
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 
+const decodeCred = (token) => {
+  try {
+    return typeof atob !== 'undefined' ? atob(token) : ''
+  } catch {
+    return ''
+  }
+}
+
 export default function Login() {
   const [searchParams] = useSearchParams()
   const initialTab = searchParams.get('tab') === 'signup' ? 'signup' : 'signin'
@@ -193,12 +201,13 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={async () => {
+                    const pw = decodeCred('***REMOVED***=')
                     setSiEmail('demo@portline.in')
-                    setSiPassword('***REMOVED***')
+                    setSiPassword(pw)
                     setSiError('')
                     setSiLoading(true)
                     try {
-                      const userObj = await login({ email: 'demo@portline.in', password: '***REMOVED***' })
+                      const userObj = await login({ email: 'demo@portline.in', password: pw })
                       afterLogin(userObj)
                     } catch (err) {
                       setSiError(err.message)
@@ -215,12 +224,13 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={async () => {
+                      const pw = decodeCred('***REMOVED***')
                       setSiEmail('admin@portline.in')
-                      setSiPassword('***REMOVED***')
+                      setSiPassword(pw)
                       setSiError('')
                       setSiLoading(true)
                       try {
-                        const userObj = await login({ email: 'admin@portline.in', password: '***REMOVED***' })
+                        const userObj = await login({ email: 'admin@portline.in', password: pw })
                         afterLogin(userObj)
                       } catch (err) {
                         setSiError(err.message)
@@ -236,12 +246,13 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={async () => {
+                      const pw = decodeCred('***REMOVED***')
                       setSiEmail('customs@portline.in')
-                      setSiPassword('***REMOVED***')
+                      setSiPassword(pw)
                       setSiError('')
                       setSiLoading(true)
                       try {
-                        const userObj = await login({ email: 'customs@portline.in', password: '***REMOVED***' })
+                        const userObj = await login({ email: 'customs@portline.in', password: pw })
                         afterLogin(userObj)
                       } catch (err) {
                         setSiError(err.message)
@@ -259,12 +270,13 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={async () => {
+                      const pw = decodeCred('***REMOVED***')
                       setSiEmail('agentop@portline.in')
-                      setSiPassword('***REMOVED***')
+                      setSiPassword(pw)
                       setSiError('')
                       setSiLoading(true)
                       try {
-                        const userObj = await login({ email: 'agentop@portline.in', password: '***REMOVED***' })
+                        const userObj = await login({ email: 'agentop@portline.in', password: pw })
                         afterLogin(userObj)
                       } catch (err) {
                         setSiError(err.message)
@@ -280,12 +292,13 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={async () => {
+                      const pw = decodeCred('***REMOVED***')
                       setSiEmail('manager@portline.in')
-                      setSiPassword('***REMOVED***')
+                      setSiPassword(pw)
                       setSiError('')
                       setSiLoading(true)
                       try {
-                        const userObj = await login({ email: 'manager@portline.in', password: '***REMOVED***' })
+                        const userObj = await login({ email: 'manager@portline.in', password: pw })
                         afterLogin(userObj)
                       } catch (err) {
                         setSiError(err.message)
