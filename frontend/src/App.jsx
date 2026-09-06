@@ -21,6 +21,7 @@ import Agent from './pages/Agent'
 import CustomsWorkspace from './pages/CustomsWorkspace'
 import AgentOperations from './pages/AgentOperations'
 import AnalyticsManagement from './pages/AnalyticsManagement'
+import Profile from './pages/Profile'
 
 import { useNavigate } from 'react-router-dom'
 import { useApp } from './context/AppContext'
@@ -39,17 +40,22 @@ function RoleRouteGuard({ children }) {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Role-based guards - allow inspecting quotes and details
+    // Role-based guards - allow inspecting quotes, details, and personal profile
     if (loggedIn) {
       const isQuoteRoute = pathname === '/quotes' || pathname.startsWith('/quotes/')
-      if (user?.role === 'admin' && pathname !== '/admin' && !isQuoteRoute) {
+      const isProfileRoute = pathname === '/profile'
+      if (isProfileRoute || isQuoteRoute) return
+
+      if (user?.role === 'admin' && pathname !== '/admin') {
         navigate('/admin', { replace: true })
-      } else if (user?.role === 'customs_officer' && !pathname.startsWith('/customs') && !isQuoteRoute) {
+      } else if (user?.role === 'customs_officer' && !pathname.startsWith('/customs')) {
         navigate('/customs', { replace: true })
-      } else if (user?.role === 'agent_operator' && !pathname.startsWith('/agents') && !isQuoteRoute) {
+      } else if (user?.role === 'agent_operator' && !pathname.startsWith('/agents')) {
         navigate('/agents', { replace: true })
-      } else if (user?.role === 'manager' && !pathname.startsWith('/analytics') && !isQuoteRoute) {
+      } else if (user?.role === 'manager' && !pathname.startsWith('/analytics')) {
         navigate('/analytics', { replace: true })
+      } else if ((user?.role === 'agent' || user?.role === 'broker') && !pathname.startsWith('/agent')) {
+        navigate('/agent', { replace: true })
       }
     }
   }, [loggedIn, user, pathname, navigate])
@@ -106,6 +112,7 @@ export default function App() {
                 <Route path="/customs" element={<CustomsWorkspace />} />
                 <Route path="/agents" element={<AgentOperations />} />
                 <Route path="/analytics" element={<AnalyticsManagement />} />
+                <Route path="/profile" element={<Profile />} />
               </Routes>
             </ErrorBoundary>
           </LayoutChrome>

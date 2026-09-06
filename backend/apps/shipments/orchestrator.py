@@ -102,17 +102,73 @@ def _assemble_quote(shipment_id, user_email, shipment_payload,
     origin_city = shipment_payload.get('from', origin_gw.get('city', 'Origin') if origin_gw else 'Origin')
     dest_city   = shipment_payload.get('to',   dest_gw.get('city', 'Dest') if dest_gw else 'Dest')
 
-    # Determine final price: if ML model loaded & high confidence, use ML; else rule
-    ml_price   = ml_result.get('ml_predicted_price', rule_result['final_sell_price'])
+    # Look up if quote record already exists (e.g. submitted from frontend)
+    existing_quote = None
+    try:
+        from apps.quotes.views import _find_quote_anywhere
+        existing_quote = _find_quote_anywhere(quote_id)
+    except Exception:
+        pass
+    if not existing_quote:
+        try:
+            col = get_collection('quotes')
+            if col is not None:
+                existing_quote = col.find_one({'id': quote_id}, {'_id': 0})
+        except Exception:
+            pass
+
+    # Determine final price:
+    # 1. If customer has already selected a route or submitted an indicative total, preserve it as ground truth
+    submitted_total = (
+        (existing_quote and existing_quote.get('selected_route', {}).get('cost')) or
+        (existing_quote and existing_quote.get('indicativeTotal')) or
+        shipment_payload.get('indicativeTotal') or
+        shipment_payload.get('cost')
+    )
     rule_price = rule_result['final_sell_price']
+    ml_price   = ml_result.get('ml_predicted_price', rule_price)
     ml_conf    = ml_result.get('confidence_level', 'LOW')
-    final_total = ml_price if ml_result.get('is_model_loaded') and ml_conf in ('HIGH', 'MEDIUM') else rule_price
+
+    if submitted_total and float(submitted_total) > 0:
+        final_total = float(submitted_total)
+    elif ml_result.get('is_model_loaded') and ml_conf in ('HIGH', 'MEDIUM'):
+        final_total = ml_price
+    else:
+        final_total = rule_price
+
+    # Preserve routes: prefer existing/submitted customer routes over raw generation
+    final_routes = (
+        (existing_quote and existing_quote.get('details', {}).get('routes')) or
+        shipment_payload.get('details', {}).get('routes') or
+        shipment_payload.get('routes') or
+        route_result.get('routes', [])
+    )
+
+    # Preserve status: do not overwrite an active status (Draft, Agent Approved, Approved, etc.) back to QUOTED
+    existing_status = (existing_quote and existing_quote.get('status')) or shipment_payload.get('status')
+    effective_status = existing_status if existing_status else 'Draft'
+
+    existing_pipe_status = (existing_quote and existing_quote.get('pipeline_status')) or shipment_payload.get('pipeline_status')
+    effective_pipe_status = existing_pipe_status if existing_pipe_status else STATUS_QUOTED
+
+    # Preserve reviews & decisions
+    agent_review = (existing_quote and existing_quote.get('agent_review')) or shipment_payload.get('agent_review')
+    customs_review = (existing_quote and existing_quote.get('customs_review')) or shipment_payload.get('customs_review')
+    customer_decision = (existing_quote and existing_quote.get('customer_decision')) or shipment_payload.get('customer_decision')
+    selected_route = (existing_quote and existing_quote.get('selected_route')) or shipment_payload.get('selected_route')
+    uploaded_docs = (existing_quote and existing_quote.get('customer_uploaded_documents')) or shipment_payload.get('customer_uploaded_documents') or []
+
+    cost_breakdown = (
+        (existing_quote and existing_quote.get('details', {}).get('costBreakdown')) or
+        shipment_payload.get('details', {}).get('costBreakdown') or
+        rule_result['cost_breakdown']
+    )
 
     quote = {
         'id':              quote_id,
         'shipment_id':     shipment_id,
-        'user_email':      user_email,
-        'customer':        shipment_payload.get('customer', user_email),
+        'user_email':      user_email or (existing_quote and existing_quote.get('user_email')) or shipment_payload.get('user_email', ''),
+        'customer':        shipment_payload.get('customer') or (existing_quote and existing_quote.get('customer')) or user_email,
         'city':            origin_city,
         'laneCode':        f"{origin_gw.get('code','?')} → {dest_gw.get('code','?')}" if origin_gw and dest_gw else '',
         'laneName':        f"{origin_city} → {dest_city}",
@@ -122,15 +178,15 @@ def _assemble_quote(shipment_id, user_email, shipment_payload,
         'basis':           rule_result.get('units_label', ''),
         'transit':         shipment_payload.get('transit', ''),
         'indicativeTotal': final_total,
-        'status':          'QUOTED',
-        'pipeline_status': STATUS_QUOTED,
-        'created':         shipment_payload.get('created') or now_str,
-        'created_at':      now_str,
+        'status':          effective_status,
+        'pipeline_status': effective_pipe_status,
+        'created':         shipment_payload.get('created') or (existing_quote and existing_quote.get('created')) or now_str,
+        'created_at':      (existing_quote and existing_quote.get('created_at')) or now_str,
 
         # ── M1 outputs ──────────────────────────────────────────────────────
         'm1_route': {
-            'routes':              route_result.get('routes', []),
-            'recommended_carrier': next((r['carrier'] for r in route_result.get('routes', []) if r.get('recommended')), None),
+            'routes':              final_routes,
+            'recommended_carrier': next((r['carrier'] for r in final_routes if r.get('recommended')), None),
             'origin_code':         route_result.get('originCode'),
             'dest_code':           route_result.get('destCode'),
         },
@@ -141,7 +197,7 @@ def _assemble_quote(shipment_id, user_email, shipment_payload,
             'thc_amount':       rule_result['thc_amount'],
             'doc_fee':          rule_result['doc_fee'],
             'margin_amount':    rule_result['margin_amount'],
-            'cost_breakdown':   rule_result['cost_breakdown'],
+            'cost_breakdown':   cost_breakdown,
         },
 
         # ── M2 outputs ──────────────────────────────────────────────────────
@@ -194,7 +250,7 @@ def _assemble_quote(shipment_id, user_email, shipment_payload,
         # ── Quote Engine final decision ──────────────────────────────────────
         'quote_engine': {
             'final_price':          final_total,
-            'price_source':         'ML_LIGHTGBM' if ml_result.get('is_model_loaded') and ml_conf in ('HIGH','MEDIUM') else 'RULE_BASED',
+            'price_source':         'CUSTOMER_LOCKED' if submitted_total else ('ML_LIGHTGBM' if ml_result.get('is_model_loaded') and ml_conf in ('HIGH','MEDIUM') else 'RULE_BASED'),
             'risk_adjusted':        risk_result.get('risk_level', 'LOW') in ('HIGH', 'CRITICAL'),
             'requires_agent_review': (
                 risk_result.get('risk_level', 'LOW') in ('HIGH', 'CRITICAL') or
@@ -208,13 +264,16 @@ def _assemble_quote(shipment_id, user_email, shipment_payload,
             'originGw':      origin_gw or {},
             'destGw':        dest_gw or {},
             'grossWeightKg': shipment_payload.get('weight', 0),
-            'routes':        route_result.get('routes', []),
-            'costBreakdown': rule_result['cost_breakdown'],
+            'routes':        final_routes,
+            'costBreakdown': cost_breakdown,
         },
 
         # ── Lifecycle ────────────────────────────────────────────────────────
-        'agent_review':       None,
-        'customer_decision':  None,
+        'agent_review':                agent_review,
+        'customs_review':              customs_review,
+        'customer_decision':           customer_decision,
+        'selected_route':              selected_route,
+        'customer_uploaded_documents': uploaded_docs,
     }
 
     # Persist to MongoDB and in-memory cache
@@ -276,27 +335,39 @@ def run_quote_pipeline(shipment_id, shipment_payload, user_email=''):
     _update_shipment_status(shipment_id, STATUS_PROCESSING)
     logs.append(f"[{now.isoformat()}] Pipeline started. Shipment: {shipment_id} | Route: {origin_code}→{dest_code}")
 
-    # ── M1: ROUTE AGENT ───────────────────────────────────────────────────────
-    from apps.routing.route_agent import build_route_options
-    rule_indicative = (24000 + distance_nm * 12) * container_count
-    routes = build_route_options(
-        origin_code=origin_code,
-        dest_code=dest_code,
-        mode=mode,
-        indicative_total=rule_indicative,
-        is_hazardous=bool(shipment_payload.get('is_hazardous', False)),
-        is_temp=bool(shipment_payload.get('is_temp_controlled', False)),
-    )
-    route_result = {'originCode': origin_code, 'destCode': dest_code, 'routes': routes}
-    rec_carrier  = next((r['carrier'] for r in routes if r.get('recommended')), 'Maersk')
-    logs.append(f"[M1-ROUTE] {len(routes)} carrier options found. Recommended: {rec_carrier}")
-
-    # ── M1: RULE PRICING ──────────────────────────────────────────────────────
+    # ── M1: RULE PRICING (compute FIRST so true commercial sell price is available) ────
     rule_result = _compute_rule_price(
         origin_code, dest_code, mode,
         weight_kg, volume_cbm, container_count, container_type, distance_nm
     )
     logs.append(f"[M1-PRICE] Rule-based sell price: ₹{rule_result['final_sell_price']:,} (Base: ₹{rule_result['base_rate']:,})")
+
+    # ── M1: ROUTE AGENT ───────────────────────────────────────────────────────
+    # If shipment payload or existing quote already has routes, preserve them!
+    submitted_routes = (
+        shipment_payload.get('details', {}).get('routes') or
+        shipment_payload.get('routes')
+    )
+    if submitted_routes and len(submitted_routes) > 0:
+        routes = submitted_routes
+        logs.append(f"[M1-ROUTE] Using {len(routes)} submitted route options from customer quotation.")
+    else:
+        from apps.routing.route_agent import build_route_options
+        # Use full commercial sell price as indicative base so carrier options are fully priced
+        rule_indicative = rule_result['final_sell_price']
+        routes = build_route_options(
+            origin_code=origin_code,
+            dest_code=dest_code,
+            mode=mode,
+            indicative_total=rule_indicative,
+            is_hazardous=bool(shipment_payload.get('is_hazardous', False)),
+            is_temp=bool(shipment_payload.get('is_temp_controlled', False)),
+        )
+        logs.append(f"[M1-ROUTE] {len(routes)} carrier options generated.")
+    
+    route_result = {'originCode': origin_code, 'destCode': dest_code, 'routes': routes}
+    rec_carrier  = next((r['carrier'] for r in routes if r.get('recommended')), 'Maersk')
+    logs.append(f"[M1-ROUTE] Active carrier: {rec_carrier}")
 
     # ── M2: ML PRICING AGENT (LightGBM) ───────────────────────────────────────
     from apps.ml_pricing.model import predict_freight_price_ml

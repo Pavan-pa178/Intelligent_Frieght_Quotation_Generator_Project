@@ -284,7 +284,7 @@ export default function Ship() {
 
   const [submitting, setSubmitting] = useState(false)
   const [isCalculating, setIsCalculating] = useState(false)
-  const [calcCountdown, setCalcCountdown] = useState(30)
+  const [calcCountdown, setCalcCountdown] = useState(15)
   const [hasCalculated, setHasCalculated] = useState(false)
 
   // 30-second computation countdown
@@ -313,7 +313,7 @@ export default function Ship() {
   useEffect(() => {
     setHasCalculated(false)
     setIsCalculating(false)
-    setCalcCountdown(30)
+    setCalcCountdown(15)
   }, [originGw, destGw, mode, loadType, cargo, readyDate])
 
   const handleStartCalculation = () => {
@@ -333,7 +333,7 @@ export default function Ship() {
     }
 
     setIsCalculating(true)
-    setCalcCountdown(30)
+    setCalcCountdown(15)
     setHasCalculated(false)
   }
 
@@ -445,10 +445,11 @@ export default function Ship() {
     const tn = `PORT-${Math.floor(10000 + Math.random() * 89999)}-${destGw.countryCode || 'IN'}`
 
     const quoteUserEmail = (user?.email || email || 'customer@portline.in').trim().toLowerCase()
+    const quoteCompany = (user?.company || companyName.trim() || 'Shipper').trim()
     const quoteRecord = {
       id: quoteId,
       user_email: quoteUserEmail,
-      customer: user?.company || user?.name || companyName.trim(),
+      customer: quoteCompany,
       city: originGw.city,
       laneCode: `${originGw.code} → ${destGw.code}`,
       laneName: `${originGw.city} → ${destGw.city}`,
@@ -497,17 +498,18 @@ export default function Ship() {
 
     const shipmentRecord = {
       tn,
-      user_email: user?.email || 'customer@portline.in',
+      quote_id: quoteId,
+      user_email: quoteUserEmail,
       userName: user?.name || 'Shipper',
-      userCompany: user?.company || 'Company',
-      customer: user?.company || user?.name || 'Shipper',
+      userCompany: quoteCompany,
+      customer: quoteCompany,
       destinationContactName: fullName.trim(),
       destinationCompany: companyName.trim(),
       destinationEmail: email.trim(),
       from: `${originGw.city}, ${originGw.countryCode}`,
       to: `${destGw.city}, ${destGw.countryCode}`,
       service: quoteRecord.mode,
-      status: 'Booked',
+      status: 'Quotation Pending',
       weight: estimate.grossWeightKg,
       cost: estimate.totalAmount,
       destinationPhone: formattedPhone,
@@ -515,7 +517,8 @@ export default function Ship() {
       deliveryAddress: finalDelivery,
       date: new Date().toISOString().slice(0, 10),
       steps: [
-        { label: 'Booked', loc: `${originGw.city}, ${originGw.countryCode}`, ts: 'Just now', done: true, current: true },
+        { label: 'Quoted', loc: `${originGw.city}, ${originGw.countryCode}`, ts: 'Just now', done: true, current: true },
+        { label: 'Booking confirmed', loc: 'Customer Acceptance Desk', ts: 'Awaiting Sign-off', done: false },
         { label: 'Picked up', loc: originGw.name, ts: 'Pending', done: false },
         { label: 'In transit', loc: '—', ts: 'Pending', done: false },
         { label: 'Customs clearance', loc: destGw.name, ts: 'Pending', done: false },
@@ -547,6 +550,10 @@ export default function Ship() {
             container_type: cargo[0]?.container_type || '40HC',
             modeKey: mode.toLowerCase(),
             service: quoteRecord.mode,
+            indicativeTotal: estimate.totalAmount,
+            cost: estimate.totalAmount,
+            routes: estimate.routes,
+            details: quoteRecord.details,
           }).catch((pipeErr) => {
             console.warn('Pipeline run notice:', pipeErr?.message)
           })
@@ -1796,7 +1803,7 @@ export default function Ship() {
                       Ready to Generate Quotation
                     </h4>
                     <p className="text-xs text-slate-300 leading-relaxed mb-3">
-                      Fill in your shipment route, cargo and schedule details, then click below to trigger the 30-second AI route intelligence & pricing analysis.
+                      Fill in your shipment route, cargo and schedule details, then click below to trigger the AI route intelligence & pricing analysis.
                     </p>
                     <div className="grid grid-cols-2 gap-2 text-left bg-black/25 rounded-lg p-2.5 text-[11px] text-slate-300 font-mono">
                       <div>
@@ -1823,7 +1830,7 @@ export default function Ship() {
                   </button>
 
                   <div className="mt-4 text-[11px] leading-relaxed text-slate-400 text-center">
-                    Runs a 30s comprehensive multi-carrier tariff and transit time estimation.
+                    Runs a ~15s multi-carrier tariff and transit time estimation. Instant estimate also available.
                   </div>
                 </div>
               )}
@@ -1844,7 +1851,7 @@ export default function Ship() {
                   <div className="w-full bg-white/10 rounded-full h-2 mb-4 overflow-hidden">
                     <div
                       className="bg-gradient-to-r from-brand-orange to-amber-400 h-2 rounded-full transition-all duration-1000 ease-linear"
-                      style={{ width: `${Math.min(100, Math.round(((30 - calcCountdown) / 30) * 100))}%` }}
+                      style={{ width: `${Math.min(100, Math.round(((15 - calcCountdown) / 15) * 100))}%` }}
                     />
                   </div>
 
@@ -1856,24 +1863,24 @@ export default function Ship() {
                       </div>
                       <div className="min-w-0">
                         <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                          Analysis Pipeline (Stage {Math.min(5, Math.floor((30 - calcCountdown) / 6) + 1)}/5)
+                          Analysis Pipeline (Stage {Math.min(5, Math.floor((15 - calcCountdown) / 3) + 1)}/5)
                         </div>
                         <div className="text-xs font-bold text-white truncate">
-                          {calcCountdown > 24 && "Route Intelligence Agent querying direct and transshipment schedules..."}
-                          {calcCountdown <= 24 && calcCountdown > 18 && "Calculating sea distance, dwell buffers and weather contingency..."}
-                          {calcCountdown <= 18 && calcCountdown > 12 && "Computing base tariffs, BAF adjustments and Terminal Handling Charges..."}
-                          {calcCountdown <= 12 && calcCountdown > 6 && "Checking corporate margin floor rules, currency conversion and discounts..."}
-                          {calcCountdown <= 6 && "Packaging formal quotation record with transit timeline and multi-route comparisons..."}
+                          {calcCountdown > 12 && "Route Intelligence Agent querying direct and transshipment schedules..."}
+                          {calcCountdown <= 12 && calcCountdown > 9 && "Calculating sea distance, dwell buffers and weather contingency..."}
+                          {calcCountdown <= 9 && calcCountdown > 6 && "Computing base tariffs, BAF adjustments and Terminal Handling Charges..."}
+                          {calcCountdown <= 6 && calcCountdown > 3 && "Checking corporate margin floor rules, currency conversion and discounts..."}
+                          {calcCountdown <= 3 && "Packaging formal quotation record with transit timeline and multi-route comparisons..."}
                         </div>
                       </div>
                     </div>
 
                     <p className="text-[11px] text-slate-300 leading-relaxed font-sans mt-2 border-t border-white/10 pt-2">
-                      {calcCountdown > 24 && "Route Intelligence Agent querying direct and transshipment schedules..."}
-                      {calcCountdown <= 24 && calcCountdown > 18 && "Calculating sea distance, dwell buffers and weather contingency..."}
-                      {calcCountdown <= 18 && calcCountdown > 12 && "Computing base tariffs, BAF adjustments and Terminal Handling Charges..."}
-                      {calcCountdown <= 12 && calcCountdown > 6 && "Checking corporate margin floor rules, currency conversion and discounts..."}
-                      {calcCountdown <= 6 && "Packaging formal quotation record with transit timeline and multi-route comparisons..."}
+                      {calcCountdown > 12 && "Route Intelligence Agent querying direct and transshipment schedules..."}
+                      {calcCountdown <= 12 && calcCountdown > 9 && "Calculating sea distance, dwell buffers and weather contingency..."}
+                      {calcCountdown <= 9 && calcCountdown > 6 && "Computing base tariffs, BAF adjustments and Terminal Handling Charges..."}
+                      {calcCountdown <= 6 && calcCountdown > 3 && "Checking corporate margin floor rules, currency conversion and discounts..."}
+                      {calcCountdown <= 3 && "Packaging formal quotation record with transit timeline and multi-route comparisons..."}
                     </p>
                   </div>
 
@@ -1881,36 +1888,44 @@ export default function Ship() {
                   <div className="space-y-1.5 text-[11px] font-mono text-slate-300 border-t border-white/10 pt-3">
                     <div className="flex justify-between">
                       <span>1. Route & Vessel Matching</span>
-                      <span className={calcCountdown <= 24 ? 'text-emerald-400 font-bold' : 'text-amber-400'}>
-                        {calcCountdown <= 24 ? 'Done' : 'Analyzing...'}
+                      <span className={calcCountdown <= 12 ? 'text-emerald-400 font-bold' : 'text-amber-400'}>
+                        {calcCountdown <= 12 ? 'Done' : 'Analyzing...'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>2. Transit Time Modeling</span>
-                      <span className={calcCountdown <= 18 ? 'text-emerald-400 font-bold' : calcCountdown <= 24 ? 'text-amber-400' : 'text-slate-500'}>
-                        {calcCountdown <= 18 ? 'Done' : calcCountdown <= 24 ? 'Analyzing...' : 'Queued'}
+                      <span className={calcCountdown <= 9 ? 'text-emerald-400 font-bold' : calcCountdown <= 12 ? 'text-amber-400' : 'text-slate-500'}>
+                        {calcCountdown <= 9 ? 'Done' : calcCountdown <= 12 ? 'Analyzing...' : 'Queued'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>3. 5-Layer Cost Tariffs</span>
-                      <span className={calcCountdown <= 12 ? 'text-emerald-400 font-bold' : calcCountdown <= 18 ? 'text-amber-400' : 'text-slate-500'}>
-                        {calcCountdown <= 12 ? 'Done' : calcCountdown <= 18 ? 'Analyzing...' : 'Queued'}
+                      <span className={calcCountdown <= 6 ? 'text-emerald-400 font-bold' : calcCountdown <= 9 ? 'text-amber-400' : 'text-slate-500'}>
+                        {calcCountdown <= 6 ? 'Done' : calcCountdown <= 9 ? 'Analyzing...' : 'Queued'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>4. Margin & Compliance</span>
-                      <span className={calcCountdown <= 6 ? 'text-emerald-400 font-bold' : calcCountdown <= 12 ? 'text-amber-400' : 'text-slate-500'}>
-                        {calcCountdown <= 6 ? 'Done' : calcCountdown <= 12 ? 'Analyzing...' : 'Queued'}
+                      <span className={calcCountdown <= 3 ? 'text-emerald-400 font-bold' : calcCountdown <= 6 ? 'text-amber-400' : 'text-slate-500'}>
+                        {calcCountdown <= 3 ? 'Done' : calcCountdown <= 6 ? 'Analyzing...' : 'Queued'}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>5. Final Quotation Compilation</span>
-                      <span className={calcCountdown === 0 ? 'text-emerald-400 font-bold' : calcCountdown <= 6 ? 'text-amber-400' : 'text-slate-500'}>
-                        {calcCountdown === 0 ? 'Done' : calcCountdown <= 6 ? 'Finalizing...' : 'Queued'}
+                      <span className={calcCountdown === 0 ? 'text-emerald-400 font-bold' : calcCountdown <= 3 ? 'text-amber-400' : 'text-slate-500'}>
+                        {calcCountdown === 0 ? 'Done' : calcCountdown <= 3 ? 'Finalizing...' : 'Queued'}
                       </span>
                     </div>
                   </div>
 
+                  {/* Skip / Use instant estimate */}
+                  <button
+                    type="button"
+                    onClick={() => { setIsCalculating(false); setCalcCountdown(0); setHasCalculated(true) }}
+                    className="mt-4 w-full rounded-lg border border-white/10 bg-white/5 py-2 text-[11px] font-mono text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    ⚡ Skip animation — use instant estimate
+                  </button>
 
                 </div>
               )}
@@ -1926,7 +1941,7 @@ export default function Ship() {
                       onClick={handleStartCalculation}
                       className="text-[11px] font-mono text-slate-400 hover:text-white underline"
                     >
-                      Recalculate (30s)
+                      Recalculate (15s)
                     </button>
                   </div>
 
@@ -2005,9 +2020,16 @@ export default function Ship() {
                     type="button"
                     disabled={submitting}
                     onClick={handleSubmitQuote}
-                    className="mt-6 w-full rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight py-3.5 font-display text-[15px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(217,80,10,.55)] transition-transform hover:-translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="mt-6 w-full rounded-[10px] bg-gradient-to-br from-brand-orange to-brand-orangeLight py-3.5 font-display text-[15px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(217,80,10,.55)] transition-transform hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {submitting ? 'Saving Quotation?' : 'Generate full quotation ?'}
+                    {submitting ? (
+                      <>
+                        <span className="inline-block h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        Generating Quotation...
+                      </>
+                    ) : (
+                      'Generate Full Quotation'
+                    )}
                   </button>
 
                   <div className="mt-4 text-[11px] leading-relaxed text-slate-400">

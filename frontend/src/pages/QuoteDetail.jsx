@@ -73,6 +73,7 @@ export default function QuoteDetail() {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState({})
   const [isUploading, setIsUploading] = useState(false)
+  const [selectingRouteId, setSelectingRouteId] = useState(null)
 
   const isAgentOrAdmin = 
     user?.role === 'agent' || 
@@ -413,16 +414,22 @@ export default function QuoteDetail() {
       toast('Route selection is locked because this quotation has already been approved.')
       return
     }
+
+    setSelectingRouteId(route.id)
+    // Optimistic UI: update selected route and indicativeTotal immediately
+    setQuote(prev => ({
+      ...prev,
+      selected_route: route,
+      indicativeTotal: route.cost || prev.indicativeTotal
+    }))
+
     try {
       await selectQuoteRoute(quote.id, route, user?.email || quote.user_email)
-      setQuote(prev => ({
-        ...prev,
-        selected_route: route,
-        indicativeTotal: route.cost || prev.indicativeTotal
-      }))
       toast(`Route selected: ${route.carrier} (${route.transitDays}d) — ₹${(route.cost || 0).toLocaleString('en-IN')}. Route request logged.`)
     } catch (err) {
-      toast(`Route selection failed: ${err.message}`)
+      toast(`Route selection notice: ${err.message}`)
+    } finally {
+      setSelectingRouteId(null)
     }
   }
 
@@ -1110,15 +1117,24 @@ export default function QuoteDetail() {
                               ) : (
                                 <button
                                   type="button"
-                                  disabled={quote.status === 'Accepted' || agentApproved}
+                                  disabled={quote.status === 'Accepted' || agentApproved || Boolean(selectingRouteId)}
                                   onClick={() => handleSelectRoute(r)}
-                                  className={`rounded-lg px-3.5 py-2 text-xs font-bold shadow-xs transition-colors ${
+                                  className={`rounded-lg px-3.5 py-2 text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 ${
                                     quote.status === 'Accepted' || agentApproved
                                       ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                                      : 'bg-brand-navy text-white hover:bg-brand-marine'
+                                      : selectingRouteId === r.id
+                                        ? 'bg-brand-marine text-white cursor-wait'
+                                        : 'bg-brand-navy text-white hover:bg-brand-marine'
                                   }`}
                                 >
-                                  Select Route
+                                  {selectingRouteId === r.id ? (
+                                    <>
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                      Selecting...
+                                    </>
+                                  ) : (
+                                    'Select Route'
+                                  )}
                                 </button>
                               )}
                             </div>

@@ -1,4 +1,4 @@
-import { seedShipments, seedQuotes, routeAnalytics, demoUser, adminUser, agentUser, customsOfficerUser, agentOperatorUser, managerUser, RATES } from './mockData'
+import { seedShipments, seedQuotes, routeAnalytics, demoUser, globalShipperUser, adminUser, agentUser, customsOfficerUser, agentOperatorUser, managerUser, RATES, DEMO_QUOTES, DEMO_EMAIL_LIST } from './mockData'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://freightquote-api.onrender.com' : '')
 export const MOCK_MODE = false
@@ -72,9 +72,11 @@ export const BUILTIN_USERS = {
   'customs@portline.in': { password: '***REMOVED***', user: customsOfficerUser },
   'agentop@portline.in': { password: '***REMOVED***', user: agentOperatorUser },
   'manager@portline.in': { password: '***REMOVED***', user: managerUser },
+  // Demo customer accounts — each has its own isolated user object
   'demo@portline.in': { password: '***REMOVED***', user: demoUser },
   'ravi@sharmatextiles.in': { password: '***REMOVED***', user: demoUser },
-  'hello1@gmail.com': { password: '***REMOVED***', user: { ...demoUser, name: 'Hello Shipper', email: 'hello1@gmail.com' } },
+  // Production test accounts — completely separate from demo personas
+  'hello1@gmail.com': { password: '***REMOVED***', user: globalShipperUser },
 }
 
 function getStoredUsers() {
@@ -604,28 +606,46 @@ export function resolveEffectiveQuoteStatus(q) {
   const agentStatus = (q.agent_review?.status || '').toLowerCase()
   const customsStatus = (q.customs_review?.status || '').toLowerCase()
 
+  // 1. Customer accepted / booked — highest priority
   if (rawStatusUpper === 'ACCEPTED' || custDec === 'ACCEPTED' || pipeStatus === 'ACCEPTED' || rawStatusUpper === 'BOOKED') {
     return 'Accepted'
   }
-  if (rawStatusUpper.includes('REJECT') || custDec === 'REJECTED' || agentStatus === 'rejected' || customsStatus === 'rejected') {
+  // 2. Any rejection at any stage
+  if (
+    rawStatusUpper.includes('REJECT') ||
+    custDec === 'REJECTED' ||
+    agentStatus === 'rejected' ||
+    customsStatus === 'rejected'
+  ) {
     return rawStatus || 'Rejected'
   }
-  if (customsStatus === 'approved' || pipeStatus === 'CUSTOMS_APPROVED') {
+  // 3. Customs fully approved
+  if (customsStatus === 'approved' || pipeStatus === 'CUSTOMS_APPROVED' || rawStatusUpper === 'APPROVED') {
     return 'Approved'
   }
-  if (rawStatusUpper.includes('DOCUMENT') || rawStatusUpper.includes('DOC') || q.customs_document_request?.status === 'REQUESTED' || pipeStatus === 'CUSTOMS_DOCS_REQUESTED') {
-    return 'Documents Requested'
+  // 4. Customs has requested documents
+  if (
+    rawStatusUpper.includes('DOCUMENT') ||
+    rawStatusUpper.includes('DOC') ||
+    pipeStatus === 'CUSTOMS_DOCS_REQUESTED' ||
+    pipeStatus === 'DOCS_SUBMITTED' ||
+    q.customs_document_request?.status === 'REQUESTED'
+  ) {
+    return rawStatus.includes('Submitted') ? rawStatus : 'Documents Requested'
   }
+  // 5. Agent approved — must come BEFORE the generic draft fallback
   if (agentStatus === 'approved' || pipeStatus === 'AGENT_APPROVED' || rawStatusUpper === 'AGENT APPROVED') {
     return 'Agent Approved'
   }
-  if (rawStatusUpper === 'APPROVED' && (customsStatus === 'approved' || pipeStatus === 'CUSTOMS_APPROVED')) {
-    return 'Approved'
-  }
-  return rawStatus || 'Draft'
+  // 6. Fallback to Draft for initial QUOTED or empty
+  if (rawStatusUpper === 'QUOTED' || !rawStatus) return 'Draft'
+  return rawStatus
 }
 
 export async function fetchQuotes(email) {
+  const emailLower = (email || '').trim().toLowerCase()
+  const isDemoEmail = emailLower && DEMO_EMAIL_LIST.some(d => d.toLowerCase() === emailLower)
+
   let remoteList = null
   let remoteSuccess = false
 
@@ -643,18 +663,24 @@ export async function fetchQuotes(email) {
   }
 
   if (remoteSuccess && remoteList !== null) {
-    const resolvedRemote = remoteList.map(q => ({
+    let resolvedRemote = remoteList.map(q => ({
       ...q,
       status: resolveEffectiveQuoteStatus(q)
     }))
 
-    // Sync localStorage: remove any deleted quotes for this user, preserve other accounts and update remote
+    // For demo accounts: merge hardcoded demo quotes that aren't already in backend results
+    if (isDemoEmail) {
+      const remoteIds = new Set(resolvedRemote.map(r => (r.id || '').toUpperCase()))
+      const missingDemoQuotes = DEMO_QUOTES
+        .filter(dq => dq.user_email.toLowerCase() === emailLower && !remoteIds.has((dq.id || '').toUpperCase()))
+        .map(dq => ({ ...dq, status: resolveEffectiveQuoteStatus(dq) }))
+      resolvedRemote = [...resolvedRemote, ...missingDemoQuotes]
+    }
+
+    // Sync localStorage: remove deleted quotes for this user, preserve other accounts
     try {
       const saved = getSavedQuotes()
       if (email) {
-        const emailLower = email.trim().toLowerCase()
-        const remoteIds = new Set(resolvedRemote.map(r => (r.id || '').trim().toUpperCase()))
-        // Keep quotes belonging to other accounts, plus the valid remote quotes for this user
         const otherUsersQuotes = saved.filter(s => (s.user_email || '').trim().toLowerCase() !== emailLower)
         const updatedLocal = [...otherUsersQuotes, ...resolvedRemote]
         localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updatedLocal))
@@ -668,13 +694,21 @@ export async function fetchQuotes(email) {
 
   // Fallback to local storage ONLY if backend is offline or unreachable
   const localList = getSavedQuotes()
-  const resolvedLocal = localList.map(q => ({
+  let resolvedLocal = localList.map(q => ({
     ...q,
     status: resolveEffectiveQuoteStatus(q)
   }))
 
+  // For demo accounts in offline mode: merge hardcoded demo quotes
+  if (isDemoEmail) {
+    const localIds = new Set(resolvedLocal.map(r => (r.id || '').toUpperCase()))
+    const missingDemoQuotes = DEMO_QUOTES
+      .filter(dq => dq.user_email.toLowerCase() === emailLower && !localIds.has((dq.id || '').toUpperCase()))
+      .map(dq => ({ ...dq, status: resolveEffectiveQuoteStatus(dq) }))
+    resolvedLocal = [...resolvedLocal, ...missingDemoQuotes]
+  }
+
   if (email) {
-    const emailLower = email.trim().toLowerCase()
     return resolvedLocal.filter(q => (q.user_email || '').trim().toLowerCase() === emailLower)
   }
 
@@ -701,7 +735,18 @@ export async function deleteQuote(id) {
 }
 
 export async function clearAllQuotes() {
-  localStorage.removeItem(QUOTES_STORAGE_KEY)
+  // Wipe non-demo quotes from localStorage, preserve demo seed quotes
+  try {
+    const saved = getSavedQuotes()
+    const demoProtected = saved.filter(q => q._isDemo === true)
+    if (demoProtected.length > 0) {
+      localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(demoProtected))
+    } else {
+      localStorage.removeItem(QUOTES_STORAGE_KEY)
+    }
+  } catch {
+    localStorage.removeItem(QUOTES_STORAGE_KEY)
+  }
   localStorage.removeItem('portline_agent_actions')
   localStorage.removeItem('portline_agent_messages')
   localStorage.removeItem('portline_customs_cases')
@@ -859,6 +904,36 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
     const targetQid = (quoteId || '').trim().toUpperCase()
     const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? { ...q, customer_decision: record, status, pipeline_status: status.toUpperCase() } : q)
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+
+    // Also sync linked shipment in user's localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('portline_shipments_')) {
+        try {
+          const raw = localStorage.getItem(k)
+          if (raw) {
+            const shps = JSON.parse(raw)
+            if (Array.isArray(shps)) {
+              let changed = false
+              const mapped = shps.map(s => {
+                if (s.quote_id === quoteId || s.quoteId === quoteId) {
+                  changed = true
+                  return {
+                    ...s,
+                    status: decision === 'accepted' ? 'Booked' : 'Cancelled',
+                    pipeline_status: decision === 'accepted' ? 'CONFIRMED' : 'CANCELLED'
+                  }
+                }
+                return s
+              })
+              if (changed) {
+                localStorage.setItem(k, JSON.stringify(mapped))
+              }
+            }
+          }
+        } catch {}
+      }
+    }
   } catch {}
 
   if (MOCK_MODE) {
@@ -889,6 +964,36 @@ export async function selectQuoteRoute(quoteId, route, requestedBy = '') {
       route_approval_status: 'PENDING_APPROVAL'
     } : q)
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+
+    // Also sync linked shipment cost and carrier in user's localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('portline_shipments_')) {
+        try {
+          const raw = localStorage.getItem(k)
+          if (raw) {
+            const shps = JSON.parse(raw)
+            if (Array.isArray(shps)) {
+              let changed = false
+              const mapped = shps.map(s => {
+                if (s.quote_id === quoteId || s.quoteId === quoteId) {
+                  changed = true
+                  return {
+                    ...s,
+                    carrier: route.carrier,
+                    cost: route.cost || s.cost
+                  }
+                }
+                return s
+              })
+              if (changed) {
+                localStorage.setItem(k, JSON.stringify(mapped))
+              }
+            }
+          }
+        } catch {}
+      }
+    }
   } catch {}
 
   if (MOCK_MODE) {

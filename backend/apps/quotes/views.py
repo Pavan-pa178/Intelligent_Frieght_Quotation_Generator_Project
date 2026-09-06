@@ -250,6 +250,21 @@ class QuoteRouteSelectView(APIView):
                 update_fields['indicativeTotal'] = cost
 
             _update_quote_anywhere(qid, update_fields)
+
+            # Sync linked shipment cost and carrier
+            shipments_col = get_collection('shipments')
+            if shipments_col is not None:
+                shipment_update = {'carrier': route.get('carrier')}
+                if cost:
+                    shipment_update['cost'] = cost
+                query_clauses = [{'quote_id': qid}, {'quoteId': qid}]
+                q = _find_quote_anywhere(qid)
+                if q and q.get('shipment_id'):
+                    query_clauses.append({'shipment_id': q.get('shipment_id')})
+                shipments_col.update_many(
+                    {'$or': query_clauses},
+                    {'$set': shipment_update}
+                )
         except Exception as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -460,11 +475,15 @@ class QuoteCustomerDecisionView(APIView):
             })
             # If shipment linked, update shipment too
             shipments_col = get_collection('shipments')
-            if shipments_col is not None and q and q.get('shipment_id'):
-                shipment_status = 'Confirmed' if decision == 'accepted' else 'Cancelled'
-                shipments_col.update_one(
-                    {'shipment_id': q.get('shipment_id')},
-                    {'$set': {'status': shipment_status, 'pipeline_status': shipment_status.upper()}}
+            if shipments_col is not None and q:
+                shipment_status = 'Booked' if decision == 'accepted' else 'Cancelled'
+                pipe_status = 'CONFIRMED' if decision == 'accepted' else 'CANCELLED'
+                query_clauses = [{'quote_id': qid}, {'quoteId': qid}]
+                if q.get('shipment_id'):
+                    query_clauses.append({'shipment_id': q.get('shipment_id')})
+                shipments_col.update_many(
+                    {'$or': query_clauses},
+                    {'$set': {'status': shipment_status, 'pipeline_status': pipe_status}}
                 )
         except Exception as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

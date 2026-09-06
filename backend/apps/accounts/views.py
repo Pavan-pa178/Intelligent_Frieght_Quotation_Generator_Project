@@ -70,11 +70,12 @@ class LoginView(APIView):
                 user_obj.save()
                 UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'admin', 'company': 'PORTLINE Operations'})
                 user = user_obj
-            elif email == 'agent@portline.in' and password in ['***REMOVED***', 'agent', 'password']:
-                user_obj, _ = User.objects.get_or_create(username='agent@portline.in', defaults={'email': 'agent@portline.in', 'first_name': 'Arjun', 'last_name': 'Agent'})
+            elif (email == 'agent@portline.in' or (email.startswith('agent.') and email.endswith('@portline.in'))) and password in ['***REMOVED***', 'agent', 'password']:
+                desk_label = email.split('@')[0].replace('agent.', '').replace('agent', '').strip('.').upper() or 'General'
+                user_obj, _ = User.objects.get_or_create(username=email, defaults={'email': email, 'first_name': desk_label, 'last_name': 'Agent'})
                 user_obj.set_password('***REMOVED***')
                 user_obj.save()
-                UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'agent', 'company': 'PORTLINE Logistics'})
+                UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'agent', 'company': f'PORTLINE {desk_label} Desk'})
                 user = user_obj
             elif email == 'customs@portline.in' and password in ['***REMOVED***', 'customs', 'password']:
                 user_obj, _ = User.objects.get_or_create(username='customs@portline.in', defaults={'email': 'customs@portline.in', 'first_name': 'Rajesh', 'last_name': 'Kumar'})

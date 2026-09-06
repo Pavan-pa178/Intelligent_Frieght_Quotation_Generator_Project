@@ -16,7 +16,7 @@ import {
   adminCreateUser, adminUpdateUser, adminDeleteUser,
   agentActionOnQuote, clearAllQuotes, deleteQuote
 } from '../lib/api'
-import { routeAnalytics } from '../lib/mockData'
+import { routeAnalytics, resolveAssignedAgent } from '../lib/mockData'
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -32,10 +32,10 @@ function getAgentDisplayName(agent) {
   if (!agent || agent === 'Unassigned' || agent === 'unassigned') return 'Unassigned'
   if (agent.includes('@')) {
     const prefix = agent.split('@')[0].toLowerCase()
-    if (prefix === 'agent') return 'Rajesh Kumar'
-    if (prefix === 'agentop') return 'Alex Chen'
-    if (prefix === 'customs') return 'Kavita Menon'
-    if (prefix === 'admin') return 'Priya Sharma'
+    if (prefix === 'agent') return 'Arjun Agent'
+    if (prefix === 'agentop') return 'Suresh Varma'
+    if (prefix === 'customs') return 'Inspector Rajesh Kumar'
+    if (prefix === 'admin') return 'Priya Admin'
     return prefix.charAt(0).toUpperCase() + prefix.slice(1)
   }
   return agent
@@ -873,7 +873,9 @@ export default function Admin() {
                   </thead>
                   <tbody className="divide-y divide-brand-line/50">
                     {filteredQuotes.map(q => {
-                      const agentName = getAgentDisplayName(q.assigned_agent)
+                      // Resolve agent from carrier-based routing map
+                      const assignedAgent = resolveAssignedAgent(q)
+                      const agentDisplayName = q.agent_review?.agent_name || assignedAgent.name
                       return (
                         <tr key={q.id} className="hover:bg-brand-cloud/30 transition-colors">
                           <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-marine whitespace-nowrap">{q.id}</td>
@@ -890,10 +892,9 @@ export default function Admin() {
                             <StatusBadge status={q.status || 'Draft'} />
                           </td>
                           <td className="px-4 py-3 text-xs">
-                            {agentName !== 'Unassigned' ? (
-                              <span className="font-medium text-brand-navy">{agentName}</span>
-                            ) : (
-                              <span className="text-brand-slateLight italic">Unassigned</span>
+                            <div className="font-medium text-brand-navy leading-snug">{agentDisplayName}</div>
+                            {assignedAgent.short && (
+                              <div className="text-[10px] text-brand-slateLight">{assignedAgent.short}</div>
                             )}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
