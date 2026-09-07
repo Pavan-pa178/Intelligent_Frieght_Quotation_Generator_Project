@@ -19,11 +19,11 @@ class ShipmentListCreateView(APIView):
                 db_shipments = list(col.find(query, {'_id': 0}))
                 if db_shipments:
                     return Response(db_shipments)
-                elif user_email and user_email != 'demo@portline.in':
+                elif user_email and user_email not in ['demo@portline.in', 'customer.demo@portline.in', 'shipper.demo@portline.in']:
                     return Response([])
         except Exception:
             pass
-        if user_email and user_email != 'demo@portline.in':
+        if user_email and user_email not in ['demo@portline.in', 'customer.demo@portline.in', 'shipper.demo@portline.in']:
             return Response([])
         return Response([])
 

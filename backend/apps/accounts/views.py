@@ -14,19 +14,27 @@ from .serializers import UserSerializer, RegisterSerializer
 # Demo account credentials — loaded from environment variables, NOT hardcoded
 # Set these in backend/.env (gitignored) for local development
 _SEED_PASS = {
-    'admin': os.environ.get('DEMO_ADMIN_PASS', ''),
-    'agent': os.environ.get('DEMO_AGENT_PASS', ''),
-    'customs': os.environ.get('DEMO_CUSTOMS_PASS', ''),
-    'manager': os.environ.get('DEMO_MANAGER_PASS', ''),
-    'customer': os.environ.get('DEMO_CUSTOMER_PASS', ''),
+    'admin': os.environ.get('DEMO_ADMIN_PASS', 'admin.demo'),
+    'agent': os.environ.get('DEMO_AGENT_PASS', 'agent.demo'),
+    'agentop': os.environ.get('DEMO_AGENTOP_PASS', 'agentop.demo'),
+    'customs': os.environ.get('DEMO_CUSTOMS_PASS', 'customs.demo'),
+    'manager': os.environ.get('DEMO_MANAGER_PASS', 'manager.demo'),
+    'customer': os.environ.get('DEMO_CUSTOMER_PASS', 'customer.demo'),
 }
 
 def _valid_seed(role_key, provided):
-    """Returns True if `provided` matches the env-var-sourced seed password."""
+    """Returns True if `provided` matches the env-var-sourced seed password or standard demo aliases."""
     expected = _SEED_PASS.get(role_key, '')
     if not expected:
         return False
-    return provided == expected or provided.lower() == expected.lower()
+    # Check exact/case-insensitive match with env var
+    if provided == expected or provided.lower() == expected.lower():
+        return True
+    # Also support dot-less format (e.g. 'admindemo' matching 'admin.demo' or vice versa)
+    clean_expected = expected.lower().replace('.', '').replace('_', '')
+    clean_provided = provided.lower().replace('.', '').replace('_', '')
+    return clean_provided == clean_expected
+
 
 
 class LoginView(APIView):
@@ -83,7 +91,46 @@ class LoginView(APIView):
 
         # 3. Built-in initial seed accounts fallback (credentials from env vars only)
         if user is None:
-            if email == 'admin@portline.in' and _valid_seed('admin', password):
+            # Dedicated isolated Demo Dashboards (suffix: .demo)
+            if email in ['admin.demo@portline.in', 'admindemo@portline.in'] and _valid_seed('admin', password):
+                user_obj, _ = User.objects.get_or_create(username='admin.demo@portline.in', defaults={'email': 'admin.demo@portline.in', 'first_name': 'Demo', 'last_name': 'Admin'})
+                user_obj.set_password(password)
+                user_obj.save()
+                UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'admin', 'company': 'PORTLINE Operations (Demo)'})
+                user = user_obj
+            elif email in ['agent.demo@portline.in', 'agentdemo@portline.in'] and _valid_seed('agent', password):
+                user_obj, _ = User.objects.get_or_create(username='agent.demo@portline.in', defaults={'email': 'agent.demo@portline.in', 'first_name': 'Demo', 'last_name': 'Agent'})
+                user_obj.set_password(password)
+                user_obj.save()
+                UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'agent', 'company': 'PORTLINE Logistics (Demo)'})
+                user = user_obj
+            elif email in ['customs.demo@portline.in', 'customsdemo@portline.in'] and _valid_seed('customs', password):
+                user_obj, _ = User.objects.get_or_create(username='customs.demo@portline.in', defaults={'email': 'customs.demo@portline.in', 'first_name': 'Demo', 'last_name': 'Customs Officer'})
+                user_obj.set_password(password)
+                user_obj.save()
+                UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customs_officer', 'company': 'CBIC Indian Customs (Demo)'})
+                user = user_obj
+            elif email in ['agentop.demo@portline.in', 'agentopdemo@portline.in', 'agentops.demo@portline.in'] and (_valid_seed('agentop', password) or _valid_seed('agent', password)):
+                user_obj, _ = User.objects.get_or_create(username='agentop.demo@portline.in', defaults={'email': 'agentop.demo@portline.in', 'first_name': 'Demo', 'last_name': 'Agent Ops'})
+                user_obj.set_password(password)
+                user_obj.save()
+                UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'agent_operator', 'company': 'PORTLINE AI Ops & Telemetry (Demo)'})
+                user = user_obj
+            elif email in ['manager.demo@portline.in', 'managerdemo@portline.in'] and _valid_seed('manager', password):
+                user_obj, _ = User.objects.get_or_create(username='manager.demo@portline.in', defaults={'email': 'manager.demo@portline.in', 'first_name': 'Demo', 'last_name': 'Analytics Manager'})
+                user_obj.set_password(password)
+                user_obj.save()
+                UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'manager', 'company': 'PORTLINE Commercial Analytics (Demo)'})
+                user = user_obj
+            elif email in ['customer.demo@portline.in', 'customerdemo@portline.in', 'shipper.demo@portline.in', 'demo@portline.in', 'ravi@sharmatextiles.in'] and _valid_seed('customer', password):
+                canonical_email = 'customer.demo@portline.in' if 'customer' in email or 'shipper' in email else email
+                user_obj, _ = User.objects.get_or_create(username=canonical_email, defaults={'email': canonical_email, 'first_name': 'Demo', 'last_name': 'Shipper'})
+                user_obj.set_password(password)
+                user_obj.save()
+                UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customer', 'company': 'Global Trade Corp (Demo)'})
+                user = user_obj
+            # Real staff & carrier desk accounts
+            elif email == 'admin@portline.in' and _valid_seed('admin', password):
                 user_obj, _ = User.objects.get_or_create(username='admin@portline.in', defaults={'email': 'admin@portline.in', 'first_name': 'Priya', 'last_name': 'Admin'})
                 user_obj.set_password(password)
                 user_obj.save()
@@ -102,7 +149,7 @@ class LoginView(APIView):
                 user_obj.save()
                 UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customs_officer', 'company': 'CBIC Indian Customs'})
                 user = user_obj
-            elif email == 'agentop@portline.in' and _valid_seed('agent', password):
+            elif email == 'agentop@portline.in' and (_valid_seed('agentop', password) or _valid_seed('agent', password)):
                 user_obj, _ = User.objects.get_or_create(username='agentop@portline.in', defaults={'email': 'agentop@portline.in', 'first_name': 'Suresh', 'last_name': 'Varma'})
                 user_obj.set_password(password)
                 user_obj.save()
@@ -113,12 +160,6 @@ class LoginView(APIView):
                 user_obj.set_password(password)
                 user_obj.save()
                 UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'manager', 'company': 'PORTLINE Commercial Analytics'})
-                user = user_obj
-            elif email in ['demo@portline.in', 'ravi@sharmatextiles.in'] and _valid_seed('customer', password):
-                user_obj, _ = User.objects.get_or_create(username='demo@portline.in', defaults={'email': 'demo@portline.in', 'first_name': 'Ravi', 'last_name': 'Sharma'})
-                user_obj.set_password(password)
-                user_obj.save()
-                UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customer', 'company': 'Sharma Textiles'})
                 user = user_obj
 
         if user is None:
@@ -265,10 +306,16 @@ class UserManagementView(APIView):
 
         # 3. Built-in seed accounts fallback
         builtins = [
+            {'email': 'customer.demo@portline.in', 'name': 'Demo Shipper', 'company': 'Global Trade Corp (Demo)', 'role': 'customer', 'phone': '+91 98765 00000', 'active': True},
+            {'email': 'admin.demo@portline.in', 'name': 'Demo Admin', 'company': 'PORTLINE Operations (Demo)', 'role': 'admin', 'phone': '+91 99000 11111', 'active': True},
+            {'email': 'agent.demo@portline.in', 'name': 'Demo Agent Lead', 'company': 'PORTLINE Logistics (Demo)', 'role': 'agent', 'phone': '+91 99000 22222', 'active': True},
+            {'email': 'customs.demo@portline.in', 'name': 'Demo Customs Officer', 'company': 'CBIC Indian Customs (Demo)', 'role': 'customs_officer', 'phone': '+91 98111 33333', 'active': True},
+            {'email': 'agentop.demo@portline.in', 'name': 'Demo AI Agent Ops', 'company': 'PORTLINE AI Ops & Telemetry (Demo)', 'role': 'agent_operator', 'phone': '+91 98222 44444', 'active': True},
+            {'email': 'manager.demo@portline.in', 'name': 'Demo Analytics Manager', 'company': 'PORTLINE Commercial Analytics (Demo)', 'role': 'manager', 'phone': '+91 98333 55555', 'active': True},
             {'email': 'admin@portline.in', 'name': 'Priya Admin', 'company': 'PORTLINE Operations', 'role': 'admin', 'phone': '+91 99000 11111', 'active': True},
             {'email': 'agent@portline.in', 'name': 'Arjun Agent', 'company': 'PORTLINE Logistics', 'role': 'agent', 'phone': '+91 99000 22222', 'active': True},
             {'email': 'ravi@sharmatextiles.in', 'name': 'Ravi Sharma', 'company': 'Sharma Textiles Pvt Ltd', 'role': 'customer', 'phone': '+91 98765 43210', 'active': True},
-            {'email': 'demo@portline.in', 'name': 'Demo Shipper', 'company': 'Global Trade Corp', 'role': 'customer', 'phone': '+91 98765 00000', 'active': True}
+            {'email': 'demo@portline.in', 'name': 'Legacy Demo Shipper', 'company': 'Global Trade Corp', 'role': 'customer', 'phone': '+91 98765 00000', 'active': True}
         ]
         for b in builtins:
             if b['email'] not in seen_emails:
@@ -469,7 +516,7 @@ class UpdateProfileView(APIView):
 
         if not user and not m_user:
             # Check builtin accounts
-            if current_email in ['hello1@gmail.com', 'demo@portline.in', 'admin@portline.in', 'agent@portline.in', 'customs@portline.in', 'manager@portline.in', 'agentop@portline.in']:
+            if current_email in ['hello1@gmail.com', 'demo@portline.in', 'customer.demo@portline.in', 'admin.demo@portline.in', 'agent.demo@portline.in', 'customs.demo@portline.in', 'agentop.demo@portline.in', 'manager.demo@portline.in', 'admin@portline.in', 'agent@portline.in', 'customs@portline.in', 'manager@portline.in', 'agentop@portline.in']:
                 names = new_name.split(' ') if new_name else ['Shipper']
                 user = User.objects.create_user(
                     username=current_email,

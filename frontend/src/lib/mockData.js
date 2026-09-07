@@ -61,6 +61,61 @@ export const managerUser = {
   since: 'October 2022',
 }
 
+// Dedicated Isolated Demo Dashboard Users
+export const customerDemoUser = {
+  name: 'Demo Shipper',
+  role: 'customer',
+  company: 'Global Trade Corp (Demo)',
+  email: 'customer.demo@portline.in',
+  phone: '+91 98765 00000',
+  since: 'January 2025',
+}
+
+export const adminDemoUser = {
+  name: 'Demo Admin',
+  role: 'admin',
+  company: 'PORTLINE Operations (Demo)',
+  email: 'admin.demo@portline.in',
+  phone: '+91 99000 11111',
+  since: 'March 2023',
+}
+
+export const agentDemoUser = {
+  name: 'Demo Agent Lead',
+  role: 'agent',
+  company: 'PORTLINE Logistics (Demo)',
+  email: 'agent.demo@portline.in',
+  phone: '+91 99000 22222',
+  since: 'June 2024',
+}
+
+export const customsDemoUser = {
+  name: 'Demo Customs Officer',
+  role: 'customs_officer',
+  company: 'CBIC Indian Customs (Demo)',
+  email: 'customs.demo@portline.in',
+  phone: '+91 98111 33333',
+  since: 'January 2023',
+}
+
+export const agentOperatorDemoUser = {
+  name: 'Demo AI Agent Ops',
+  role: 'agent_operator',
+  company: 'PORTLINE AI Ops & Telemetry (Demo)',
+  email: 'agentop.demo@portline.in',
+  phone: '+91 98222 44444',
+  since: 'May 2024',
+}
+
+export const managerDemoUser = {
+  name: 'Demo Analytics Manager',
+  role: 'manager',
+  company: 'PORTLINE Commercial Analytics (Demo)',
+  email: 'manager.demo@portline.in',
+  phone: '+91 98333 55555',
+  since: 'October 2022',
+}
+
 export const seedShipments = []
 
 export const RATES = {
@@ -94,13 +149,13 @@ export const routeAnalytics = {
 // demo@portline.in). These are hardcoded and NEVER wiped by Admin "Clear All".
 // They will not appear in production customer accounts.
 // ---------------------------------------------------------------------------
-export const DEMO_EMAIL_LIST = ['ravi@sharmatextiles.in', 'demo@portline.in']
+export const DEMO_EMAIL_LIST = ['customer.demo@portline.in', 'shipper.demo@portline.in', 'ravi@sharmatextiles.in', 'demo@portline.in']
 
 export const DEMO_QUOTES = [
   {
     id: 'QT-DEMO-00101',
     _isDemo: true,
-    user_email: 'ravi@sharmatextiles.in',
+    user_email: 'customer.demo@portline.in',
     customer: 'Sharma Textiles',
     city: 'Nhava Sheva',
     laneCode: 'INNSA → AEJEA',

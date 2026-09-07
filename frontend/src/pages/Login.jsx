@@ -197,13 +197,14 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={async () => {
+                    const email = ENV.VITE_DEMO_CUSTOMER_USER || 'customer.demo@portline.in'
                     const pw = ENV.VITE_DEMO_CUSTOMER_PASS || ''
-                    setSiEmail('demo@portline.in')
+                    setSiEmail(email)
                     setSiPassword(pw)
                     setSiError('')
                     setSiLoading(true)
                     try {
-                      const userObj = await login({ email: 'demo@portline.in', password: pw })
+                      const userObj = await login({ email, password: pw })
                       afterLogin(userObj)
                     } catch (err) {
                       setSiError(err.message)
@@ -213,20 +214,21 @@ export default function Login() {
                   }}
                   className="flex w-full items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-brand-line py-2 text-xs font-semibold text-brand-navy hover:bg-brand-cloud transition-colors"
                 >
-                  <User className="h-4 w-4 text-brand-marine" /> 1. Customer (Shipper)
+                  <User className="h-4 w-4 text-brand-marine" /> 1. Customer Demo (Shipper)
                 </button>
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={async () => {
+                      const email = ENV.VITE_DEMO_ADMIN_USER || 'admin.demo@portline.in'
                       const pw = ENV.VITE_DEMO_ADMIN_PASS || ''
-                      setSiEmail('admin@portline.in')
+                      setSiEmail(email)
                       setSiPassword(pw)
                       setSiError('')
                       setSiLoading(true)
                       try {
-                        const userObj = await login({ email: 'admin@portline.in', password: pw })
+                        const userObj = await login({ email, password: pw })
                         afterLogin(userObj)
                       } catch (err) {
                         setSiError(err.message)
@@ -236,19 +238,20 @@ export default function Login() {
                     }}
                     className="flex items-center justify-center gap-1.5 rounded-[10px] border border-blue-200 bg-blue-50/70 py-2 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
                   >
-                    <Shield className="h-3.5 w-3.5 text-blue-600" /> 2. Admin
+                    <Shield className="h-3.5 w-3.5 text-blue-600" /> 2. Admin Demo
                   </button>
 
                   <button
                     type="button"
                     onClick={async () => {
+                      const email = ENV.VITE_DEMO_CUSTOMS_USER || 'customs.demo@portline.in'
                       const pw = ENV.VITE_DEMO_CUSTOMS_PASS || ''
-                      setSiEmail('customs@portline.in')
+                      setSiEmail(email)
                       setSiPassword(pw)
                       setSiError('')
                       setSiLoading(true)
                       try {
-                        const userObj = await login({ email: 'customs@portline.in', password: pw })
+                        const userObj = await login({ email, password: pw })
                         afterLogin(userObj)
                       } catch (err) {
                         setSiError(err.message)
@@ -258,7 +261,7 @@ export default function Login() {
                     }}
                     className="flex items-center justify-center gap-1.5 rounded-[10px] border border-amber-200 bg-amber-50/70 py-2 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
                   >
-                    <UserCheck className="h-3.5 w-3.5 text-amber-600" /> 3. Customs Officer
+                    <UserCheck className="h-3.5 w-3.5 text-amber-600" /> 3. Customs Demo
                   </button>
                 </div>
 
@@ -266,13 +269,14 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={async () => {
-                      const pw = ENV.VITE_DEMO_AGENT_PASS || ''
-                      setSiEmail('agentop@portline.in')
+                      const email = ENV.VITE_DEMO_AGENTOP_USER || 'agentop.demo@portline.in'
+                      const pw = ENV.VITE_DEMO_AGENTOP_PASS || ENV.VITE_DEMO_AGENT_PASS || ''
+                      setSiEmail(email)
                       setSiPassword(pw)
                       setSiError('')
                       setSiLoading(true)
                       try {
-                        const userObj = await login({ email: 'agentop@portline.in', password: pw })
+                        const userObj = await login({ email, password: pw })
                         afterLogin(userObj)
                       } catch (err) {
                         setSiError(err.message)
@@ -282,19 +286,20 @@ export default function Login() {
                     }}
                     className="flex items-center justify-center gap-1.5 rounded-[10px] border border-indigo-200 bg-indigo-50/70 py-2 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors"
                   >
-                    <UserCheck className="h-3.5 w-3.5 text-indigo-600" /> 4. AI Agent Ops
+                    <UserCheck className="h-3.5 w-3.5 text-indigo-600" /> 4. AI Ops Demo
                   </button>
 
                   <button
                     type="button"
                     onClick={async () => {
+                      const email = ENV.VITE_DEMO_MANAGER_USER || 'manager.demo@portline.in'
                       const pw = ENV.VITE_DEMO_MANAGER_PASS || ''
-                      setSiEmail('manager@portline.in')
+                      setSiEmail(email)
                       setSiPassword(pw)
                       setSiError('')
                       setSiLoading(true)
                       try {
-                        const userObj = await login({ email: 'manager@portline.in', password: pw })
+                        const userObj = await login({ email, password: pw })
                         afterLogin(userObj)
                       } catch (err) {
                         setSiError(err.message)
@@ -304,9 +309,32 @@ export default function Login() {
                     }}
                     className="flex items-center justify-center gap-1.5 rounded-[10px] border border-emerald-200 bg-emerald-50/70 py-2 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
                   >
-                    <Shield className="h-3.5 w-3.5 text-emerald-600" /> 5. Analytics Mgr
+                    <Shield className="h-3.5 w-3.5 text-emerald-600" /> 5. Manager Demo
                   </button>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const email = ENV.VITE_DEMO_AGENT_USER || 'agent.demo@portline.in'
+                    const pw = ENV.VITE_DEMO_AGENT_PASS || ''
+                    setSiEmail(email)
+                    setSiPassword(pw)
+                    setSiError('')
+                    setSiLoading(true)
+                    try {
+                      const userObj = await login({ email, password: pw })
+                      afterLogin(userObj)
+                    } catch (err) {
+                      setSiError(err.message)
+                    } finally {
+                      setSiLoading(false)
+                    }
+                  }}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-[10px] border border-purple-200 bg-purple-50/70 py-1.5 text-[11px] font-semibold text-purple-700 hover:bg-purple-100 transition-colors"
+                >
+                  <UserCheck className="h-3.5 w-3.5 text-purple-600" /> 6. Carrier Agent Demo
+                </button>
               </div>
             </>
           ) : (

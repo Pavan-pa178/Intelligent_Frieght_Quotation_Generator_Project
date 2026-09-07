@@ -1,4 +1,4 @@
-import { seedShipments, seedQuotes, routeAnalytics, demoUser, globalShipperUser, adminUser, agentUser, customsOfficerUser, agentOperatorUser, managerUser, RATES, DEMO_QUOTES, DEMO_EMAIL_LIST } from './mockData'
+import { seedShipments, seedQuotes, routeAnalytics, demoUser, globalShipperUser, adminUser, agentUser, customsOfficerUser, agentOperatorUser, managerUser, customerDemoUser, adminDemoUser, agentDemoUser, customsDemoUser, agentOperatorDemoUser, managerDemoUser, RATES, DEMO_QUOTES, DEMO_EMAIL_LIST } from './mockData'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'https://freightquote-api.onrender.com' : '')
 export const MOCK_MODE = false
@@ -68,21 +68,35 @@ async function apiFetch(path, options = {}) {
 
 // Built-in system profiles for demo/offline mode — NO passwords stored in source
 export const BUILTIN_USERS = {
+  // Dedicated Isolated Demo Accounts
+  'customer.demo@portline.in': { user: customerDemoUser },
+  'admin.demo@portline.in': { user: adminDemoUser },
+  'agent.demo@portline.in': { user: agentDemoUser },
+  'customs.demo@portline.in': { user: customsDemoUser },
+  'agentop.demo@portline.in': { user: agentOperatorDemoUser },
+  'manager.demo@portline.in': { user: managerDemoUser },
+  // Real Accounts
   'admin@portline.in': { user: adminUser },
   'agent@portline.in': { user: agentUser },
   'customs@portline.in': { user: customsOfficerUser },
   'agentop@portline.in': { user: agentOperatorUser },
   'manager@portline.in': { user: managerUser },
-  'demo@portline.in': { user: demoUser },
+  'demo@portline.in': { user: customerDemoUser },
   'ravi@sharmatextiles.in': { user: demoUser },
 }
 
 // Credentials are read ONLY from environment variables (frontend/.env.local — gitignored)
 // If env vars are not set, demo logins will not work in offline mode
 const ENV_PASS = {
+  'customer.demo@portline.in': import.meta.env.VITE_DEMO_CUSTOMER_PASS,
+  'admin.demo@portline.in': import.meta.env.VITE_DEMO_ADMIN_PASS,
+  'agent.demo@portline.in': import.meta.env.VITE_DEMO_AGENT_PASS,
+  'agentop.demo@portline.in': import.meta.env.VITE_DEMO_AGENTOP_PASS || import.meta.env.VITE_DEMO_AGENT_PASS,
+  'customs.demo@portline.in': import.meta.env.VITE_DEMO_CUSTOMS_PASS,
+  'manager.demo@portline.in': import.meta.env.VITE_DEMO_MANAGER_PASS,
   'admin@portline.in': import.meta.env.VITE_DEMO_ADMIN_PASS,
   'agent@portline.in': import.meta.env.VITE_DEMO_AGENT_PASS,
-  'agentop@portline.in': import.meta.env.VITE_DEMO_AGENT_PASS,
+  'agentop@portline.in': import.meta.env.VITE_DEMO_AGENTOP_PASS || import.meta.env.VITE_DEMO_AGENT_PASS,
   'customs@portline.in': import.meta.env.VITE_DEMO_CUSTOMS_PASS,
   'manager@portline.in': import.meta.env.VITE_DEMO_MANAGER_PASS,
   'demo@portline.in': import.meta.env.VITE_DEMO_CUSTOMER_PASS,
@@ -92,7 +106,9 @@ const ENV_PASS = {
 function verifyBuiltinPassword(email, input) {
   const expected = ENV_PASS[email.trim().toLowerCase()]
   if (!expected) return false
-  return input === expected || input.toLowerCase() === expected.toLowerCase()
+  const cleanExp = expected.trim().toLowerCase().replace('.', '').replace('_', '')
+  const cleanIn = (input || '').trim().toLowerCase().replace('.', '').replace('_', '')
+  return input === expected || input.toLowerCase() === expected.toLowerCase() || cleanIn === cleanExp
 }
 
 function getStoredUsers() {
@@ -477,7 +493,7 @@ export async function updateUserProfile(payload) {
 
 export async function fetchShipments(email = '') {
   const getLocalShipments = () => {
-    if (email && email !== 'demo@portline.in' && email !== 'admin@portline.in') {
+    if (email && email !== 'customer.demo@portline.in' && email !== 'demo@portline.in' && email !== 'admin@portline.in') {
       try {
         const raw = localStorage.getItem(`portline_shipments_${email.toLowerCase()}`)
         return raw ? JSON.parse(raw) : []

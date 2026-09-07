@@ -280,7 +280,7 @@ export default function Admin() {
   }
 
   const handleDeleteUser = async (email, name) => {
-    if (email === 'admin@portline.in') {
+    if (email === 'admin@portline.in' || email === 'admin.demo@portline.in') {
       toast('The primary Administrator account cannot be removed.')
       return
     }
