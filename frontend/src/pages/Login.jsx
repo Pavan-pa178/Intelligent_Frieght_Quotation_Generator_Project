@@ -4,13 +4,9 @@ import { ChevronLeft, Eye, EyeOff, User, Container, AlertTriangle, Shield, UserC
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 
-const decodeCred = (token) => {
-  try {
-    return typeof atob !== 'undefined' ? atob(token) : ''
-  } catch {
-    return ''
-  }
-}
+// Demo credential access — sourced from .env.local (gitignored), not stored in source
+const ENV = import.meta.env
+
 
 export default function Login() {
   const [searchParams] = useSearchParams()
@@ -201,7 +197,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={async () => {
-                    const pw = decodeCred('***REMOVED***=')
+                    const pw = ENV.VITE_DEMO_CUSTOMER_PASS || ''
                     setSiEmail('demo@portline.in')
                     setSiPassword(pw)
                     setSiError('')
@@ -219,12 +215,12 @@ export default function Login() {
                 >
                   <User className="h-4 w-4 text-brand-marine" /> 1. Customer (Shipper)
                 </button>
-                
+
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={async () => {
-                      const pw = decodeCred('***REMOVED***')
+                      const pw = ENV.VITE_DEMO_ADMIN_PASS || ''
                       setSiEmail('admin@portline.in')
                       setSiPassword(pw)
                       setSiError('')
@@ -246,7 +242,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={async () => {
-                      const pw = decodeCred('***REMOVED***')
+                      const pw = ENV.VITE_DEMO_CUSTOMS_PASS || ''
                       setSiEmail('customs@portline.in')
                       setSiPassword(pw)
                       setSiError('')
@@ -270,7 +266,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={async () => {
-                      const pw = decodeCred('***REMOVED***')
+                      const pw = ENV.VITE_DEMO_AGENT_PASS || ''
                       setSiEmail('agentop@portline.in')
                       setSiPassword(pw)
                       setSiError('')
@@ -292,7 +288,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={async () => {
-                      const pw = decodeCred('***REMOVED***')
+                      const pw = ENV.VITE_DEMO_MANAGER_PASS || ''
                       setSiEmail('manager@portline.in')
                       setSiPassword(pw)
                       setSiError('')

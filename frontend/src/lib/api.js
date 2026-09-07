@@ -66,16 +66,7 @@ async function apiFetch(path, options = {}) {
 
 // ---------------- Auth ----------------
 
-// Decodes development mock credentials safely at runtime without exposing plain text strings to static secret scanners
-const decodeKey = (token) => {
-  try {
-    return typeof atob !== 'undefined' ? atob(token) : ''
-  } catch {
-    return ''
-  }
-}
-
-// Built-in system profiles for demo, testing, and offline modes
+// Built-in system profiles for demo/offline mode — NO passwords stored in source
 export const BUILTIN_USERS = {
   'admin@portline.in': { user: adminUser },
   'agent@portline.in': { user: agentUser },
@@ -86,21 +77,21 @@ export const BUILTIN_USERS = {
   'ravi@sharmatextiles.in': { user: demoUser },
 }
 
-// Base64-encoded mock auth tokens to prevent false-positive secret incident alerts
-const MOCK_AUTH_KEYS = {
-  'admin@portline.in': '***REMOVED***',
-  'agent@portline.in': '***REMOVED***',
-  'customs@portline.in': '***REMOVED***',
-  'agentop@portline.in': '***REMOVED***',
-  'manager@portline.in': '***REMOVED***',
-  'demo@portline.in': '***REMOVED***=',
-  'ravi@sharmatextiles.in': '***REMOVED***=',
+// Credentials are read ONLY from environment variables (frontend/.env.local — gitignored)
+// If env vars are not set, demo logins will not work in offline mode
+const ENV_PASS = {
+  'admin@portline.in': import.meta.env.VITE_DEMO_ADMIN_PASS,
+  'agent@portline.in': import.meta.env.VITE_DEMO_AGENT_PASS,
+  'agentop@portline.in': import.meta.env.VITE_DEMO_AGENT_PASS,
+  'customs@portline.in': import.meta.env.VITE_DEMO_CUSTOMS_PASS,
+  'manager@portline.in': import.meta.env.VITE_DEMO_MANAGER_PASS,
+  'demo@portline.in': import.meta.env.VITE_DEMO_CUSTOMER_PASS,
+  'ravi@sharmatextiles.in': import.meta.env.VITE_DEMO_CUSTOMER_PASS,
 }
 
 function verifyBuiltinPassword(email, input) {
-  const token = MOCK_AUTH_KEYS[email.trim().toLowerCase()]
-  if (!token) return false
-  const expected = decodeKey(token)
+  const expected = ENV_PASS[email.trim().toLowerCase()]
+  if (!expected) return false
   return input === expected || input.toLowerCase() === expected.toLowerCase()
 }
 
@@ -441,24 +432,15 @@ export async function updateUserProfile(payload) {
     ...(backendUser || {})
   }
 
-  // Update in BUILTIN_USERS
+  // Update user profile in BUILTIN_USERS (profile data only, no password stored in source)
   if (BUILTIN_USERS[cleanCurrentEmail]) {
     const existing = BUILTIN_USERS[cleanCurrentEmail]
     const updatedUser = { ...existing.user, ...updatedUserObj }
     if (cleanNewEmail !== cleanCurrentEmail) {
       delete BUILTIN_USERS[cleanCurrentEmail]
       BUILTIN_USERS[cleanNewEmail] = { user: updatedUser }
-      if (new_password) {
-        MOCK_AUTH_KEYS[cleanNewEmail] = typeof btoa !== 'undefined' ? btoa(new_password) : ''
-      } else if (MOCK_AUTH_KEYS[cleanCurrentEmail]) {
-        MOCK_AUTH_KEYS[cleanNewEmail] = MOCK_AUTH_KEYS[cleanCurrentEmail]
-        delete MOCK_AUTH_KEYS[cleanCurrentEmail]
-      }
     } else {
       BUILTIN_USERS[cleanCurrentEmail] = { user: updatedUser }
-      if (new_password) {
-        MOCK_AUTH_KEYS[cleanCurrentEmail] = typeof btoa !== 'undefined' ? btoa(new_password) : ''
-      }
     }
   }
 

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from rest_framework import status, permissions
 from rest_framework.views import APIView
@@ -9,6 +10,24 @@ from django.contrib.auth.hashers import check_password as django_check_password
 from core.mongodb import get_collection
 from .models import UserProfile
 from .serializers import UserSerializer, RegisterSerializer
+
+# Demo account credentials — loaded from environment variables, NOT hardcoded
+# Set these in backend/.env (gitignored) for local development
+_SEED_PASS = {
+    'admin': os.environ.get('DEMO_ADMIN_PASS', ''),
+    'agent': os.environ.get('DEMO_AGENT_PASS', ''),
+    'customs': os.environ.get('DEMO_CUSTOMS_PASS', ''),
+    'manager': os.environ.get('DEMO_MANAGER_PASS', ''),
+    'customer': os.environ.get('DEMO_CUSTOMER_PASS', ''),
+}
+
+def _valid_seed(role_key, provided):
+    """Returns True if `provided` matches the env-var-sourced seed password."""
+    expected = _SEED_PASS.get(role_key, '')
+    if not expected:
+        return False
+    return provided == expected or provided.lower() == expected.lower()
+
 
 class LoginView(APIView):
     authentication_classes = []
@@ -62,50 +81,44 @@ class LoginView(APIView):
             except Exception:
                 pass
 
-        # 3. Built-in initial seed accounts fallback (if user hasn't changed password or newly logging in)
+        # 3. Built-in initial seed accounts fallback (credentials from env vars only)
         if user is None:
-            if email == 'admin@portline.in' and password in ['***REMOVED***', 'admin', 'password']:
+            if email == 'admin@portline.in' and _valid_seed('admin', password):
                 user_obj, _ = User.objects.get_or_create(username='admin@portline.in', defaults={'email': 'admin@portline.in', 'first_name': 'Priya', 'last_name': 'Admin'})
-                user_obj.set_password('***REMOVED***')
+                user_obj.set_password(password)
                 user_obj.save()
                 UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'admin', 'company': 'PORTLINE Operations'})
                 user = user_obj
-            elif (email == 'agent@portline.in' or (email.startswith('agent.') and email.endswith('@portline.in'))) and password in ['***REMOVED***', 'agent', 'password']:
+            elif (email == 'agent@portline.in' or (email.startswith('agent.') and email.endswith('@portline.in'))) and _valid_seed('agent', password):
                 desk_label = email.split('@')[0].replace('agent.', '').replace('agent', '').strip('.').upper() or 'General'
                 user_obj, _ = User.objects.get_or_create(username=email, defaults={'email': email, 'first_name': desk_label, 'last_name': 'Agent'})
-                user_obj.set_password('***REMOVED***')
+                user_obj.set_password(password)
                 user_obj.save()
                 UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'agent', 'company': f'PORTLINE {desk_label} Desk'})
                 user = user_obj
-            elif email == 'customs@portline.in' and password in ['***REMOVED***', 'customs', 'password']:
+            elif email == 'customs@portline.in' and _valid_seed('customs', password):
                 user_obj, _ = User.objects.get_or_create(username='customs@portline.in', defaults={'email': 'customs@portline.in', 'first_name': 'Rajesh', 'last_name': 'Kumar'})
-                user_obj.set_password('***REMOVED***')
+                user_obj.set_password(password)
                 user_obj.save()
                 UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customs_officer', 'company': 'CBIC Indian Customs'})
                 user = user_obj
-            elif email == 'agentop@portline.in' and password in ['***REMOVED***', 'agentop', 'password']:
+            elif email == 'agentop@portline.in' and _valid_seed('agent', password):
                 user_obj, _ = User.objects.get_or_create(username='agentop@portline.in', defaults={'email': 'agentop@portline.in', 'first_name': 'Suresh', 'last_name': 'Varma'})
-                user_obj.set_password('***REMOVED***')
+                user_obj.set_password(password)
                 user_obj.save()
                 UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'agent_operator', 'company': 'PORTLINE AI Ops & Telemetry'})
                 user = user_obj
-            elif email == 'manager@portline.in' and password in ['***REMOVED***', 'manager', 'password']:
+            elif email == 'manager@portline.in' and _valid_seed('manager', password):
                 user_obj, _ = User.objects.get_or_create(username='manager@portline.in', defaults={'email': 'manager@portline.in', 'first_name': 'Ananya', 'last_name': 'Roy'})
-                user_obj.set_password('***REMOVED***')
+                user_obj.set_password(password)
                 user_obj.save()
                 UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'manager', 'company': 'PORTLINE Commercial Analytics'})
                 user = user_obj
-            elif email in ['demo@portline.in', 'ravi@sharmatextiles.in'] and password in ['***REMOVED***', 'password', 'demo']:
+            elif email in ['demo@portline.in', 'ravi@sharmatextiles.in'] and _valid_seed('customer', password):
                 user_obj, _ = User.objects.get_or_create(username='demo@portline.in', defaults={'email': 'demo@portline.in', 'first_name': 'Ravi', 'last_name': 'Sharma'})
                 user_obj.set_password(password)
                 user_obj.save()
                 UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customer', 'company': 'Sharma Textiles'})
-                user = user_obj
-            elif email == 'hello1@gmail.com' and password in ['***REMOVED***', 'hellotest', 'password']:
-                user_obj, _ = User.objects.get_or_create(username='hello1@gmail.com', defaults={'email': 'hello1@gmail.com', 'first_name': 'Hello', 'last_name': 'Shipper'})
-                user_obj.set_password('***REMOVED***')
-                user_obj.save()
-                UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'customer', 'company': 'Global Shippers Corp'})
                 user = user_obj
 
         if user is None:
@@ -481,10 +494,14 @@ class UpdateProfileView(APIView):
             elif m_user:
                 pw_hash = m_user.get('password_hash', '')
                 raw_pw = m_user.get('raw_password', '')
-                if (pw_hash and django_check_password(old_password, pw_hash)) or (raw_pw and old_password == raw_pw) or old_password in ['***REMOVED***', '***REMOVED***', '***REMOVED***', '***REMOVED***', '***REMOVED***', '***REMOVED***']:
+                if (pw_hash and django_check_password(old_password, pw_hash)) or (raw_pw and old_password == raw_pw):
                     password_matches = True
-            elif old_password in ['***REMOVED***', '***REMOVED***', '***REMOVED***', '***REMOVED***', '***REMOVED***', '***REMOVED***', 'password']:
-                password_matches = True
+            # Also allow seed passwords (read from env vars) as fallback for built-in accounts
+            if not password_matches:
+                for role_key in _SEED_PASS:
+                    if _SEED_PASS[role_key] and old_password == _SEED_PASS[role_key]:
+                        password_matches = True
+                        break
 
             if not password_matches:
                 return Response({'detail': 'The old password you entered is incorrect. Please try again.'}, status=status.HTTP_400_BAD_REQUEST)
