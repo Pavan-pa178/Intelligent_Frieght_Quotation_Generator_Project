@@ -42,6 +42,11 @@ function RoleRouteGuard({ children }) {
   useEffect(() => {
     // Role-based guards - allow inspecting quotes, details, and personal profile
     if (loggedIn) {
+      if (user?.role === 'customer' && pathname === '/profile') {
+        navigate('/portal', { replace: true })
+        return
+      }
+
       const isQuoteRoute = pathname === '/quotes' || pathname.startsWith('/quotes/')
       const isProfileRoute = pathname === '/profile'
       if (isProfileRoute || isQuoteRoute) return

@@ -146,9 +146,9 @@ export default function Navbar() {
             {loggedIn ? (
               <div className="flex items-center gap-2.5">
                 <button
-                  onClick={() => navigate('/profile')}
+                  onClick={() => navigate(user?.role === 'customer' ? '/portal' : '/profile')}
                   className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 py-1.5 pl-1.5 pr-3.5 text-white transition-colors hover:bg-white/10"
-                  title="View & Edit Profile"
+                  title={user?.role === 'customer' ? 'My Customer Portal' : 'View Profile'}
                 >
                   <span className={`flex h-7 w-7 items-center justify-center rounded-full font-display text-xs font-bold shadow-xs ${getRoleBadgeColor()}`}>
                     {user?.name?.charAt(0) || 'P'}
@@ -222,7 +222,7 @@ export default function Navbar() {
         {loggedIn ? (
           <div className="space-y-4">
             <button
-              onClick={() => { navigate('/profile'); setMobileOpen(false) }}
+              onClick={() => { navigate(user?.role === 'customer' ? '/portal' : '/profile'); setMobileOpen(false) }}
               className="w-full text-left rounded-xl border border-white/10 bg-white/5 p-4 text-white hover:bg-white/10 transition-colors flex items-center justify-between group"
             >
               <div>
@@ -231,17 +231,17 @@ export default function Navbar() {
                 <div className="text-xs text-slate-400">{user?.email}</div>
               </div>
               <span className="text-xs text-brand-orangeLight font-semibold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                Edit Profile &rarr;
+                {user?.role === 'customer' ? 'My Portal' : 'View Profile'} &rarr;
               </span>
             </button>
 
             <Link
-              to="/profile"
+              to={user?.role === 'customer' ? '/portal' : '/profile'}
               onClick={() => setMobileOpen(false)}
               className="flex items-center gap-2.5 border-b border-white/10 py-3 font-display text-lg text-white hover:text-brand-orangeLight transition-colors"
             >
               <User className="h-5 w-5 text-brand-orangeLight" />
-              <span>My Profile & Settings</span>
+              <span>{user?.role === 'customer' ? 'My Portal & Profile' : 'My Profile & Settings'}</span>
             </Link>
 
             {navItems.map((item) => (
