@@ -8,8 +8,19 @@ import StatusBadge from '../components/StatusBadge'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { fetchAllQuotes, agentActionOnQuote, getAgentActions } from '../lib/api'
-import { seedQuotes, resolveAssignedAgent, getAgentDesk, CARRIER_DESK_CONFIG, isCarrierMatch } from '../lib/mockData'
+import { seedQuotes, resolveAssignedAgent, getAgentDesk, CARRIER_DESK_CONFIG, isCarrierMatch, DEFAULT_CARRIER_THEME } from '../lib/mockData'
 
+const DEFAULT_THEME = DEFAULT_CARRIER_THEME || {
+  primaryColor: '#0A2540',
+  accentColor: '#D9500A',
+  badgeBg: 'bg-orange-50',
+  badgeText: 'text-brand-orange',
+  badgeBorder: 'border-orange-200',
+  bannerGradient: 'from-[#0A2540] via-[#103052] to-[#1C4977]',
+  tagline: 'Lead Freight Brokerage, Multi-Carrier Routing & Margin Review',
+  contractTier: 'Master Brokerage Operations Hub',
+  slaHours: '2h SLA'
+}
 
 const TABS = [
   { key: 'queue', label: 'Review Queue', icon: Inbox },
@@ -48,14 +59,15 @@ export default function Agent() {
   const [selectedDeskFilter, setSelectedDeskFilter] = useState('ALL')
 
   const isAgent = user?.role === 'agent' || user?.role === 'broker' || user?.role === 'admin'
-  const currentDesk = getAgentDesk(user)
+  const currentDesk = getAgentDesk(user) || CARRIER_DESK_CONFIG['default'] || {}
+  const deskTheme = currentDesk?.theme || DEFAULT_THEME
   const isSupervisor =
     user?.role === 'admin' ||
     user?.email?.toLowerCase() === 'agent@portline.in' ||
     user?.email?.toLowerCase() === 'agent.demo@portline.in' ||
     user?.email?.toLowerCase().startsWith('agent@') ||
     user?.email?.toLowerCase().startsWith('agent.demo@') ||
-    currentDesk.carrierKey?.toLowerCase() === 'general'
+    currentDesk?.carrierKey?.toLowerCase() === 'general'
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -88,10 +100,10 @@ export default function Agent() {
     
     // Specific Carrier Agent: strictly isolate by carrier key or exact agent email
     const matchCarrier =
-      isCarrierMatch(currentDesk.carrierKey, assigned.carrierKey) ||
-      isCarrierMatch(currentDesk.carrierKey, assigned.carrierName) ||
-      isCarrierMatch(currentDesk.carrierKey, q.selected_route?.carrier)
-    const matchEmail = assigned.email && assigned.email.toLowerCase() === agentEmail
+      isCarrierMatch(currentDesk?.carrierKey, assigned?.carrierKey) ||
+      isCarrierMatch(currentDesk?.carrierKey, assigned?.carrierName) ||
+      isCarrierMatch(currentDesk?.carrierKey, q.selected_route?.carrier)
+    const matchEmail = assigned?.email && assigned.email.toLowerCase() === agentEmail
     return Boolean(matchCarrier || matchEmail)
   })
 
@@ -120,7 +132,7 @@ export default function Agent() {
     const msgs = loadMessages()
     if (!msgs[quoteId]) msgs[quoteId] = []
     msgs[quoteId].push({
-      from: user?.name || currentDesk.agentName || 'Agent',
+      from: user?.name || currentDesk?.agentName || 'Agent',
       role: 'agent',
       text: newMsg.trim(),
       ts: new Date().toISOString()
@@ -154,7 +166,7 @@ export default function Agent() {
   return (
     <>
       {/* Carrier-Specific Custom Desk Header Banner */}
-      <div className={`relative overflow-hidden bg-gradient-to-r ${currentDesk.theme.bannerGradient} text-white shadow-lg border-b border-white/10 pt-6 pb-8`}>
+      <div className={`relative overflow-hidden bg-gradient-to-r ${deskTheme.bannerGradient || DEFAULT_THEME.bannerGradient} text-white shadow-lg border-b border-white/10 pt-6 pb-8`}>
         {/* Subtle background grid & ambient light */}
         <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
         <div className="absolute -right-16 -top-16 w-80 h-80 rounded-full bg-white/5 blur-2xl pointer-events-none" />
@@ -165,33 +177,33 @@ export default function Agent() {
             {/* Left: Carrier Identity & Desk Information */}
             <div className="max-w-3xl">
               <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-xs ${currentDesk.theme.badgeBg} ${currentDesk.theme.badgeText} ${currentDesk.theme.badgeBorder}`}>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-xs ${deskTheme.badgeBg || DEFAULT_THEME.badgeBg} ${deskTheme.badgeText || DEFAULT_THEME.badgeText} ${deskTheme.badgeBorder || DEFAULT_THEME.badgeBorder}`}>
                   <Ship className="h-3.5 w-3.5" />
-                  {currentDesk.carrierKey} DESK
+                  {currentDesk?.carrierKey || 'GENERAL'} DESK
                 </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-slate-200 border border-white/15">
                   <ShieldCheck className="h-3 w-3 text-emerald-400" />
-                  {currentDesk.theme.contractTier || 'Carrier Verified Tier 1'}
+                  {deskTheme.contractTier || 'Carrier Verified Tier 1'}
                 </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-amber-300 border border-white/15">
                   <Clock className="h-3 w-3" />
-                  {currentDesk.theme.slaHours || '2h Guaranteed SLA'}
+                  {deskTheme.slaHours || '2h Guaranteed SLA'}
                 </span>
               </div>
 
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-display tracking-tight text-white">
-                {currentDesk.deskName}
+                {currentDesk?.deskName || 'PORTLINE Commercial Operations Desk'}
               </h1>
 
               <p className="mt-2 text-sm sm:text-base text-slate-200 leading-relaxed max-w-2xl">
-                Commercial carrier operations console for {currentDesk.carrierName}. Review route selections, validate liner tariffs, negotiate margins, and approve vessel berth allocations.
+                Commercial carrier operations console for {currentDesk?.carrierName || 'PORTLINE General Carrier Network'}. Review route selections, validate liner tariffs, negotiate margins, and approve vessel berth allocations.
               </p>
 
               {/* Desk Officer & Hub Details */}
               <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-300">
                 <div className="flex items-center gap-1.5 bg-black/25 px-3 py-1.5 rounded-lg border border-white/10">
                   <User className="h-3.5 w-3.5 text-brand-orangeLight" />
-                  <span>Officer: <strong className="text-white">{user?.name || currentDesk.agentName}</strong></span>
+                  <span>Officer: <strong className="text-white">{user?.name || currentDesk?.agentName || 'Arjun Agent'}</strong></span>
                 </div>
                 <div className="flex items-center gap-1.5 bg-black/25 px-3 py-1.5 rounded-lg border border-white/10">
                   <MapPin className="h-3.5 w-3.5 text-sky-400" />
@@ -275,7 +287,7 @@ export default function Agent() {
                 >
                   All Carrier Desks ({safeQuotes.filter(q => !q._isDemo).length})
                 </button>
-                {Object.entries(CARRIER_DESK_CONFIG).filter(([k]) => k !== 'GENERAL').map(([key, desk]) => {
+                {Object.entries(CARRIER_DESK_CONFIG).filter(([k]) => k !== 'GENERAL' && k !== 'default' && k !== 'General').map(([key, desk]) => {
                   const deskCount = safeQuotes.filter(q => !q._isDemo && resolveAssignedAgent(q).carrierKey === key).length
                   const active = selectedDeskFilter === key
                   return (
@@ -338,14 +350,15 @@ export default function Agent() {
                   <p className="text-sm text-brand-slate">
                     {isSupervisor && selectedDeskFilter !== 'ALL' 
                       ? `No quotes awaiting review for the ${selectedDeskFilter} desk.` 
-                      : `No quotes pending review for ${currentDesk.deskName}.`}
+                      : `No quotes pending review for ${currentDesk?.deskName || 'this desk'}.`}
                   </p>
                 </div>
               )}
               {pending.map(q => {
                 const st = getState(q.id)
                 const assigned = resolveAssignedAgent(q)
-                const deskConf = CARRIER_DESK_CONFIG[assigned.carrierKey] || CARRIER_DESK_CONFIG.GENERAL
+                const deskConf = (assigned?.carrierKey && CARRIER_DESK_CONFIG[assigned.carrierKey]) || CARRIER_DESK_CONFIG['General'] || CARRIER_DESK_CONFIG['default'] || {}
+                const cardTheme = deskConf?.theme || assigned?.theme || DEFAULT_THEME
 
                 return (
                   <div key={q.id} className="rounded-xl border border-brand-line bg-white shadow-sm overflow-hidden hover:border-brand-marine/40 transition-colors">
@@ -355,8 +368,8 @@ export default function Agent() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-xs font-bold text-brand-marine">{q.id}</span>
                           <StatusBadge status={q.status || 'Draft'} />
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border shadow-xs ${deskConf.theme?.badgeBg || 'bg-slate-50'} ${deskConf.theme?.badgeText || 'text-slate-700'} ${deskConf.theme?.badgeBorder || 'border-slate-200'}`}>
-                            <Ship className="h-3 w-3" /> {assigned.carrierKey} Desk
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border shadow-xs ${cardTheme.badgeBg || 'bg-slate-50'} ${cardTheme.badgeText || 'text-slate-700'} ${cardTheme.badgeBorder || 'border-slate-200'}`}>
+                            <Ship className="h-3 w-3" /> {assigned?.carrierKey || 'General'} Desk
                           </span>
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
                             <Clock className="h-3 w-3" /> Awaiting review
@@ -364,7 +377,7 @@ export default function Agent() {
                         </div>
                         <h4 className="mt-1.5 text-[15px] font-bold text-brand-navy">{q.customer} — {q.laneName}</h4>
                         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-brand-slate">
-                          <span className="font-semibold text-brand-navy">Carrier: {assigned.carrier}</span>
+                          <span className="font-semibold text-brand-navy">Carrier: {assigned?.carrier || 'Multi-Carrier'}</span>
                           <span>{q.mode}</span>
                           <span>{q.basis}</span>
                           <span>Transit: {q.transit}</span>
@@ -400,7 +413,7 @@ export default function Agent() {
                         onClick={() => handleAction(q.id, 'approved')}
                         className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors disabled:opacity-50 shadow-sm"
                       >
-                        <CheckCircle2 className="h-4 w-4" /> Approve for {assigned.carrierKey}
+                        <CheckCircle2 className="h-4 w-4" /> Approve for {assigned?.carrierKey || 'Carrier'}
                       </button>
                       <button
                         disabled={st.loading}
@@ -437,7 +450,8 @@ export default function Agent() {
                 const rev = q.agent_review
                 const isApproved = rev?.status === 'approved'
                 const assigned = resolveAssignedAgent(q)
-                const deskConf = CARRIER_DESK_CONFIG[assigned.carrierKey] || CARRIER_DESK_CONFIG.GENERAL
+                const deskConf = (assigned?.carrierKey && CARRIER_DESK_CONFIG[assigned.carrierKey]) || CARRIER_DESK_CONFIG['General'] || CARRIER_DESK_CONFIG['default'] || {}
+                const cardTheme = deskConf?.theme || assigned?.theme || DEFAULT_THEME
 
                 return (
                   <div key={q.id} className="flex flex-wrap items-start gap-4 rounded-xl border border-brand-line bg-white px-6 py-4 shadow-sm">
@@ -447,8 +461,8 @@ export default function Agent() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-xs font-bold text-brand-marine">{q.id}</span>
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border shadow-xs ${deskConf.theme?.badgeBg || 'bg-slate-50'} ${deskConf.theme?.badgeText || 'text-slate-700'} ${deskConf.theme?.badgeBorder || 'border-slate-200'}`}>
-                          <Ship className="h-2.5 w-2.5" /> {assigned.carrierKey} Desk
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border shadow-xs ${cardTheme.badgeBg || 'bg-slate-50'} ${cardTheme.badgeText || 'text-slate-700'} ${cardTheme.badgeBorder || 'border-slate-200'}`}>
+                          <Ship className="h-2.5 w-2.5" /> {assigned?.carrierKey || 'General'} Desk
                         </span>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isApproved ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
                           {isApproved ? 'Approved' : 'Rejected'}
@@ -456,7 +470,7 @@ export default function Agent() {
                       </div>
                       <div className="mt-1 text-[13px] font-semibold text-brand-navy">{q.customer} — {q.laneName}</div>
                       <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-brand-slate">
-                        <span className="font-semibold text-brand-navy">Carrier: {assigned.carrier}</span>
+                        <span className="font-semibold text-brand-navy">Carrier: {assigned?.carrier || 'Multi-Carrier'}</span>
                         <span>{q.mode} · {q.basis}</span>
                         {q.indicativeTotal && <span className="font-mono font-semibold text-brand-navy">Rs.{Number(q.indicativeTotal).toLocaleString('en-IN')}</span>}
                       </div>
@@ -489,7 +503,7 @@ export default function Agent() {
                 <div className="border-b border-brand-line px-4 py-3 bg-brand-cloud/40">
                   <h4 className="text-sm font-bold text-brand-navy flex items-center justify-between">
                     <span>Quotes ({myDeskQuotes.length})</span>
-                    <span className="text-[10px] font-mono text-brand-marine font-semibold">{currentDesk.carrierKey}</span>
+                    <span className="text-[10px] font-mono text-brand-marine font-semibold">{currentDesk?.carrierKey || 'GENERAL'}</span>
                   </h4>
                 </div>
                 <div className="divide-y divide-brand-line max-h-[500px] overflow-y-auto">

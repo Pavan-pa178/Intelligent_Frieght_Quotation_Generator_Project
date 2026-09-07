@@ -239,6 +239,18 @@ export const DEMO_QUOTES = [
 // CARRIER → DEDICATED AGENT DESK CONFIGURATION
 // Detailed desk styling, brand identities, badges, and agent assignments.
 // ---------------------------------------------------------------------------
+export const DEFAULT_CARRIER_THEME = {
+  primaryColor: '#0A2540',
+  accentColor: '#D9500A',
+  badgeBg: 'bg-orange-50',
+  badgeText: 'text-brand-orange',
+  badgeBorder: 'border-orange-200',
+  bannerGradient: 'from-[#0A2540] via-[#103052] to-[#1C4977]',
+  tagline: 'Lead Freight Brokerage, Multi-Carrier Routing & Margin Review',
+  contractTier: 'Master Brokerage Operations Hub',
+  slaHours: '2h SLA'
+}
+
 export const CARRIER_DESK_CONFIG = {
   'CMA CGM': {
     carrierKey: 'CMA CGM',
@@ -418,19 +430,15 @@ export const CARRIER_DESK_CONFIG = {
     agentName: 'Arjun Agent',
     email: 'agent@portline.in',
     short: 'General Desk',
-    theme: {
-      primaryColor: '#0A2540',
-      accentColor: '#D9500A',
-      badgeBg: 'bg-orange-50',
-      badgeText: 'text-brand-orange',
-      badgeBorder: 'border-orange-200',
-      bannerGradient: 'from-[#0A2540] via-[#103052] to-[#1C4977]',
-      tagline: 'Lead Freight Brokerage, Multi-Carrier Routing & Margin Review',
-      contractTier: 'Master Brokerage Operations Hub',
-      slaHours: '2h SLA'
-    }
+    theme: DEFAULT_CARRIER_THEME
   }
 }
+
+// Map aliases so lookups by 'General', 'GENERAL', etc. never return undefined
+CARRIER_DESK_CONFIG['General'] = CARRIER_DESK_CONFIG['default']
+CARRIER_DESK_CONFIG['GENERAL'] = CARRIER_DESK_CONFIG['default']
+CARRIER_DESK_CONFIG.GENERAL = CARRIER_DESK_CONFIG['default']
+CARRIER_DESK_CONFIG.General = CARRIER_DESK_CONFIG['default']
 
 // Backwards-compatible alias for existing imports
 export const CARRIER_AGENT_MAP = CARRIER_DESK_CONFIG
@@ -439,28 +447,44 @@ export const CARRIER_AGENT_MAP = CARRIER_DESK_CONFIG
  * Determine which dedicated carrier desk an agent belongs to based on user profile.
  */
 export function getAgentDesk(user) {
-  if (!user) return CARRIER_DESK_CONFIG['default']
+  const fallback = CARRIER_DESK_CONFIG['default']
+  if (!user) return { ...fallback, theme: { ...DEFAULT_CARRIER_THEME, ...(fallback.theme || {}) } }
   const email = (user.email || '').toLowerCase().trim()
   const name = (user.name || '').toLowerCase()
   const company = (user.company || '').toLowerCase()
   const deskField = (user.carrierDesk || user.desk || '').toLowerCase()
 
+  let matched = null
+
   // Match by specific desk email first
   for (const [key, desk] of Object.entries(CARRIER_DESK_CONFIG)) {
-    if (key === 'default') continue
-    if (desk.email.toLowerCase() === email) return desk
-  }
-
-  // Match by desk/company/name keywords
-  for (const [key, desk] of Object.entries(CARRIER_DESK_CONFIG)) {
-    if (key === 'default') continue
-    const kLower = key.toLowerCase()
-    if (deskField.includes(kLower) || email.includes(kLower) || name.includes(kLower) || company.includes(kLower)) {
-      return desk
+    if (key === 'default' || key === 'General' || key === 'GENERAL') continue
+    if (desk?.email && desk.email.toLowerCase() === email) {
+      matched = desk
+      break
     }
   }
 
-  return CARRIER_DESK_CONFIG['default']
+  // Match by desk/company/name keywords if not matched by email
+  if (!matched) {
+    for (const [key, desk] of Object.entries(CARRIER_DESK_CONFIG)) {
+      if (key === 'default' || key === 'General' || key === 'GENERAL') continue
+      const kLower = key.toLowerCase()
+      if (deskField.includes(kLower) || email.includes(kLower) || name.includes(kLower) || company.includes(kLower)) {
+        matched = desk
+        break
+      }
+    }
+  }
+
+  const res = matched || fallback
+  return {
+    ...res,
+    theme: {
+      ...DEFAULT_CARRIER_THEME,
+      ...(res?.theme || {})
+    }
+  }
 }
 
 /**
@@ -492,6 +516,7 @@ export function isCarrierMatch(deskKey, routeCarrier) {
  * Prioritizes explicitly selected routes, then quote-level carrier, then route recommendations.
  */
 export function resolveAssignedAgent(quote) {
+  const fallback = CARRIER_DESK_CONFIG['default']
   const carrier = (
     quote?.selected_route?.carrier ||
     quote?.selectedCarrier ||
@@ -503,10 +528,19 @@ export function resolveAssignedAgent(quote) {
     ''
   ).trim()
 
-  if (!carrier) return CARRIER_DESK_CONFIG['default']
+  if (!carrier) {
+    return { ...fallback, theme: { ...DEFAULT_CARRIER_THEME, ...(fallback.theme || {}) } }
+  }
 
-  const key = Object.keys(CARRIER_DESK_CONFIG).find(k => k !== 'default' && isCarrierMatch(k, carrier))
-  return key ? CARRIER_DESK_CONFIG[key] : CARRIER_DESK_CONFIG['default']
+  const key = Object.keys(CARRIER_DESK_CONFIG).find(k => k !== 'default' && k !== 'General' && k !== 'GENERAL' && isCarrierMatch(k, carrier))
+  const found = (key && CARRIER_DESK_CONFIG[key]) || fallback
+  return {
+    ...found,
+    theme: {
+      ...DEFAULT_CARRIER_THEME,
+      ...(found?.theme || {})
+    }
+  }
 }
 
 
