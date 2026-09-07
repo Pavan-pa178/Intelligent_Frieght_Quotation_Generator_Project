@@ -23,6 +23,7 @@ import {
 } from '../lib/api'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
+import { getAgentDesk, isCarrierMatch } from '../lib/mockData'
 
 export default function QuoteDetail() {
   const { id } = useParams()
@@ -87,6 +88,21 @@ export default function QuoteDetail() {
 
   const isAgentView = isAgentOrAdmin
 
+  const currentDesk = getAgentDesk(user)
+  const agentEmail = (user?.email || '').toLowerCase().trim()
+  const isSupervisorOrLead =
+    user?.role === 'admin' ||
+    user?.role === 'agent_operator' ||
+    user?.role === 'manager' ||
+    user?.role === 'customs_officer' ||
+    agentEmail === 'agent@portline.in' ||
+    agentEmail === 'agent.demo@portline.in' ||
+    agentEmail.startsWith('agent@') ||
+    agentEmail.startsWith('agent.demo@') ||
+    currentDesk?.carrierKey?.toLowerCase() === 'general'
+
+  const isSpecificCarrierAgent = (user?.role === 'agent' || user?.role === 'broker') && !isSupervisorOrLead
+
   // Real backend async state (used if quote document doesn't already have precomputed AI)
   const [liveML, setLiveML] = useState(null)
   const [liveWeather, setLiveWeather] = useState(null)
@@ -140,7 +156,27 @@ export default function QuoteDetail() {
   }, [id])
 
   const d = quote?.details || {}
-  const routes = d.routes || []
+  const allRoutes = d.routes || []
+
+  // Route visibility isolation:
+  // - Customer, Admin, and Lead/Main Agent (agent@portline.in) see all routes for comparison.
+  // - Specific carrier desk agents (e.g. Hapag, CMA CGM, Maersk) ONLY see their own respective carrier route.
+  const routes = useMemo(() => {
+    if (!allRoutes || allRoutes.length === 0) return []
+    if (!isSpecificCarrierAgent) return allRoutes
+
+    // Specific carrier desk agent: only show this agent's carrier route
+    const deskKey = currentDesk?.carrierKey || ''
+    const filtered = allRoutes.filter(r => isCarrierMatch(deskKey, r.carrier))
+    if (filtered.length > 0) return filtered
+
+    // If quote.selected_route exists and matches this desk:
+    if (quote?.selected_route && isCarrierMatch(deskKey, quote.selected_route.carrier)) {
+      return [quote.selected_route]
+    }
+
+    return filtered
+  }, [allRoutes, isSpecificCarrierAgent, currentDesk, quote?.selected_route])
 
   // Milestone 3 Intelligence calculations (prioritizes real backend data from MongoDB)
   const weatherData = useMemo(() => {
@@ -564,6 +600,24 @@ export default function QuoteDetail() {
         </p>
         <button onClick={handleBack} className="mt-6 rounded-xl bg-brand-navy px-5 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-navy/90 transition-colors">
           Return to My Quotations
+        </button>
+      </div>
+    )
+  }
+
+  // Carrier Desk Isolation: Specific carrier desk agents cannot review quotes assigned to other carriers
+  if (isSpecificCarrierAgent && quote?.selected_route && !isCarrierMatch(currentDesk?.carrierKey, quote.selected_route.carrier)) {
+    return (
+      <div className="py-20 text-center max-w-md mx-auto px-4">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600 border border-amber-200">
+          <Lock className="h-6 w-6" />
+        </div>
+        <h3 className="text-xl font-bold text-brand-navy">Carrier Allocation Restricted</h3>
+        <p className="mt-2 text-xs text-brand-slate leading-relaxed">
+          Quotation <span className="font-mono font-bold text-brand-navy">{quote.id}</span> has been selected for <span className="font-bold text-brand-navy">{quote.selected_route.carrier}</span>. Your desk ({currentDesk?.deskName || currentDesk?.carrierKey}) is restricted to your carrier assignments.
+        </p>
+        <button onClick={handleBack} className="mt-6 rounded-xl bg-brand-navy px-5 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-brand-navy/90 transition-colors">
+          Return to My Queue
         </button>
       </div>
     )
@@ -1046,7 +1100,11 @@ export default function QuoteDetail() {
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-bold text-brand-navy">Recommended Route Options ({routes.length})</h3>
+                      <h3 className="text-lg font-bold text-brand-navy">
+                        {isSpecificCarrierAgent
+                          ? `${currentDesk?.carrierName || currentDesk?.carrierKey} Route Allocation (${routes.length})`
+                          : `Recommended Route Options (${routes.length})`}
+                      </h3>
                       {isAgentOrAdmin && quote.selected_route && (
                         <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-mono text-[10px] font-bold text-slate-700 border border-slate-300 flex items-center gap-1">
                           <Lock className="h-3 w-3 text-slate-500" /> Customer Choice Locked
@@ -1054,13 +1112,17 @@ export default function QuoteDetail() {
                       )}
                     </div>
                     <p className="text-xs text-brand-slate">
-                      {isAgentOrAdmin 
+                      {isSpecificCarrierAgent
                         ? (quote.selected_route 
-                            ? `The customer has selected ${quote.selected_route.carrier}. This route selection is locked to respect the customer's decision.`
-                            : 'Available carrier routes and commercial options for this lane.')
-                        : (quote.selected_route
-                            ? 'Your selected route is confirmed below. You can adjust your route before final agent approval.'
-                            : 'Choose your preferred carrier route. Click to select and request approval.')}
+                            ? `The customer has chosen ${quote.selected_route.carrier}. Displaying your desk's confirmed route allocation.`
+                            : `Displaying your desk's assigned carrier route allocation.`)
+                        : isAgentOrAdmin 
+                          ? (quote.selected_route 
+                              ? `The customer has selected ${quote.selected_route.carrier}. This route selection is locked to respect the customer's decision.`
+                              : 'Available carrier routes and commercial options for this lane.')
+                          : (quote.selected_route
+                              ? 'Your selected route is confirmed below. You can adjust your route before final agent approval.'
+                              : 'Choose your preferred carrier route. Click to select and request approval.')}
                     </p>
                   </div>
                     {quote.selected_route && (

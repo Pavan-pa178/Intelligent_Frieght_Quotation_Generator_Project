@@ -464,6 +464,30 @@ export function getAgentDesk(user) {
 }
 
 /**
+ * Normalized carrier matching between desk key and quote/route carrier name.
+ */
+export function isCarrierMatch(deskKey, routeCarrier) {
+  if (!deskKey || !routeCarrier) return false
+  const d = String(deskKey).toLowerCase().replace(/[^a-z0-9]/g, '')
+  const r = String(routeCarrier).toLowerCase().replace(/[^a-z0-9]/g, '')
+
+  if (d === r || d.includes(r) || r.includes(d)) return true
+
+  // Common carrier aliases and brand variants
+  if ((d.includes('hapag') || d.includes('hlag')) && (r.includes('hapag') || r.includes('hlag'))) return true
+  if (d.includes('cma') && r.includes('cma')) return true
+  if (d.includes('maersk') && r.includes('maersk')) return true
+  if (d.includes('msc') && r.includes('msc')) return true
+  if (d.includes('evergreen') && r.includes('evergreen')) return true
+  if (d.includes('cosco') && r.includes('cosco')) return true
+  if ((d.includes('one') || d.includes('oceannetwork')) && (r.includes('one') || r.includes('oceannetwork'))) return true
+  if (d.includes('air') && r.includes('air')) return true
+  if (d.includes('express') && r.includes('express')) return true
+
+  return false
+}
+
+/**
  * Resolve the assigned carrier desk for a quote based on its selected route carrier.
  * Prioritizes explicitly selected routes, then quote-level carrier, then route recommendations.
  */
@@ -481,7 +505,8 @@ export function resolveAssignedAgent(quote) {
 
   if (!carrier) return CARRIER_DESK_CONFIG['default']
 
-  const key = Object.keys(CARRIER_DESK_CONFIG).find(k => k !== 'default' && carrier.toLowerCase().includes(k.toLowerCase()))
+  const key = Object.keys(CARRIER_DESK_CONFIG).find(k => k !== 'default' && isCarrierMatch(k, carrier))
   return key ? CARRIER_DESK_CONFIG[key] : CARRIER_DESK_CONFIG['default']
 }
+
 

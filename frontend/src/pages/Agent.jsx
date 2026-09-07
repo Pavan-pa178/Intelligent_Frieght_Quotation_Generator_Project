@@ -8,7 +8,8 @@ import StatusBadge from '../components/StatusBadge'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import { fetchAllQuotes, agentActionOnQuote, getAgentActions } from '../lib/api'
-import { seedQuotes, resolveAssignedAgent, getAgentDesk, CARRIER_DESK_CONFIG } from '../lib/mockData'
+import { seedQuotes, resolveAssignedAgent, getAgentDesk, CARRIER_DESK_CONFIG, isCarrierMatch } from '../lib/mockData'
+
 
 const TABS = [
   { key: 'queue', label: 'Review Queue', icon: Inbox },
@@ -48,7 +49,13 @@ export default function Agent() {
 
   const isAgent = user?.role === 'agent' || user?.role === 'broker' || user?.role === 'admin'
   const currentDesk = getAgentDesk(user)
-  const isSupervisor = user?.role === 'admin' || user?.email?.toLowerCase() === 'agent@portline.in' || currentDesk.carrierKey === 'GENERAL'
+  const isSupervisor =
+    user?.role === 'admin' ||
+    user?.email?.toLowerCase() === 'agent@portline.in' ||
+    user?.email?.toLowerCase() === 'agent.demo@portline.in' ||
+    user?.email?.toLowerCase().startsWith('agent@') ||
+    user?.email?.toLowerCase().startsWith('agent.demo@') ||
+    currentDesk.carrierKey?.toLowerCase() === 'general'
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -80,7 +87,10 @@ export default function Agent() {
     }
     
     // Specific Carrier Agent: strictly isolate by carrier key or exact agent email
-    const matchCarrier = assigned.carrierKey && currentDesk.carrierKey && assigned.carrierKey === currentDesk.carrierKey
+    const matchCarrier =
+      isCarrierMatch(currentDesk.carrierKey, assigned.carrierKey) ||
+      isCarrierMatch(currentDesk.carrierKey, assigned.carrierName) ||
+      isCarrierMatch(currentDesk.carrierKey, q.selected_route?.carrier)
     const matchEmail = assigned.email && assigned.email.toLowerCase() === agentEmail
     return Boolean(matchCarrier || matchEmail)
   })
