@@ -23,10 +23,11 @@ function formatRelativeTime(dateInput, fallbackInput) {
 }
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Search, Plus, Lock, Trash2 } from 'lucide-react'
+import { FileText, Search, Plus, Lock, Trash2, Check, X } from 'lucide-react'
+import { useToast } from '../context/ToastContext'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
-import { fetchQuotes, clearAllQuotes, deleteQuote, resolveEffectiveQuoteStatus } from '../lib/api'
+import { fetchQuotes, clearAllQuotes, deleteQuote, resolveEffectiveQuoteStatus, customerDecisionOnQuote } from '../lib/api'
 import { useApp } from '../context/AppContext'
 
 export default function Quotes() {
@@ -381,7 +382,27 @@ export default function Quotes() {
                         </td>
                         <td className="py-4 px-5 text-brand-slateLight">{formatRelativeTime(q.created_at, q.created)}</td>
                         <td className="py-4 px-5 text-right">
-                          <div className="inline-flex items-center justify-end gap-2">
+                          <div className="inline-flex items-center justify-end gap-2 flex-wrap">
+                            {!isElevated && q.agent_price_edit && q.agent_price_edit.revised_price > 0 && !q.customer_decision?.status && q.status !== 'Accepted' && (
+                              <div className="inline-flex items-center gap-1.5 mr-1">
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCustomerQuickDecision(e, q.id, 'accepted', q.agent_price_edit.revised_price)}
+                                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs transition-colors"
+                                  title="Accept Revised Price Offer"
+                                >
+                                  <Check className="h-3.5 w-3.5" /> Accept ₹{Number(q.agent_price_edit.revised_price).toLocaleString('en-IN')}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCustomerQuickDecision(e, q.id, 'rejected', q.agent_price_edit.revised_price)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
+                                  title="Decline Revised Price Offer"
+                                >
+                                  <X className="h-3.5 w-3.5" /> Reject
+                                </button>
+                              </div>
+                            )}
                             <button
                               onClick={() => navigate(`/quotes/${q.id}`, { state: { from: '/quotes', fromLabel: 'Back to Quotations' } })}
                               className="rounded-lg border-[1.5px] border-brand-line bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-navy hover:border-brand-marine shadow-xs"

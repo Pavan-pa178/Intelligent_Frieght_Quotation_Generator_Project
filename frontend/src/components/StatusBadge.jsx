@@ -13,6 +13,10 @@ const STYLES = {
   'Documents Requested': 'bg-amber-50 text-amber-800 border border-amber-300',
   'Documents Submitted (Pending Customs Sign-off)': 'bg-indigo-50 text-indigo-700 border border-indigo-200',
   'Pending Review': 'bg-amber-50 text-amber-800 border border-amber-200',
+  'Price Revised': 'bg-amber-100 text-amber-900 border border-amber-300 font-bold',
+  'Price Revised (Awaiting Customer Decision)': 'bg-amber-100 text-amber-900 border border-amber-300 font-bold',
+  'Price Accepted (Pending Agent Sign-off)': 'bg-teal-50 text-teal-800 border border-teal-300 font-bold',
+  'Revised Price Declined': 'bg-rose-50 text-rose-700 border border-rose-200',
   Draft: 'bg-slate-100 text-slate-700',
 }
 

@@ -636,6 +636,22 @@ export function resolveEffectiveQuoteStatus(q) {
   const agentStatus = (q.agent_review?.status || '').toLowerCase()
   const customsStatus = (q.customs_review?.status || '').toLowerCase()
 
+  // 0. Agent Price Revision Lifecycle
+  if (q.agent_price_edit && q.agent_price_edit.revised_price > 0) {
+    if (custDec === 'ACCEPTED' || rawStatusUpper.includes('PRICE ACCEPTED')) {
+      if (agentStatus === 'approved' || rawStatusUpper === 'ACCEPTED' || pipeStatus === 'ACCEPTED') {
+        return 'Accepted'
+      }
+      return 'Price Accepted (Pending Agent Sign-off)'
+    }
+    if (custDec === 'REJECTED' || rawStatusUpper.includes('DECLINED')) {
+      return 'Revised Price Declined'
+    }
+    if (agentStatus !== 'approved' && rawStatusUpper !== 'ACCEPTED') {
+      return 'Price Revised (Awaiting Customer Decision)'
+    }
+  }
+
   // 1. Customer accepted / booked — highest priority
   if (rawStatusUpper === 'ACCEPTED' || custDec === 'ACCEPTED' || pipeStatus === 'ACCEPTED' || rawStatusUpper === 'BOOKED') {
     return 'Accepted'
@@ -983,6 +999,8 @@ export function saveAgentPriceEdit(quoteId, newPrice, reason, agentUser) {
             const copy = { ...q }
             if (record) {
               copy.agent_price_edit = record
+              copy.status = 'Price Revised (Awaiting Customer Decision)'
+              delete copy.customer_decision
             } else {
               delete copy.agent_price_edit
             }
@@ -1037,8 +1055,15 @@ export async function triggerQuotePipeline(shipmentId, payload = {}) {
 
 // Customer accepts or rejects a quote
 export async function customerDecisionOnQuote(quoteId, decision, notes = '', customerUser = null) {
-  const record = { status: decision.toUpperCase(), notes, decided_at: new Date().toISOString() }
-  const status = decision === 'accepted' ? 'Accepted' : 'Rejected'
+  const allSaved = getSavedQuotes()
+  const targetQ = allSaved.find(q => (q.id || '').toUpperCase() === (quoteId || '').toUpperCase())
+  const hasRevision = Boolean(targetQ?.agent_price_edit?.revised_price > 0)
+
+  let status = decision === 'accepted' ? 'Accepted' : 'Rejected'
+  if (hasRevision) {
+    status = decision === 'accepted' ? 'Price Accepted (Pending Agent Sign-off)' : 'Revised Price Declined'
+  }
+  const record = { status: decision.toUpperCase(), notes, decided_at: new Date().toISOString(), is_revised_price: hasRevision }
 
   // Always update local storage
   try {

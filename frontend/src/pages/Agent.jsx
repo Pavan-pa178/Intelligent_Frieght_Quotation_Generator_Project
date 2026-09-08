@@ -399,6 +399,33 @@ export default function Agent() {
                       </button>
                     </div>
 
+                    {/* Customer Accepted Revision Alert */}
+                    {q.agent_price_edit && q.customer_decision?.status === 'ACCEPTED' && q.status !== 'Accepted' && (
+                      <div className="mt-3 rounded-xl bg-emerald-50 border-2 border-emerald-300 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-emerald-950">Customer Accepted Revised Price: ₹{Number(q.agent_price_edit.revised_price).toLocaleString('en-IN')}</span>
+                            <span className="rounded-full bg-emerald-200 text-emerald-900 text-[10px] px-2 py-0.5 font-bold">Action Needed</span>
+                          </div>
+                          <p className="text-[11px] text-emerald-800 mt-0.5">Customer accepted your revised tariff. Please grant final sign-off or reject.</p>
+                        </div>
+                        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                          <button
+                            onClick={() => handleAction(q.id, 'approved')}
+                            className="flex-1 sm:flex-initial rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 shadow-2xs"
+                          >
+                            Approve Quote
+                          </button>
+                          <button
+                            onClick={() => handleAction(q.id, 'rejected')}
+                            className="rounded-lg border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Comment box (shown when requested) */}
                     {st.showComment && (
                       <div className="bg-brand-cloud/50 px-6 py-4 border-b border-brand-line">

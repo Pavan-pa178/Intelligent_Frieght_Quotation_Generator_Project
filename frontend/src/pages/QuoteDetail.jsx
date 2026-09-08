@@ -21,6 +21,7 @@ import {
   fetchBackendWeatherAssess,
   fetchBackendCustomsValidate,
   saveAgentPriceEdit,
+  agentActionOnQuote,
   getAgentPriceEdits
 } from '../lib/api'
 import { useApp } from '../context/AppContext'
@@ -562,7 +563,8 @@ export default function QuoteDetail() {
     quote?.pipeline_status === 'CUSTOMS_REJECTED' ||
     quote?.m3_customs?.compliance_status === 'REJECTED'
 
-  const canCustomerAccept = (agentApproved || quote?.status === 'Approved') && customsApproved
+  const hasPriceRevision = Boolean((agentPriceEdit?.revised_price > 0) || (quote?.agent_price_edit?.revised_price > 0))
+  const canCustomerAccept = ((agentApproved || quote?.status === 'Approved') && customsApproved) || hasPriceRevision
 
   const isAcceptedByCustomer = quote?.customer_decision?.status === 'ACCEPTED' || quote?.status === 'Accepted'
   const isRejectedByCustomer = quote?.customer_decision?.status === 'REJECTED' || (quote?.status === 'Rejected' && quote?.customer_decision?.status === 'REJECTED')
@@ -719,6 +721,53 @@ export default function QuoteDetail() {
               )}
             </div>
           </div>
+
+          {/* ─── AGENT FINAL SIGN-OFF CARD AFTER CUSTOMER ACCEPTED REVISION ─── */}
+              {isAgentOrAdmin && agentPriceEdit && agentPriceEdit.revised_price > 0 && quote.customer_decision?.status === 'ACCEPTED' && quote.status !== 'Accepted' && (
+                <div className="mb-6 rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-6 shadow-sm animate-in fade-in">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+                    <div className="flex items-start gap-3.5">
+                      <div className="rounded-xl bg-emerald-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                        <CheckCircle2 className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-base font-bold text-emerald-950">Customer Accepted Revised Price: ₹{Number(agentPriceEdit.revised_price).toLocaleString('en-IN')}</h4>
+                          <span className="rounded-full bg-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-900 border border-emerald-300">Action Required</span>
+                        </div>
+                        <p className="text-xs text-emerald-800 mt-1">
+                          The customer has agreed to your revised tariff. Grant your final agent approval below to finalize booking and allocate carrier slots.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await agentActionOnQuote(quote.id, 'approved', 'Agent sign-off granted after customer accepted revised price', user)
+                          setQuote(prev => ({ ...prev, status: 'Accepted', pipeline_status: 'ACCEPTED', agent_review: { status: 'approved', reviewed_at: new Date().toISOString(), agent_name: user?.name || 'Agent' } }))
+                          toast('Quotation approved! Booking confirmed.')
+                        }}
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-sm transition-all"
+                      >
+                        <Check className="h-4 w-4" /> Approve & Confirm Booking
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const note = prompt('Enter rejection reason:') || 'Agent rejected after revision'
+                          await agentActionOnQuote(quote.id, 'rejected', note, user)
+                          setQuote(prev => ({ ...prev, status: 'Rejected by Agent', agent_review: { status: 'rejected', comment: note } }))
+                          toast('Quotation rejected.')
+                        }}
+                        className="rounded-xl border border-rose-300 bg-white px-4 py-3.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 transition-colors"
+                      >
+                        <X className="h-4 w-4" /> Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
           {/* DYNAMIC CONSIGNMENT LIFECYCLE UPDATE WINDOW */}
           {isAcceptedByCustomer ? (
@@ -964,7 +1013,7 @@ export default function QuoteDetail() {
           )}
 
           {/* PROMINENT CUSTOMER ACTION HERO BANNER (When approved & ready to book) */}
-          {!isAgentOrAdmin && canCustomerAccept && !quote.customer_decision?.status && quote.status !== 'Accepted' && quote.status !== 'Rejected' && (
+          {!isAgentOrAdmin && canCustomerAccept && !hasPriceRevision && !quote.customer_decision?.status && quote.status !== 'Accepted' && quote.status !== 'Rejected' && (
             <div className="mb-8 overflow-hidden rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-700 text-white shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
               <div className="p-6 sm:p-7 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                 <div className="space-y-2 max-w-2xl">
@@ -1007,40 +1056,77 @@ export default function QuoteDetail() {
           )}
 
           {/* ─── AGENT REVISED PRICE NOTICE ─── */}
-          {((agentPriceEdit?.revised_price > 0) || (quote?.agent_price_edit?.revised_price > 0)) && (
-            <div className="mb-6 overflow-hidden rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-5 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-start gap-3.5">
-                  <div className="rounded-xl bg-amber-500 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
-                    <IndianRupee className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block">Agent Revised Quote Price</span>
-                      <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">Updated by {quote.agent_price_edit.agent_name}</span>
+          {Boolean((agentPriceEdit?.revised_price > 0) || (quote?.agent_price_edit?.revised_price > 0)) && (() => {
+            const activeEdit = agentPriceEdit?.revised_price > 0 ? agentPriceEdit : quote?.agent_price_edit
+            if (!activeEdit || !activeEdit.revised_price) return null
+            const customerDecided = Boolean(quote?.customer_decision?.status)
+            return (
+              <div className="mb-6 overflow-hidden rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-5 sm:p-6 shadow-sm">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+                  <div className="flex items-start gap-3.5 max-w-2xl">
+                    <div className="rounded-xl bg-amber-500 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                      <IndianRupee className="h-5 w-5" />
                     </div>
-                    <p className="mt-0.5 text-xs text-amber-900 leading-relaxed">
-                      Your freight agent has reviewed and revised the commercial tariff for this quotation.
-                    </p>
-                    {quote.agent_price_edit.reason && (
-                      <p className="mt-1.5 rounded-lg border border-amber-300 bg-white/70 px-3 py-1.5 text-[11px] italic text-amber-950 font-medium">
-                        Agent Note: &ldquo;{quote.agent_price_edit.reason}&rdquo;
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block">Agent Revised Quote Price</span>
+                        <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">Updated by {activeEdit.agent_name || 'Freight Agent'}</span>
+                        {quote?.customer_decision?.status === 'ACCEPTED' ? (
+                          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-300">Accepted by Customer · Awaiting Agent Final Sign-off</span>
+                        ) : quote?.customer_decision?.status === 'REJECTED' ? (
+                          <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-bold text-rose-800 border border-rose-300">Declined by Customer</span>
+                        ) : (
+                          <span className="rounded-full bg-amber-300 px-2.5 py-0.5 text-[10px] font-bold text-amber-950 border border-amber-400 animate-pulse">Action Required</span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-amber-900 leading-relaxed">
+                        Your freight agent reviewed and adjusted the commercial tariff for this consignment.
                       </p>
+                      {activeEdit.reason && (
+                        <p className="mt-1.5 rounded-lg border border-amber-300 bg-white/80 px-3 py-1.5 text-[11px] italic text-amber-950 font-medium">
+                          Agent Justification: &ldquo;{activeEdit.reason}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-start lg:items-end gap-3 w-full lg:w-auto shrink-0 border-t lg:border-t-0 border-amber-200 pt-3 lg:pt-0">
+                    <div className="text-left lg:text-right">
+                      <div className="text-[10px] font-semibold text-amber-700 uppercase line-through">
+                        System Tariff: ₹ {(quote.indicativeTotal || 0).toLocaleString('en-IN')}
+                      </div>
+                      <div className="font-display text-2xl font-bold text-amber-950">
+                        ₹ {(activeEdit.revised_price).toLocaleString('en-IN')}
+                      </div>
+                      <div className="text-[10px] text-amber-800 font-semibold">Revised All-Inclusive Tariff</div>
+                    </div>
+
+                    {/* Customer Action Buttons directly in Revised Price Banner */}
+                    {!isAgentOrAdmin && !customerDecided && (
+                      <div className="flex items-center gap-2 w-full sm:w-auto mt-1">
+                        <button
+                          type="button"
+                          disabled={deciding}
+                          onClick={() => handleCustomerDecision('accepted')}
+                          className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-emerald-700 transition-all disabled:opacity-50"
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5" /> Accept Revised Price
+                        </button>
+                        <button
+                          type="button"
+                          disabled={deciding}
+                          onClick={() => setShowDeclineModal(true)}
+                          className="rounded-xl border border-amber-400 bg-white px-4 py-2.5 text-xs font-semibold text-amber-950 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 transition-colors disabled:opacity-50"
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" /> Decline
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="text-[10px] font-semibold text-amber-700 uppercase line-through">
-                    Was: ₹ {(quote.indicativeTotal || 0).toLocaleString('en-IN')}
-                  </div>
-                  <div className="font-display text-2xl font-bold text-amber-950">
-                    ₹ {(quote.agent_price_edit.revised_price).toLocaleString('en-IN')}
-                  </div>
-                  <div className="text-[10px] text-amber-800 font-semibold mt-0.5">Revised All-Inclusive Tariff</div>
-                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
 
@@ -1358,17 +1444,20 @@ export default function QuoteDetail() {
                       <h4 className="text-base font-bold text-rose-900">Quotation Declined</h4>
                       <p className="text-xs text-rose-700 mt-1">This quotation was declined by customer.</p>
                     </div>
-                  ) : canCustomerAccept ? (
+                  ) : (canCustomerAccept || (agentPriceEdit && agentPriceEdit.revised_price > 0)) ? (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-5 p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-emerald-50/50 to-white border-2 border-emerald-300">
                       <div className="flex items-start gap-3.5">
                         <div className="rounded-xl bg-emerald-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
                           <Check className="h-5 w-5 stroke-[2.5]" />
                         </div>
                         <div>
-                          <div className="text-sm font-bold text-emerald-950">Approvals Complete · Ready For Your Booking</div>
+                          <div className="text-sm font-bold text-emerald-950">
+                            {agentPriceEdit && agentPriceEdit.revised_price > 0 ? 'Agent Revised Commercial Tariff · Action Required' : 'Approvals Complete · Ready For Your Booking'}
+                          </div>
                           <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
-                            Selected Carrier: <span className="font-bold text-emerald-950">{quote.selected_route?.carrier || 'Standard Route'}</span> · 
-                            Click below to confirm your consignment.
+                            {agentPriceEdit && agentPriceEdit.revised_price > 0
+                              ? `Freight Agent revised tariff to ₹${Number(agentPriceEdit.revised_price).toLocaleString('en-IN')}: "${agentPriceEdit.reason}". Confirm acceptance to proceed.`
+                              : `Selected Carrier: ${quote.selected_route?.carrier || 'Standard Route'} · Click below to confirm your consignment.`}
                           </p>
                         </div>
                       </div>
@@ -1380,7 +1469,7 @@ export default function QuoteDetail() {
                           className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-7 py-3.5 text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
                         >
                           <ThumbsUp className="h-4 w-4" />
-                          {deciding ? 'Confirming...' : 'Accept & Book Quotation'}
+                          {deciding ? 'Confirming...' : (agentPriceEdit && agentPriceEdit.revised_price > 0 ? `Accept Revised ₹${Number(agentPriceEdit.revised_price).toLocaleString('en-IN')}` : 'Accept & Book Quotation')}
                         </button>
                         <button
                           type="button"
