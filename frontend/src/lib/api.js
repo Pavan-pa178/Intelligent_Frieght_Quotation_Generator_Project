@@ -910,6 +910,69 @@ export function getAgentActions() {
   }
 }
 
+// ---- Agent Price Edit ----
+const AGENT_PRICE_EDITS_KEY = 'portline_agent_price_edits'
+
+/**
+ * Save an agent-revised price for a specific quote.
+ * @param {string} quoteId
+ * @param {number} newPrice  - Revised indicative total in INR
+ * @param {string} reason    - Agent's reason/note for the revision
+ * @param {object} agentUser - The logged-in agent user object
+ */
+export function saveAgentPriceEdit(quoteId, newPrice, reason, agentUser) {
+  try {
+    const all = getAgentPriceEdits()
+    all[quoteId] = {
+      revised_price: Number(newPrice),
+      reason: reason || '',
+      agent_name: agentUser?.name || 'Agent',
+      agent_email: agentUser?.email || '',
+      edited_at: new Date().toISOString(),
+    }
+    localStorage.setItem(AGENT_PRICE_EDITS_KEY, JSON.stringify(all))
+
+    // Also persist into the main quote record so fetchQuoteById picks it up
+    try {
+      const QUOTES_STORAGE_KEY = 'portline_saved_quotes'
+      const savedRaw = localStorage.getItem(QUOTES_STORAGE_KEY)
+      if (savedRaw) {
+        const saved = JSON.parse(savedRaw)
+        const targetQid = (quoteId || '').trim().toUpperCase()
+        const updated = saved.map(q =>
+          (q.id || '').trim().toUpperCase() === targetQid
+            ? { ...q, agent_price_edit: all[quoteId] }
+            : q
+        )
+        localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+      }
+    } catch {}
+
+    return all[quoteId]
+  } catch {
+    return null
+  }
+}
+
+/** Retrieve all agent price edits keyed by quoteId */
+export function getAgentPriceEdits() {
+  try {
+    const raw = localStorage.getItem(AGENT_PRICE_EDITS_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+/** Clear a single agent price edit (e.g. on quote delete or reset) */
+export function clearAgentPriceEdit(quoteId) {
+  try {
+    const all = getAgentPriceEdits()
+    delete all[quoteId]
+    localStorage.setItem(AGENT_PRICE_EDITS_KEY, JSON.stringify(all))
+  } catch {}
+}
+
 
 // Trigger the full M1->M2->M3->Quote Engine pipeline on the backend
 export async function triggerQuotePipeline(shipmentId, payload = {}) {

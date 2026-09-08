@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from 'react'
+﻿import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, Upload, X, Loader2, AlertTriangle, Receipt, Lock, Sparkles, Trash2 } from 'lucide-react'
+import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, Upload, X, Loader2, AlertTriangle, Receipt, Lock, Sparkles, Trash2, Edit3, IndianRupee, BadgeCheck, RotateCcw } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import WeatherRiskPanel from '../components/WeatherRiskPanel'
@@ -75,6 +75,13 @@ export default function QuoteDetail() {
   const [uploadedFiles, setUploadedFiles] = useState({})
   const [isUploading, setIsUploading] = useState(false)
   const [selectingRouteId, setSelectingRouteId] = useState(null)
+
+  // Agent Price Edit state
+  const [editPriceMode, setEditPriceMode] = useState(false)
+  const [editPriceVal, setEditPriceVal] = useState('')
+  const [editPriceReason, setEditPriceReason] = useState('')
+  const [editPriceSaving, setEditPriceSaving] = useState(false)
+  const [agentPriceEdit, setAgentPriceEdit] = useState(null)
 
   const isAgentOrAdmin = 
     user?.role === 'agent' || 
@@ -567,6 +574,31 @@ export default function QuoteDetail() {
     return []
   }, [docReq, customsData, quote?.status])
 
+  const handleSaveEditedPrice = () => {
+    const parsed = parseFloat(editPriceVal.replace(/,/g, '').replace(/[^\d.]/g, ''))
+    if (!parsed || parsed <= 0) {
+      alert('Please enter a valid revised price greater than 0.')
+      return
+    }
+    if (!editPriceReason.trim()) {
+      alert('Please provide a reason/justification for this price revision.')
+      return
+    }
+    setEditPriceSaving(true)
+    try {
+      const saved = saveAgentPriceEdit(quote.id, parsed, editPriceReason.trim(), user)
+      setAgentPriceEdit(saved)
+      setEditPriceMode(false)
+      // Show updated price in quote view
+      setQuote(prev => ({ ...prev, agent_price_edit: saved }))
+      toast('Revised price saved! The updated quotation will be visible to the customer and admin.')
+    } catch {
+      toast('Failed to save price revision. Please try again.')
+    } finally {
+      setEditPriceSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="py-20 text-center text-brand-slate">
@@ -947,6 +979,42 @@ export default function QuoteDetail() {
                     <ThumbsDown className="h-3.5 w-3.5" />
                     Decline / Revision
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── AGENT REVISED PRICE NOTICE ─── */}
+          {(quote?.agent_price_edit?.revised_price > 0) && (
+            <div className="mb-6 overflow-hidden rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-amber-500 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <IndianRupee className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold uppercase tracking-wider text-amber-950 block">Agent Revised Quote Price</span>
+                      <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">Updated by {quote.agent_price_edit.agent_name}</span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-amber-900 leading-relaxed">
+                      Your freight agent has reviewed and revised the commercial tariff for this quotation.
+                    </p>
+                    {quote.agent_price_edit.reason && (
+                      <p className="mt-1.5 rounded-lg border border-amber-300 bg-white/70 px-3 py-1.5 text-[11px] italic text-amber-950 font-medium">
+                        Agent Note: &ldquo;{quote.agent_price_edit.reason}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-[10px] font-semibold text-amber-700 uppercase line-through">
+                    Was: ₹ {(quote.indicativeTotal || 0).toLocaleString('en-IN')}
+                  </div>
+                  <div className="font-display text-2xl font-bold text-amber-950">
+                    ₹ {(quote.agent_price_edit.revised_price).toLocaleString('en-IN')}
+                  </div>
+                  <div className="text-[10px] text-amber-800 font-semibold mt-0.5">Revised All-Inclusive Tariff</div>
                 </div>
               </div>
             </div>
@@ -1346,6 +1414,138 @@ export default function QuoteDetail() {
                 </div>
               </div>
 
+
+              {/* ─── AGENT EDIT QUOTE PRICE PANEL ─── */}
+              {isAgentOrAdmin && (
+                <div className="rounded-xl border-2 border-brand-navy/20 bg-gradient-to-br from-[#0A2540]/5 via-white to-orange-50/40 p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="rounded-lg bg-brand-navy p-2 text-white shadow-xs">
+                        <IndianRupee className="h-4 w-4 text-amber-300" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-brand-navy">Agent Price Revision</h4>
+                        <p className="text-[11px] text-brand-slate">Override system tariff with agent-adjusted quote</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-brand-orange/10 border border-brand-orange/30 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-orange">
+                      Agent Only
+                    </span>
+                  </div>
+
+                  {/* System vs Revised price comparison */}
+                  <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-brand-cloud/60 p-3 border border-brand-line">
+                    <div className="text-center border-r border-brand-line pr-2">
+                      <div className="text-[10px] font-bold uppercase text-brand-slate tracking-wider mb-1">System Price</div>
+                      <div className="font-mono text-sm font-bold text-brand-navy">Rs.{(quote.indicativeTotal || 0).toLocaleString('en-IN')}</div>
+                    </div>
+                    <div className="text-center pl-2">
+                      <div className="text-[10px] font-bold uppercase text-brand-slate tracking-wider mb-1">Revised Price</div>
+                      {agentPriceEdit && agentPriceEdit.revised_price > 0 ? (
+                        <div className="font-mono text-sm font-bold text-emerald-700">Rs.{(agentPriceEdit.revised_price).toLocaleString('en-IN')}</div>
+                      ) : (
+                        <div className="font-mono text-sm text-brand-slateLight italic">Not revised</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Existing revision badge */}
+                  {agentPriceEdit && agentPriceEdit.revised_price > 0 && !editPriceMode && (
+                    <div className="mb-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <BadgeCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span className="text-xs font-bold text-emerald-800">Revised by {agentPriceEdit.agent_name}</span>
+                        <span className="ml-auto text-[10px] text-emerald-600 font-mono">{new Date(agentPriceEdit.edited_at).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
+                      </div>
+                      {agentPriceEdit.reason && (
+                        <div className="text-[11px] text-emerald-800 italic leading-relaxed">
+                          Reason: &ldquo;{agentPriceEdit.reason}&rdquo;
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Edit form (expanded) */}
+                  {editPriceMode ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-brand-navy">
+                          Revised Price (INR) <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-brand-slate">Rs.</span>
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={editPriceVal}
+                            onChange={e => setEditPriceVal(e.target.value)}
+                            placeholder={String(quote.indicativeTotal || '')}
+                            className="w-full rounded-lg border border-brand-line bg-white pl-9 pr-3 py-2.5 text-sm font-mono font-bold text-brand-navy focus:border-brand-marine focus:outline-none focus:ring-2 focus:ring-brand-marine/20"
+                          />
+                        </div>
+                        {editPriceVal && Number(editPriceVal) > 0 && (
+                          <div className="mt-1 text-[11px] text-brand-slate">
+                            Preview: <span className="font-mono font-bold text-brand-navy">Rs.{Number(editPriceVal).toLocaleString('en-IN')}</span>
+                            {quote.indicativeTotal ? (
+                              <span className={Number(editPriceVal) > quote.indicativeTotal ? "ml-2 font-bold text-rose-600" : "ml-2 font-bold text-emerald-600"}>
+                                ({Number(editPriceVal) > quote.indicativeTotal ? '+' : ''}{Math.round((Number(editPriceVal) - quote.indicativeTotal) / quote.indicativeTotal * 100)}% vs system)
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-brand-navy">
+                          Reason / Justification <span className="text-rose-500">*</span>
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={editPriceReason}
+                          onChange={e => setEditPriceReason(e.target.value)}
+                          placeholder="e.g. Carrier surcharge adjustment, special contract rate, fuel revision..."
+                          className="w-full rounded-lg border border-brand-line bg-white px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none resize-none"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          disabled={editPriceSaving || !editPriceVal || !editPriceReason.trim()}
+                          onClick={handleSaveEditedPrice}
+                          className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-brand-navy px-4 py-2.5 text-xs font-bold text-white hover:bg-brand-marine transition-colors disabled:opacity-50 shadow-xs"
+                        >
+                          {editPriceSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BadgeCheck className="h-3.5 w-3.5" />}
+                          {editPriceSaving ? 'Saving...' : 'Confirm Revised Price'}
+                        </button>
+                        <button
+                          onClick={() => { setEditPriceMode(false) }}
+                          className="flex items-center gap-1.5 rounded-lg border border-brand-line px-4 py-2.5 text-xs font-semibold text-brand-slate hover:bg-brand-cloud transition-colors"
+                        >
+                          <X className="h-3.5 w-3.5" /> Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setEditPriceMode(true); if (!editPriceVal) setEditPriceVal(String(quote.indicativeTotal || '')) }}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-lg border-2 border-brand-navy bg-white px-4 py-2.5 text-xs font-bold text-brand-navy hover:bg-brand-navy hover:text-white transition-all group shadow-xs"
+                      >
+                        <Edit3 className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+                        {agentPriceEdit && agentPriceEdit.revised_price > 0 ? 'Edit Revised Price' : 'Revise Quote Price'}
+                      </button>
+                      {agentPriceEdit && agentPriceEdit.revised_price > 0 && (
+                        <button
+                          onClick={() => { setAgentPriceEdit(null); setEditPriceVal(''); setEditPriceReason(''); saveAgentPriceEdit(quote.id, 0, 'cleared', user) }}
+                          title="Clear revision and revert to system price"
+                          className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               {/* Multi-Stage Sequential Approval Tracker */}
               <div className="rounded-lg2 border border-brand-line bg-white p-5 shadow-sm2">
                 <h4 className="mb-3 text-xs font-bold text-brand-navy uppercase tracking-wider">Approval Sequence</h4>
