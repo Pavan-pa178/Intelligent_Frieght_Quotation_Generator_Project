@@ -923,33 +923,54 @@ const AGENT_PRICE_EDITS_KEY = 'portline_agent_price_edits'
 export function saveAgentPriceEdit(quoteId, newPrice, reason, agentUser) {
   try {
     const all = getAgentPriceEdits()
-    all[quoteId] = {
-      revised_price: Number(newPrice),
-      reason: reason || '',
-      agent_name: agentUser?.name || 'Agent',
-      agent_email: agentUser?.email || '',
-      edited_at: new Date().toISOString(),
+    const numPrice = Number(newPrice)
+    const normalizedId = (quoteId || '').trim().toUpperCase()
+    let record = null
+
+    if (!numPrice || numPrice <= 0) {
+      delete all[quoteId]
+      delete all[normalizedId]
+    } else {
+      record = {
+        revised_price: numPrice,
+        reason: (reason || '').trim(),
+        agent_name: agentUser?.name || 'Freight Agent',
+        agent_email: agentUser?.email || '',
+        edited_at: new Date().toISOString(),
+      }
+      all[quoteId] = record
+      all[normalizedId] = record
     }
     localStorage.setItem(AGENT_PRICE_EDITS_KEY, JSON.stringify(all))
 
-    // Also persist into the main quote record so fetchQuoteById picks it up
+    // Also persist into the main quote record so fetchQuoteById and list views pick it up
     try {
       const QUOTES_STORAGE_KEY = 'portline_saved_quotes'
       const savedRaw = localStorage.getItem(QUOTES_STORAGE_KEY)
       if (savedRaw) {
         const saved = JSON.parse(savedRaw)
-        const targetQid = (quoteId || '').trim().toUpperCase()
-        const updated = saved.map(q =>
-          (q.id || '').trim().toUpperCase() === targetQid
-            ? { ...q, agent_price_edit: all[quoteId] }
-            : q
-        )
+        const updated = saved.map(q => {
+          const qid = (q.id || '').trim().toUpperCase()
+          if (qid === normalizedId) {
+            const copy = { ...q }
+            if (record) {
+              copy.agent_price_edit = record
+            } else {
+              delete copy.agent_price_edit
+            }
+            return copy
+          }
+          return q
+        })
         localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Could not sync quote price edit to saved quotes list', e)
+    }
 
-    return all[quoteId]
-  } catch {
+    return record || { cleared: true }
+  } catch (err) {
+    console.error('saveAgentPriceEdit error:', err)
     return null
   }
 }

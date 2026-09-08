@@ -19,7 +19,9 @@ import {
   uploadQuoteDocuments,
   fetchBackendMLPrice,
   fetchBackendWeatherAssess,
-  fetchBackendCustomsValidate
+  fetchBackendCustomsValidate,
+  saveAgentPriceEdit,
+  getAgentPriceEdits
 } from '../lib/api'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
@@ -119,6 +121,21 @@ export default function QuoteDetail() {
     fetchQuoteById(id).then((res) => {
       setQuote(res)
       setLoading(false)
+
+      // Load agent price revision if one exists
+      if (res) {
+        try {
+          const edits = getAgentPriceEdits()
+          const edit = edits?.[id] || edits?.[(id || '').toUpperCase()] || res.agent_price_edit
+          if (edit && edit.revised_price > 0) {
+            setAgentPriceEdit(edit)
+            setEditPriceVal(String(edit.revised_price))
+            setEditPriceReason(edit.reason || '')
+          }
+        } catch (e) {
+          console.warn('Failed loading agent price revision:', e)
+        }
+      }
 
       // If quote lacks precomputed backend AI, fetch from real backend endpoints
       if (res) {
@@ -575,24 +592,29 @@ export default function QuoteDetail() {
   }, [docReq, customsData, quote?.status])
 
   const handleSaveEditedPrice = () => {
-    const parsed = parseFloat(editPriceVal.replace(/,/g, '').replace(/[^\d.]/g, ''))
+    const rawVal = String(editPriceVal || '').replace(/,/g, '').replace(/[^\d.]/g, '')
+    const parsed = parseFloat(rawVal)
     if (!parsed || parsed <= 0) {
-      alert('Please enter a valid revised price greater than 0.')
+      toast('Please enter a valid revised price greater than 0.')
       return
     }
-    if (!editPriceReason.trim()) {
-      alert('Please provide a reason/justification for this price revision.')
+    if (!editPriceReason || !editPriceReason.trim()) {
+      toast('Please provide a reason / justification for this price revision.')
       return
     }
     setEditPriceSaving(true)
     try {
       const saved = saveAgentPriceEdit(quote.id, parsed, editPriceReason.trim(), user)
-      setAgentPriceEdit(saved)
-      setEditPriceMode(false)
-      // Show updated price in quote view
-      setQuote(prev => ({ ...prev, agent_price_edit: saved }))
-      toast('Revised price saved! The updated quotation will be visible to the customer and admin.')
-    } catch {
+      if (saved && saved.revised_price > 0) {
+        setAgentPriceEdit(saved)
+        setEditPriceMode(false)
+        setQuote(prev => ({ ...prev, agent_price_edit: saved }))
+        toast('Revised price saved! The updated quotation is now active and visible to the customer and admin.')
+      } else {
+        throw new Error('Save did not return a valid revised price')
+      }
+    } catch (err) {
+      console.error('Error in handleSaveEditedPrice:', err)
       toast('Failed to save price revision. Please try again.')
     } finally {
       setEditPriceSaving(false)
@@ -1535,7 +1557,18 @@ export default function QuoteDetail() {
                       </button>
                       {agentPriceEdit && agentPriceEdit.revised_price > 0 && (
                         <button
-                          onClick={() => { setAgentPriceEdit(null); setEditPriceVal(''); setEditPriceReason(''); saveAgentPriceEdit(quote.id, 0, 'cleared', user) }}
+                          onClick={() => {
+                            saveAgentPriceEdit(quote.id, 0, 'cleared', user)
+                            setAgentPriceEdit(null)
+                            setEditPriceVal('')
+                            setEditPriceReason('')
+                            setQuote(prev => {
+                              const copy = { ...prev }
+                              delete copy.agent_price_edit
+                              return copy
+                            })
+                            toast('Price revision cleared. Reverted to standard system tariff.')
+                          }}
                           title="Clear revision and revert to system price"
                           className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
                         >
