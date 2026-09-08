@@ -381,7 +381,14 @@ export default function Agent() {
                           <span>{q.mode}</span>
                           <span>{q.basis}</span>
                           <span>Transit: {q.transit}</span>
-                          {q.indicativeTotal && <span className="font-mono font-semibold text-brand-navy">Rs.{Number(q.indicativeTotal).toLocaleString('en-IN')}</span>}
+                          {q.agent_price_edit && q.agent_price_edit.revised_price > 0 ? (
+                            <span className="font-mono font-bold text-emerald-700">
+                              Rs.{Number(q.agent_price_edit.revised_price).toLocaleString('en-IN')}
+                              <span className="ml-1 text-[10px] font-sans text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Revised</span>
+                            </span>
+                          ) : q.indicativeTotal ? (
+                            <span className="font-mono font-semibold text-brand-navy">Rs.{Number(q.indicativeTotal).toLocaleString('en-IN')}</span>
+                          ) : null}
                         </div>
                       </div>
                       <button

@@ -358,7 +358,23 @@ export default function Quotes() {
                         <td className="py-4 px-5 font-mono">{q.basis}</td>
                         <td className="py-4 px-5">{q.transit}</td>
                         <td className="py-4 px-5 font-mono font-bold text-brand-navy">
-                          {q.indicativeTotal ? `₹ ${q.indicativeTotal.toLocaleString('en-IN')}` : 'Not serviced'}
+                          {q.agent_price_edit && q.agent_price_edit.revised_price > 0 ? (
+                            <div>
+                              <div className="text-emerald-700 flex items-center gap-1.5 flex-wrap">
+                                <span>₹ {q.agent_price_edit.revised_price.toLocaleString('en-IN')}</span>
+                                <span className="rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] px-1.5 py-0.5 font-sans font-bold">
+                                  Revised
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-brand-slate line-through font-normal">
+                                System: ₹ {(q.indicativeTotal || 0).toLocaleString('en-IN')}
+                              </div>
+                            </div>
+                          ) : q.indicativeTotal ? (
+                            `₹ ${q.indicativeTotal.toLocaleString('en-IN')}`
+                          ) : (
+                            'Not serviced'
+                          )}
                         </td>
                         <td className="py-4 px-5">
                           <StatusBadge status={resolveEffectiveQuoteStatus(q)} />

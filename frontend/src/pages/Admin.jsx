@@ -886,7 +886,15 @@ export default function Admin() {
                           </td>
                           <td className="px-4 py-3 text-xs text-brand-slate whitespace-nowrap">{q.mode || 'N/A'}</td>
                           <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-navy whitespace-nowrap">
-                            {q.indicativeTotal ? `Rs.${Number(q.indicativeTotal).toLocaleString('en-IN')}` : 'N/A'}
+                            {q.agent_price_edit && q.agent_price_edit.revised_price > 0 ? (
+                              <div>
+                                <span className="text-emerald-700 font-bold">Rs.{Number(q.agent_price_edit.revised_price).toLocaleString('en-IN')}</span>
+                                <span className="ml-1 text-[10px] text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200 font-sans">Rev</span>
+                                <div className="text-[10px] text-brand-slate line-through font-normal">Rs.{Number(q.indicativeTotal || 0).toLocaleString('en-IN')}</div>
+                              </div>
+                            ) : q.indicativeTotal ? (
+                              `Rs.${Number(q.indicativeTotal).toLocaleString('en-IN')}`
+                            ) : 'N/A'}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <StatusBadge status={q.status || 'Draft'} />

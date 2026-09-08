@@ -672,6 +672,20 @@ export function resolveEffectiveQuoteStatus(q) {
   return rawStatus
 }
 
+function attachAgentPriceEditsToList(list) {
+  if (!Array.isArray(list)) return list
+  const edits = getAgentPriceEdits()
+  return list.map(q => {
+    if (!q || !q.id) return q
+    const norm = (q.id || '').trim().toUpperCase()
+    const edit = edits[q.id] || edits[norm] || q.agent_price_edit
+    if (edit && edit.revised_price > 0) {
+      return { ...q, agent_price_edit: edit }
+    }
+    return q
+  })
+}
+
 export async function fetchQuotes(email) {
   const emailLower = (email || '').trim().toLowerCase()
   const isDemoEmail = emailLower && DEMO_EMAIL_LIST.some(d => d.toLowerCase() === emailLower)
@@ -719,7 +733,7 @@ export async function fetchQuotes(email) {
       }
     } catch {}
 
-    return resolvedRemote
+    return attachAgentPriceEditsToList(resolvedRemote)
   }
 
   // Fallback to local storage ONLY if backend is offline or unreachable
@@ -739,10 +753,10 @@ export async function fetchQuotes(email) {
   }
 
   if (email) {
-    return resolvedLocal.filter(q => (q.user_email || '').trim().toLowerCase() === emailLower)
+    return attachAgentPriceEditsToList(resolvedLocal).filter(q => (q.user_email || '').trim().toLowerCase() === emailLower)
   }
 
-  return resolvedLocal
+  return attachAgentPriceEditsToList(resolvedLocal)
 }
 
 export async function deleteQuote(id) {
@@ -802,19 +816,33 @@ export async function clearAllQuotes() {
 
 export async function fetchQuoteById(id) {
   if (!id) return null
+  const normId = id.trim().toUpperCase()
+  const edits = getAgentPriceEdits()
+  const attachEdit = (q) => {
+    if (!q) return q
+    const edit = edits[q.id] || edits[normId] || q.agent_price_edit
+    if (edit && edit.revised_price > 0) {
+      return { ...q, agent_price_edit: edit }
+    }
+    return q
+  }
+
   if (MOCK_MODE) {
     await delay(20)
     const all = [...getSavedQuotes(), ...seedQuotes]
-    return all.find(q => q.id?.toUpperCase() === id.toUpperCase()) || null
+    const found = all.find(q => q.id?.toUpperCase() === normId) || null
+    return attachEdit(found)
   }
   try {
     const res = await apiFetch(`/api/v1/quotes/${id}/`)
-    if (res && res.id) return res
+    if (res && res.id) return attachEdit(res)
     const all = [...getSavedQuotes(), ...seedQuotes]
-    return all.find(q => q.id?.toUpperCase() === id.toUpperCase()) || null
+    const found = all.find(q => q.id?.toUpperCase() === normId) || null
+    return attachEdit(found)
   } catch {
     const all = [...getSavedQuotes(), ...seedQuotes]
-    return all.find(q => q.id?.toUpperCase() === id.toUpperCase()) || null
+    const found = all.find(q => q.id?.toUpperCase() === normId) || null
+    return attachEdit(found)
   }
 }
 

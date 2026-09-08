@@ -364,7 +364,7 @@ export default function QuoteDetail() {
   // Clean, transparent commercial tariff breakdown for customers & invoices
   const customerTariffBreakdown = useMemo(() => {
     if (!quote) return []
-    const total = quote.indicativeTotal || 0
+    const total = (agentPriceEdit?.revised_price > 0 ? agentPriceEdit.revised_price : quote.indicativeTotal) || 0
     const modeLabel = quote.mode || 'Freight'
     const basisLabel = quote.basis || 'Per Unit Tariff'
 
@@ -978,7 +978,7 @@ export default function QuoteDetail() {
                   <p className="text-xs sm:text-sm text-emerald-100 leading-relaxed">
                     Both Freight Agent and Customs Authorities have verified and cleared all compliance and statutory tariffs. 
                     Confirm now to lock in your carrier slot with <b>{quote.selected_route?.carrier || 'your chosen carrier'}</b> for 
-                    <span className="font-bold text-white ml-1">₹ {(quote.indicativeTotal || 0).toLocaleString('en-IN')}</span>.
+                    <span className="font-bold text-white ml-1">₹ {((agentPriceEdit?.revised_price > 0 ? agentPriceEdit.revised_price : quote.indicativeTotal) || 0).toLocaleString('en-IN')}</span>.
                   </p>
                 </div>
 
@@ -1007,7 +1007,7 @@ export default function QuoteDetail() {
           )}
 
           {/* ─── AGENT REVISED PRICE NOTICE ─── */}
-          {(quote?.agent_price_edit?.revised_price > 0) && (
+          {((agentPriceEdit?.revised_price > 0) || (quote?.agent_price_edit?.revised_price > 0)) && (
             <div className="mb-6 overflow-hidden rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-start gap-3.5">
