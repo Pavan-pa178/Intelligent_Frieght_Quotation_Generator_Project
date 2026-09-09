@@ -694,11 +694,18 @@ function attachAgentPriceEditsToList(list) {
   return list.map(q => {
     if (!q || !q.id) return q
     const norm = (q.id || '').trim().toUpperCase()
-    const edit = edits[q.id] || edits[norm] || q.agent_price_edit
+    const edit = q.agent_price_edit || edits[q.id] || edits[norm]
     if (edit && edit.revised_price > 0) {
-      return { ...q, agent_price_edit: edit }
+      const withEdit = { ...q, agent_price_edit: edit }
+      return {
+        ...withEdit,
+        status: resolveEffectiveQuoteStatus(withEdit)
+      }
     }
-    return q
+    return {
+      ...q,
+      status: resolveEffectiveQuoteStatus(q)
+    }
   })
 }
 
@@ -737,24 +744,16 @@ export async function fetchQuotes(email) {
       resolvedRemote = [...resolvedRemote, ...missingDemoQuotes]
     }
 
-    // Sync localStorage: remove deleted quotes for this user, preserve other accounts
-    try {
-      const saved = getSavedQuotes()
-      if (email) {
-        const otherUsersQuotes = saved.filter(s => (s.user_email || '').trim().toLowerCase() !== emailLower)
-        const updatedLocal = [...otherUsersQuotes, ...resolvedRemote]
-        localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updatedLocal))
-      } else {
-        localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(resolvedRemote))
-      }
-    } catch {}
+    if (email) {
+      return attachAgentPriceEditsToList(resolvedRemote).filter(q => (q.user_email || '').trim().toLowerCase() === emailLower)
+    }
 
     return attachAgentPriceEditsToList(resolvedRemote)
   }
 
-  // Fallback to local storage ONLY if backend is offline or unreachable
-  const localList = getSavedQuotes()
-  let resolvedLocal = localList.map(q => ({
+  // Fallback to local storage
+  const localQuotes = getSavedQuotes()
+  let resolvedLocal = localQuotes.map(q => ({
     ...q,
     status: resolveEffectiveQuoteStatus(q)
   }))
@@ -836,11 +835,18 @@ export async function fetchQuoteById(id) {
   const edits = getAgentPriceEdits()
   const attachEdit = (q) => {
     if (!q) return q
-    const edit = edits[q.id] || edits[normId] || q.agent_price_edit
+    const edit = q.agent_price_edit || edits[q.id] || edits[normId]
     if (edit && edit.revised_price > 0) {
-      return { ...q, agent_price_edit: edit }
+      const withEdit = { ...q, agent_price_edit: edit }
+      return {
+        ...withEdit,
+        status: resolveEffectiveQuoteStatus(withEdit)
+      }
     }
-    return q
+    return {
+      ...q,
+      status: resolveEffectiveQuoteStatus(q)
+    }
   }
 
   if (MOCK_MODE) {
@@ -916,32 +922,79 @@ export async function agentActionOnQuote(quoteId, action, comment, agentUser) {
   const reviewObj = {
     status: action, // 'approved' | 'rejected' | 'pending'
     comment: comment || '',
-    agent_name: agentUser?.name || 'Agent',
+    agent_name: agentUser?.name || 'Freight Agent',
     agent_email: agentUser?.email || '',
     reviewed_at: new Date().toISOString()
   }
-  const quote_status = action === 'approved' ? 'Agent Approved' : 'Rejected by Agent'
+
+  const all = getSavedQuotes()
+  const targetQid = (quoteId || '').trim().toUpperCase()
+  const targetQ = all.find(q => (q.id || '').trim().toUpperCase() === targetQid)
+  const hasAcceptedRevision = Boolean(
+    targetQ && targetQ.agent_price_edit?.revised_price > 0 &&
+    (targetQ.customer_decision?.status === 'ACCEPTED' || (targetQ.status || '').includes('Price Accepted'))
+  )
+  const quote_status = action === 'approved'
+    ? (hasAcceptedRevision ? 'Accepted' : 'Agent Approved')
+    : 'Rejected by Agent'
+  const pipeStatus = action === 'approved'
+    ? (hasAcceptedRevision ? 'ACCEPTED' : 'AGENT_APPROVED')
+    : 'AGENT_REJECTED'
 
   // Always update local storage
   try {
-    const all = getSavedQuotes()
-    const targetQid = (quoteId || '').trim().toUpperCase()
-    const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? { ...q, agent_review: reviewObj, status: quote_status } : q)
+    const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? {
+      ...q,
+      agent_review: reviewObj,
+      status: quote_status,
+      pipeline_status: pipeStatus
+    } : q)
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
     const raw = localStorage.getItem(AGENT_ACTIONS_KEY)
     const actions = raw ? JSON.parse(raw) : {}
     actions[quoteId] = reviewObj
     localStorage.setItem(AGENT_ACTIONS_KEY, JSON.stringify(actions))
+
+    // If accepted and shipment linked, update shipment to Booked
+    if (quote_status === 'Accepted') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (k && k.startsWith('portline_shipments_')) {
+          try {
+            const rawShp = localStorage.getItem(k)
+            if (rawShp) {
+              const shps = JSON.parse(rawShp)
+              if (Array.isArray(shps)) {
+                let changed = false
+                const mapped = shps.map(s => {
+                  if (s.quote_id === quoteId || s.quoteId === quoteId) {
+                    changed = true
+                    return { ...s, status: 'Booked', pipeline_status: 'CONFIRMED' }
+                  }
+                  return s
+                })
+                if (changed) localStorage.setItem(k, JSON.stringify(mapped))
+              }
+            }
+          } catch {}
+        }
+      }
+    }
   } catch {}
 
   if (MOCK_MODE) {
     await delay(300)
-    return { ok: true, quoteId, review: reviewObj }
+    return { ok: true, quoteId, review: reviewObj, status: quote_status }
   }
 
-  return apiFetch(`/api/v1/quotes/${quoteId}/action/`, {
+  return apiFetch(`/api/v1/quotes/${encodeURIComponent(quoteId)}/action/`, {
     method: 'POST',
-    body: JSON.stringify({ action, comment, agent_email: agentUser?.email }),
+    body: JSON.stringify({
+      action,
+      comment,
+      agent_email: agentUser?.email || '',
+      agent_name: agentUser?.name || 'Freight Agent'
+    }),
   })
 }
 
@@ -1000,6 +1053,7 @@ export function saveAgentPriceEdit(quoteId, newPrice, reason, agentUser) {
             if (record) {
               copy.agent_price_edit = record
               copy.status = 'Price Revised (Awaiting Customer Decision)'
+              copy.pipeline_status = 'PRICE_REVISED'
               delete copy.customer_decision
             } else {
               delete copy.agent_price_edit
@@ -1012,6 +1066,24 @@ export function saveAgentPriceEdit(quoteId, newPrice, reason, agentUser) {
       }
     } catch (e) {
       console.warn('Could not sync quote price edit to saved quotes list', e)
+    }
+
+    // Call backend API to persist price revision across backend and all customer sessions
+    if (!MOCK_MODE && quoteId) {
+      try {
+        apiFetch(`/api/v1/quotes/${encodeURIComponent(quoteId)}/action/`, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'revise_price',
+            revised_price: numPrice > 0 ? numPrice : 0,
+            reason: (reason || '').trim(),
+            agent_name: agentUser?.name || 'Freight Agent',
+            agent_email: agentUser?.email || ''
+          })
+        }).catch(err => console.warn('Backend quote price revision sync note:', err.message))
+      } catch (backendErr) {
+        console.warn('Backend quote price revision error:', backendErr.message)
+      }
     }
 
     return record || { cleared: true }

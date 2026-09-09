@@ -41,8 +41,57 @@ export default function Quotes() {
   const [statusFilter, setStatusFilter] = useState('All')
 
   const { user } = useApp()
+  const toast = useToast()
   const isElevated = user?.role === 'admin' || user?.role === 'agent' || user?.role === 'broker' || user?.role === 'customs_officer' || user?.role === 'agent_operator' || user?.role === 'manager'
   const [activeTab, setActiveTab] = useState(isElevated ? 'all' : 'mine')
+  const [decisionLoading, setDecisionLoading] = useState(null)
+
+  const handleCustomerQuickDecision = async (e, quoteId, decision, revisedPrice) => {
+    if (e && e.stopPropagation) e.stopPropagation()
+    setDecisionLoading(quoteId)
+    try {
+      const isAccept = decision === 'accepted'
+      const note = isAccept ? 'Accepted revised price offer' : 'Declined revised price offer'
+      const res = await customerDecisionOnQuote(quoteId, decision, note, user)
+      if (res && (res.ok || res.status)) {
+        toast?.(isAccept ? `Quotation ${quoteId} revised offer accepted!` : `Quotation ${quoteId} revised offer declined.`)
+        // Update local list
+        setQuotes(prev => prev.map(q => {
+          if (q.id === quoteId) {
+            const newStatus = isAccept ? 'Price Accepted (Pending Agent Sign-off)' : 'Revised Price Declined'
+            return {
+              ...q,
+              status: newStatus,
+              pipeline_status: newStatus.toUpperCase(),
+              customer_decision: {
+                status: decision.toUpperCase(),
+                decided_at: new Date().toISOString(),
+                is_revised_price: true
+              }
+            }
+          }
+          return q
+        }))
+      } else {
+        toast?.('Failed to record price decision')
+      }
+    } catch (err) {
+      console.error(err)
+      toast?.('Error recording decision: ' + (err.message || 'Unknown error'))
+    } finally {
+      setDecisionLoading(null)
+    }
+  }
+
+  const customerPendingRevisions = useMemo(() => {
+    if (isElevated) return []
+    return quotes.filter(q => {
+      const hasEdit = q.agent_price_edit && Number(q.agent_price_edit.revised_price) > 0
+      const decided = Boolean(q.customer_decision?.status)
+      const isAccepted = q.status === 'Accepted' || (q.status || '').includes('Price Accepted')
+      return hasEdit && !decided && !isAccepted
+    })
+  }, [quotes, isElevated])
 
   useEffect(() => {
     if (!user) {
@@ -293,6 +342,73 @@ export default function Quotes() {
                 </button>
               </div>
             </div>
+
+            {/* CUSTOMER ACTION REQUIRED BANNER FOR REVISED TARIFFS */}
+            {!isElevated && customerPendingRevisions.length > 0 && (
+              <div className="mb-6 rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-5 sm:p-6 shadow-sm animate-in fade-in">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-3 border-b border-amber-200">
+                  <div className="flex items-center gap-2.5">
+                    <div className="rounded-xl bg-amber-500 p-2 text-white shadow-xs">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-amber-950">Action Required: Revised Freight Quotations ({customerPendingRevisions.length})</h3>
+                      <p className="text-xs text-amber-900 mt-0.5">Your freight agent adjusted the commercial tariff for the quotations below. Please accept or decline to proceed.</p>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-amber-300 px-3 py-1 text-xs font-bold text-amber-950 border border-amber-400 animate-pulse">
+                    Awaiting Your Decision
+                  </span>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {customerPendingRevisions.map(q => (
+                    <div key={q.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-xl bg-white/90 border border-amber-300 p-4 shadow-2xs">
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-xs text-brand-navy">{q.id}</span>
+                          <span className="text-xs font-semibold text-brand-slate">{q.laneName || `${q.origin} → ${q.destination}`}</span>
+                          <span className="rounded bg-brand-cloud px-2 py-0.5 text-[10px] font-bold text-brand-slate uppercase">{q.mode}</span>
+                        </div>
+                        {q.agent_price_edit?.reason && (
+                          <p className="text-[11px] text-amber-950 italic">Agent note: &ldquo;{q.agent_price_edit.reason}&rdquo; ({q.agent_price_edit.agent_name || 'Agent'})</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 shrink-0 flex-wrap justify-between md:justify-end">
+                        <div className="text-right">
+                          <div className="text-[10px] text-brand-slate line-through">System: ₹ {(q.indicativeTotal || 0).toLocaleString('en-IN')}</div>
+                          <div className="font-mono text-base font-bold text-emerald-700">Revised: ₹ {Number(q.agent_price_edit.revised_price).toLocaleString('en-IN')}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={decisionLoading === q.id}
+                            onClick={(e) => handleCustomerQuickDecision(e, q.id, 'accepted', q.agent_price_edit.revised_price)}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs transition-colors disabled:opacity-50"
+                          >
+                            <Check className="h-3.5 w-3.5 stroke-[2.5]" /> Accept
+                          </button>
+                          <button
+                            type="button"
+                            disabled={decisionLoading === q.id}
+                            onClick={(e) => handleCustomerQuickDecision(e, q.id, 'rejected', q.agent_price_edit.revised_price)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                          >
+                            <X className="h-3.5 w-3.5" /> Decline
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/quotes/${q.id}`)}
+                            className="rounded-xl border border-brand-line bg-white px-3 py-2 text-xs font-semibold text-brand-navy hover:bg-brand-cloud shadow-2xs"
+                          >
+                            Open
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Table */}
             <div className="overflow-x-auto">

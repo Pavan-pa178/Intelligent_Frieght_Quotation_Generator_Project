@@ -168,47 +168,100 @@ def _update_quote_anywhere(qid, update_fields):
 
 
 class QuoteAgentActionView(APIView):
-    """Agent approve / reject a quote and store the decision."""
+    """Agent approve / reject a quote, or revise quote price, and store the decision."""
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, quote_id):
         from datetime import datetime, timezone
         qid = (quote_id or '').strip()
-        action = request.data.get('action', '').strip()   # 'approved' | 'rejected'
+        action = request.data.get('action', '').strip().lower()   # 'approved' | 'rejected' | 'revise_price'
         comment = request.data.get('comment', '').strip()
         agent_email = request.data.get('agent_email', '').strip()
         agent_name = request.data.get('agent_name', '').strip()
 
-        if action not in ('approved', 'rejected'):
-            return Response({'detail': 'action must be approved or rejected'}, status=status.HTTP_400_BAD_REQUEST)
+        if action not in ('approved', 'rejected', 'revise_price'):
+            return Response({'detail': 'action must be approved, rejected, or revise_price'}, status=status.HTTP_400_BAD_REQUEST)
+
+        now_str = datetime.now(timezone.utc).isoformat()
+
+        # 1. Handle Price Revision by Agent
+        if action == 'revise_price':
+            revised_price = request.data.get('revised_price')
+            try:
+                revised_price = float(revised_price)
+            except (TypeError, ValueError):
+                return Response({'detail': 'Valid numeric revised_price required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            reason = (request.data.get('reason') or comment or '').strip()
+            agent_price_edit = {
+                'revised_price': revised_price,
+                'reason': reason,
+                'agent_name': agent_name or 'Freight Agent',
+                'agent_email': agent_email,
+                'edited_at': now_str,
+            }
+
+            try:
+                updated = _update_quote_anywhere(qid, {
+                    'agent_price_edit': agent_price_edit,
+                    'status': 'Price Revised (Awaiting Customer Decision)',
+                    'pipeline_status': 'PRICE_REVISED',
+                    'customer_decision': None
+                })
+                if not updated:
+                    return Response({'detail': f'Quote {qid} not found'}, status=status.HTTP_404_NOT_FOUND)
+
+                fresh_q = _find_quote_anywhere(qid)
+                return Response({
+                    'ok': True,
+                    'quote_id': qid,
+                    'agent_price_edit': agent_price_edit,
+                    'status': 'Price Revised (Awaiting Customer Decision)',
+                    'quote': fresh_q
+                }, status=status.HTTP_200_OK)
+            except Exception as exc:
+                return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # 2. Handle Agent Approval or Rejection (including Final Sign-off after customer accepted revision)
+        q = _find_quote_anywhere(qid)
+        has_accepted_revision = bool(
+            q and q.get('agent_price_edit', {}).get('revised_price') and
+            (q.get('customer_decision', {}).get('status') == 'ACCEPTED' or 'PRICE ACCEPTED' in (q.get('status') or '').upper())
+        )
 
         review = {
             'status': action,
             'comment': comment,
             'agent_email': agent_email,
             'agent_name': agent_name or 'Freight Agent',
-            'reviewed_at': datetime.now(timezone.utc).isoformat(),
+            'reviewed_at': now_str,
         }
 
-        quote_status = 'Agent Approved' if action == 'approved' else 'Rejected by Agent'
-        pipeline_status = 'AGENT_APPROVED' if action == 'approved' else 'AGENT_REJECTED'
+        if action == 'approved':
+            # If customer already accepted revised price, final agent approval confirms the booking!
+            quote_status = 'Accepted' if has_accepted_revision else 'Agent Approved'
+            pipeline_status = 'ACCEPTED' if has_accepted_revision else 'AGENT_APPROVED'
+        else:
+            quote_status = 'Rejected by Agent'
+            pipeline_status = 'AGENT_REJECTED'
 
         try:
-            updated = _update_quote_anywhere(qid, {
+            update_data = {
                 'agent_review': review,
                 'status': quote_status,
                 'pipeline_status': pipeline_status
-            })
+            }
+            updated = _update_quote_anywhere(qid, update_data)
             if not updated:
                 return Response({'detail': f'Quote {qid} not found'}, status=status.HTTP_404_NOT_FOUND)
 
             # Update shipment if linked
-            q = _find_quote_anywhere(qid)
             shipments_col = get_collection('shipments')
             if shipments_col is not None and q and q.get('shipment_id'):
+                shipment_status = 'Booked' if quote_status == 'Accepted' else ('In Review' if action == 'approved' else 'Rejected')
                 shipments_col.update_one(
                     {'shipment_id': q.get('shipment_id')},
-                    {'$set': {'pipeline_status': pipeline_status}}
+                    {'$set': {'pipeline_status': pipeline_status, 'status': shipment_status}}
                 )
         except Exception as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -456,28 +509,44 @@ class QuoteCustomerDecisionView(APIView):
         if decision not in ('accepted', 'rejected'):
             return Response({'detail': 'decision must be accepted or rejected'}, status=status.HTTP_400_BAD_REQUEST)
 
+        q = _find_quote_anywhere(qid) or {}
+        has_revision = bool(
+            q.get('agent_price_edit') and
+            isinstance(q.get('agent_price_edit'), dict) and
+            q.get('agent_price_edit', {}).get('revised_price', 0) > 0
+        )
+
         record = {
             'status': decision.upper(),
             'notes': notes,
             'customer_email': customer_email,
             'customer_name': customer_name,
             'decided_at': datetime.now(timezone.utc).isoformat(),
+            'is_revised_price': has_revision
         }
 
-        quote_status = 'Accepted' if decision == 'accepted' else 'Rejected'
+        if has_revision:
+            if decision == 'accepted':
+                quote_status = 'Price Accepted (Pending Agent Sign-off)'
+                pipeline_status = 'PRICE_ACCEPTED_PENDING_AGENT'
+            else:
+                quote_status = 'Revised Price Declined'
+                pipeline_status = 'REVISED_PRICE_DECLINED'
+        else:
+            quote_status = 'Accepted' if decision == 'accepted' else 'Rejected'
+            pipeline_status = quote_status.upper()
 
         try:
-            q = _find_quote_anywhere(qid)
             _update_quote_anywhere(qid, {
                 'customer_decision': record,
                 'status': quote_status,
-                'pipeline_status': quote_status.upper()
+                'pipeline_status': pipeline_status
             })
             # If shipment linked, update shipment too
             shipments_col = get_collection('shipments')
             if shipments_col is not None and q:
-                shipment_status = 'Booked' if decision == 'accepted' else 'Cancelled'
-                pipe_status = 'CONFIRMED' if decision == 'accepted' else 'CANCELLED'
+                shipment_status = 'Booked' if (decision == 'accepted' and not has_revision) else ('Under Review' if has_revision and decision == 'accepted' else 'Cancelled')
+                pipe_status = 'CONFIRMED' if (decision == 'accepted' and not has_revision) else ('REVISION_ACCEPTED' if has_revision and decision == 'accepted' else 'CANCELLED')
                 query_clauses = [{'quote_id': qid}, {'quoteId': qid}]
                 if q.get('shipment_id'):
                     query_clauses.append({'shipment_id': q.get('shipment_id')})

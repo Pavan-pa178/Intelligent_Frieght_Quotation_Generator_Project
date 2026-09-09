@@ -1,19 +1,85 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Lock, Mail, Phone, Calendar, Plus, Search, Package, ArrowRight, Ship, Plane, Truck, Inbox, XCircle, AlertTriangle, CheckCircle2, RefreshCw, X, User, Building, Key, ShieldCheck, Trash2 } from 'lucide-react'
+import { Lock, Mail, Phone, Calendar, Plus, Search, Package, ArrowRight, Ship, Plane, Truck, Inbox, XCircle, AlertTriangle, CheckCircle2, RefreshCw, X, User, Building, Key, ShieldCheck, Trash2, FileText, IndianRupee, Check, ThumbsUp, ThumbsDown, ExternalLink, Clock, Tag } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { updateUserProfile } from '../lib/api'
+import { updateUserProfile, fetchQuotes, customerDecisionOnQuote, resolveEffectiveQuoteStatus } from '../lib/api'
 
 export default function Portal() {
   const { loggedIn, user, shipments = [], logout, cancelShipment, deleteShipment, updateProfile } = useApp()
   const navigate = useNavigate()
   const toast = useToast()
 
+  const [portalTab, setPortalTab] = useState('shipments') // 'shipments' | 'quotes'
   const [activeFilter, setActiveFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [quotes, setQuotes] = useState([])
+  const [quotesLoading, setQuotesLoading] = useState(true)
+  const [quoteDecisionLoading, setQuoteDecisionLoading] = useState(null)
+
+  useEffect(() => {
+    if (user?.email) {
+      setQuotesLoading(true)
+      fetchQuotes(user.email)
+        .then((res) => {
+          const list = Array.isArray(res) ? res : []
+          setQuotes(list.map(q => ({
+            ...q,
+            status: resolveEffectiveQuoteStatus(q)
+          })))
+        })
+        .catch(err => console.warn('Failed to load quotes for customer portal', err))
+        .finally(() => setQuotesLoading(false))
+    }
+  }, [user?.email])
+
+  const handleCustomerQuickDecision = async (e, quoteId, decision, revisedPrice) => {
+    if (e && e.stopPropagation) e.stopPropagation()
+    setQuoteDecisionLoading(quoteId)
+    try {
+      const isAccept = decision === 'accepted'
+      const note = isAccept ? 'Accepted revised price offer via customer dashboard' : 'Declined revised price offer via customer dashboard'
+      const res = await customerDecisionOnQuote(quoteId, decision, note, user)
+      if (res && (res.ok || res.status)) {
+        toast?.(isAccept ? `Quotation ${quoteId} revised offer accepted!` : `Quotation ${quoteId} revised offer declined.`)
+        // Update local state
+        setQuotes(prev => prev.map(q => {
+          if (q.id === quoteId) {
+            const newStatus = isAccept ? 'Price Accepted (Pending Agent Sign-off)' : 'Revised Price Declined'
+            return {
+              ...q,
+              status: newStatus,
+              pipeline_status: newStatus.toUpperCase(),
+              customer_decision: {
+                status: decision.toUpperCase(),
+                decided_at: new Date().toISOString(),
+                is_revised_price: true
+              }
+            }
+          }
+          return q
+        }))
+      } else {
+        toast?.('Failed to record price decision')
+      }
+    } catch (err) {
+      console.error(err)
+      toast?.('Error recording decision: ' + (err.message || 'Unknown error'))
+    } finally {
+      setQuoteDecisionLoading(null)
+    }
+  }
+
+  const revisedQuotesNeedingAction = useMemo(() => {
+    return quotes.filter(q => {
+      const hasEdit = q.agent_price_edit && Number(q.agent_price_edit.revised_price) > 0
+      const decided = Boolean(q.customer_decision?.status)
+      const isAccepted = q.status === 'Accepted' || (q.status || '').includes('Price Accepted')
+      return hasEdit && !decided && !isAccepted
+    })
+  }, [quotes])
   const [cancelModalShipment, setCancelModalShipment] = useState(null)
   const [cancelReason, setCancelReason] = useState('Customer schedule change')
   const [cancelNotes, setCancelNotes] = useState('')
@@ -187,10 +253,11 @@ export default function Portal() {
                   <MetaRow icon={Calendar} text={'Member since ' + (user?.since || '2026')} />
                 </div>
 
-                <div className="mb-[22px] grid grid-cols-3 gap-2">
-                  <StatBox n={safeShipments.length} label="Total" color="navy" />
+                <div className="mb-[22px] grid grid-cols-4 gap-1.5">
+                  <StatBox n={safeShipments.length} label="Shipments" color="navy" />
                   <StatBox n={activeCount} label="Active" color="marine" />
-                  <StatBox n={cancelledCount} label="Cancelled" color="rose" />
+                  <StatBox n={quotes.length} label="Quotes" color="navy" />
+                  <StatBox n={revisedQuotesNeedingAction.length} label="Revisions" color={revisedQuotesNeedingAction.length > 0 ? "rose" : "slate"} />
                 </div>
 
                 <button onClick={handleOpenEditModal} className="mb-2.5 w-full rounded-lg border-[1.5px] border-brand-line bg-white py-2.5 text-[13.5px] font-semibold shadow-sm2 hover:bg-brand-cloud transition-colors flex items-center justify-center gap-1.5">
@@ -201,8 +268,244 @@ export default function Portal() {
                 </button>
               </div>
 
-              {/* SHIPMENTS MANAGEMENT + QUICK ACTIONS */}
+              {/* MAIN CONTENT AREA */}
               <div>
+                {/* ─── ACTION REQUIRED: REVISED FREIGHT TARIFF OFFERS BANNER ─── */}
+                {revisedQuotesNeedingAction.length > 0 && (
+                  <div className="mb-6 rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-5 sm:p-6 shadow-md animate-in fade-in">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-amber-200">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-xl bg-amber-500 p-2.5 text-white shadow-xs shrink-0 mt-0.5">
+                          <IndianRupee className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-base font-bold text-amber-950">Action Required: Revised Freight Quotations ({revisedQuotesNeedingAction.length})</h3>
+                            <span className="rounded-full bg-amber-300 px-2.5 py-0.5 text-[10px] font-bold text-amber-950 border border-amber-400 animate-pulse">
+                              Awaiting Your Decision
+                            </span>
+                          </div>
+                          <p className="text-xs text-amber-900 mt-1">
+                            Your freight agent has reviewed your shipment requests and submitted revised commercial tariffs with custom price quotes. Review and accept below to secure your booking slots.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      {revisedQuotesNeedingAction.map(q => {
+                        const originalPrice = Number(q.indicativeTotal || 0)
+                        const revisedPrice = Number(q.agent_price_edit?.revised_price || 0)
+                        const diffPct = originalPrice > 0 ? Math.round(((revisedPrice - originalPrice) / originalPrice) * 100) : 0
+                        const isDiscount = diffPct < 0
+
+                        return (
+                          <div key={q.id} className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 rounded-xl bg-white border-2 border-amber-300 p-4 shadow-sm hover:border-amber-400 transition-colors">
+                            <div className="space-y-1.5 min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono font-bold text-xs text-brand-navy bg-brand-cloud px-2 py-0.5 rounded border border-brand-line">{q.id}</span>
+                                <span className="text-xs font-bold text-brand-navy">{q.laneName || `${q.origin || 'Origin'} → ${q.destination || 'Destination'}`}</span>
+                                <span className="rounded-md bg-brand-marinePale px-2 py-0.5 text-[10px] font-bold text-brand-marine uppercase">{q.mode || 'Ocean FCL'}</span>
+                                {diffPct !== 0 && (
+                                  <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${isDiscount ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
+                                    {isDiscount ? `${diffPct}% Discount` : `+${diffPct}% Adjusted`}
+                                  </span>
+                                )}
+                              </div>
+                              {q.agent_price_edit?.reason && (
+                                <p className="text-xs text-amber-950 bg-amber-50/60 p-2 rounded-lg border border-amber-200/70 italic">
+                                  Agent Note: &ldquo;{q.agent_price_edit.reason}&rdquo; <span className="font-semibold text-brand-slate not-italic">— {q.agent_price_edit.agent_name || 'Freight Agent'}</span>
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-4 shrink-0 flex-wrap justify-between lg:justify-end border-t lg:border-t-0 border-amber-200/60 pt-3 lg:pt-0">
+                              <div className="text-left lg:text-right">
+                                <div className="text-[10px] font-semibold text-brand-slate line-through">
+                                  System: ₹ {originalPrice.toLocaleString('en-IN')}
+                                </div>
+                                <div className="font-mono text-lg font-bold text-emerald-700">
+                                  ₹ {revisedPrice.toLocaleString('en-IN')}
+                                </div>
+                                <div className="text-[10px] font-semibold text-emerald-800">Revised Tariff Offer</div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  disabled={quoteDecisionLoading === q.id}
+                                  onClick={(e) => handleCustomerQuickDecision(e, q.id, 'accepted', revisedPrice)}
+                                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs hover:shadow transition-all disabled:opacity-50"
+                                >
+                                  <Check className="h-3.5 w-3.5 stroke-[2.5]" /> Accept ₹{revisedPrice.toLocaleString('en-IN')}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={quoteDecisionLoading === q.id}
+                                  onClick={(e) => handleCustomerQuickDecision(e, q.id, 'rejected', revisedPrice)}
+                                  className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 bg-white px-3 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                                >
+                                  <X className="h-3.5 w-3.5" /> Decline
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/quotes/${q.id}`)}
+                                  className="inline-flex items-center gap-1 rounded-xl border border-brand-line bg-white px-3 py-2.5 text-xs font-semibold text-brand-navy hover:bg-brand-cloud transition-colors shadow-2xs"
+                                >
+                                  Details <ExternalLink className="h-3 w-3 text-brand-slate" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* DASHBOARD TABS: SHIPMENTS VS QUOTATIONS */}
+                <div className="mb-5 flex items-center gap-2 border-b border-brand-line pb-2">
+                  <button
+                    type="button"
+                    onClick={() => setPortalTab('shipments')}
+                    className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                      portalTab === 'shipments'
+                        ? 'bg-brand-navy text-white shadow-xs'
+                        : 'text-brand-slate hover:text-brand-navy hover:bg-brand-cloud'
+                    }`}
+                  >
+                    <Package className="h-4 w-4" /> Booked Shipments ({safeShipments.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPortalTab('quotes')}
+                    className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                      portalTab === 'quotes'
+                        ? 'bg-brand-navy text-white shadow-xs'
+                        : 'text-brand-slate hover:text-brand-navy hover:bg-brand-cloud'
+                    }`}
+                  >
+                    <FileText className="h-4 w-4" /> My Quotations ({quotes.length})
+                    {revisedQuotesNeedingAction.length > 0 && (
+                      <span className="rounded-full bg-amber-400 text-amber-950 px-2 py-0.5 text-[10px] font-extrabold animate-pulse">
+                        {revisedQuotesNeedingAction.length} new
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* ─── QUOTATIONS TAB VIEW ─── */}
+                {portalTab === 'quotes' && (
+                  <div className="mb-[22px] rounded-lg2 border border-brand-line bg-white p-[30px] shadow-sm2 animate-in fade-in">
+                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-[20px] font-bold text-brand-navy">My Freight Quotations</h3>
+                        <p className="text-xs text-brand-slate mt-0.5">Manage quotation requests, review agent revised tariffs, and book shipments</p>
+                      </div>
+                      <button onClick={() => navigate('/ship')} className="flex items-center gap-1.5 rounded-lg bg-gradient-to-br from-brand-orange to-brand-orangeLight px-4 py-2.5 text-[13.5px] font-semibold text-white shadow-xs hover:opacity-95 transition-opacity">
+                        <Plus className="h-4 w-4" /> Request new quote
+                      </button>
+                    </div>
+
+                    {quotesLoading ? (
+                      <div className="py-12 text-center text-xs text-brand-slate">Loading your quotations…</div>
+                    ) : quotes.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-brand-line p-10 text-center">
+                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-cloud text-brand-slate">
+                          <FileText className="h-6 w-6" />
+                        </div>
+                        <h4 className="mb-1 text-base font-semibold text-slate-800">No quotations generated yet</h4>
+                        <p className="mb-5 text-xs text-brand-slate">You have not submitted any freight quote enquiries yet. Generate an instant rate calculation now.</p>
+                        <button
+                          onClick={() => navigate('/ship')}
+                          className="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-brand-navy/90"
+                        >
+                          <Plus className="h-4 w-4" /> Get Instant Quote
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-brand-line/60">
+                        {quotes.map((q) => {
+                          const hasEdit = q.agent_price_edit && Number(q.agent_price_edit.revised_price) > 0
+                          const isAwaitingAction = hasEdit && !q.customer_decision?.status && q.status !== 'Accepted'
+
+                          return (
+                            <div key={q.id} className="py-4 hover:bg-brand-cloud/40 transition-colors rounded-xl px-3 group">
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="space-y-1 min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-mono font-bold text-xs text-brand-navy">{q.id}</span>
+                                    <span className="text-xs font-bold text-brand-navy">{q.laneName || `${q.origin || 'Origin'} → ${q.destination || 'Destination'}`}</span>
+                                    <span className="rounded bg-brand-cloud px-2 py-0.5 text-[10px] font-bold text-brand-slate uppercase">{q.mode}</span>
+                                    <StatusBadge status={resolveEffectiveQuoteStatus(q)} />
+                                  </div>
+                                  <div className="text-xs text-brand-slate">
+                                    Customer: <span className="font-medium text-brand-navy">{q.customer || user?.name || user?.email}</span> · Created: {q.created || (q.created_at ? new Date(q.created_at).toLocaleDateString('en-IN') : 'Recently')}
+                                  </div>
+                                  {hasEdit && (
+                                    <div className="text-[11px] text-amber-800 mt-1 bg-amber-50 p-2 rounded border border-amber-200">
+                                      Revised by {q.agent_price_edit.agent_name || 'Agent'}: &ldquo;{q.agent_price_edit.reason || 'Tariff updated'}&rdquo;
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="text-right shrink-0">
+                                  {hasEdit ? (
+                                    <div>
+                                      <div className="font-mono text-sm font-bold text-emerald-700">
+                                        ₹ {Number(q.agent_price_edit.revised_price).toLocaleString('en-IN')}
+                                      </div>
+                                      <div className="text-[10px] text-brand-slate line-through">
+                                        System: ₹ {(q.indicativeTotal || 0).toLocaleString('en-IN')}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="font-mono text-sm font-bold text-brand-navy">
+                                      ₹ {(q.indicativeTotal || 0).toLocaleString('en-IN')}
+                                    </div>
+                                  )}
+
+                                  <div className="mt-2 flex items-center gap-2 justify-end">
+                                    {isAwaitingAction && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          disabled={quoteDecisionLoading === q.id}
+                                          onClick={(e) => handleCustomerQuickDecision(e, q.id, 'accepted', q.agent_price_edit.revised_price)}
+                                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs transition-colors disabled:opacity-50"
+                                        >
+                                          <Check className="h-3 w-3" /> Accept
+                                        </button>
+                                        <button
+                                          type="button"
+                                          disabled={quoteDecisionLoading === q.id}
+                                          onClick={(e) => handleCustomerQuickDecision(e, q.id, 'rejected', q.agent_price_edit.revised_price)}
+                                          className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                                        >
+                                          <X className="h-3 w-3" /> Decline
+                                        </button>
+                                      </>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => navigate(`/quotes/${q.id}`, { state: { from: '/portal', fromLabel: 'Back to Portal' } })}
+                                      className="rounded-lg border border-brand-line bg-white px-3 py-1.5 text-xs font-semibold text-brand-navy hover:bg-brand-cloud transition-colors shadow-2xs"
+                                    >
+                                      Open
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ─── SHIPMENTS TAB VIEW ─── */}
+                {portalTab === 'shipments' && (
                 <div className="mb-[22px] rounded-lg2 border border-brand-line bg-white p-[30px] shadow-sm2">
                   <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -386,6 +689,7 @@ export default function Portal() {
                     </div>
                   )}
                 </div>
+                )}
 
                 <div className="rounded-lg2 border border-brand-line bg-white p-[30px] shadow-sm2">
                   <h3 className="mb-[22px] text-[18.5px] font-bold text-brand-navy">Quick actions</h3>
