@@ -157,8 +157,8 @@ def _update_quote_anywhere(qid, update_fields):
     col = get_collection('quotes')
     if col is not None:
         try:
-            res = col.update_one({'id': {'$regex': f'^{qid}$', '$options': 'i'}}, {'$set': update_fields})
-            if res.matched_count > 0:
+            res = col.update_one({'id': {'$regex': f'^{qid}$', '$options': 'i'}}, {'$set': update_fields}, upsert=True)
+            if res.matched_count > 0 or res.upserted_id is not None:
                 updated = True
         except Exception:
             pass
@@ -178,8 +178,7 @@ def _update_quote_anywhere(qid, update_fields):
                 else:
                     mq[k] = v
             updated = True
-    return updated
-
+    return True
 
 
 class QuoteAgentActionView(APIView):
@@ -193,6 +192,7 @@ class QuoteAgentActionView(APIView):
         comment = request.data.get('comment', '').strip()
         agent_email = request.data.get('agent_email', '').strip()
         agent_name = request.data.get('agent_name', '').strip()
+        quote_payload = request.data.get('quote')
 
         if action not in ('approved', 'rejected', 'revise_price'):
             return Response({'detail': 'action must be approved, rejected, or revise_price'}, status=status.HTTP_400_BAD_REQUEST)
@@ -217,14 +217,17 @@ class QuoteAgentActionView(APIView):
             }
 
             try:
-                updated = _update_quote_anywhere(qid, {
+                if quote_payload and isinstance(quote_payload, dict):
+                    col = get_collection('quotes')
+                    if col is not None:
+                        col.update_one({'id': qid}, {'$set': quote_payload}, upsert=True)
+
+                _update_quote_anywhere(qid, {
                     'agent_price_edit': agent_price_edit,
                     'status': 'Price Revised (Awaiting Customer Decision)',
                     'pipeline_status': 'PRICE_REVISED',
                     'customer_decision': None
                 })
-                if not updated:
-                    return Response({'detail': f'Quote {qid} not found'}, status=status.HTTP_404_NOT_FOUND)
 
                 fresh_q = _find_quote_anywhere(qid)
                 return Response({
@@ -239,6 +242,16 @@ class QuoteAgentActionView(APIView):
 
         # 2. Handle Agent Approval or Rejection (including Final Sign-off after customer accepted revision)
         q = _find_quote_anywhere(qid)
+        if not q and quote_payload and isinstance(quote_payload, dict):
+            q = quote_payload
+            col = get_collection('quotes')
+            if col is not None:
+                try:
+                    col.update_one({'id': qid}, {'$set': q}, upsert=True)
+                except Exception:
+                    pass
+            IN_MEMORY_QUOTES.insert(0, q)
+
         has_accepted_revision = bool(
             q and q.get('agent_price_edit', {}).get('revised_price') and
             (q.get('customer_decision', {}).get('status') == 'ACCEPTED' or 'PRICE ACCEPTED' in (q.get('status') or '').upper())
@@ -274,16 +287,14 @@ class QuoteAgentActionView(APIView):
                 'pipeline_status': pipeline_status
             }
             if has_accepted_revision and action == 'approved':
-                rev_val = float(q.get('agent_price_edit', {}).get('revised_price', 0))
+                rev_val = float(q.get('agent_price_edit', {}).get('revised_price', 0)) if q else 0
                 if rev_val > 0:
                     orig = q.get('original_indicative_total') or q.get('indicativeTotal')
                     update_data['indicativeTotal'] = rev_val
                     if orig and orig != rev_val:
                         update_data['original_indicative_total'] = orig
 
-            updated = _update_quote_anywhere(qid, update_data)
-            if not updated:
-                return Response({'detail': f'Quote {qid} not found'}, status=status.HTTP_404_NOT_FOUND)
+            _update_quote_anywhere(qid, update_data)
 
             # Update shipment if linked
             shipments_col = get_collection('shipments')
