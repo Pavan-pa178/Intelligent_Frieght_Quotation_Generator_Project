@@ -155,10 +155,10 @@ export default function Quotes() {
       const matchStatus = 
         statusFilter === 'All' ||
         qStatus === sf ||
-        (sf === 'draft' && (qStatus === 'draft' || qStatus === 'quoted' || qStatus.includes('awaiting'))) ||
-        (sf === 'approved' && (qStatus === 'approved' || qStatus === 'agent approved')) ||
+        (sf === 'draft' && (qStatus === 'draft' || qStatus === 'quoted' || qStatus.includes('pending') || qStatus.includes('awaiting'))) ||
+        (sf === 'approved' && (qStatus.includes('approved') || qStatus === 'approved by agent' || qStatus === 'approved by customs')) ||
         (sf === 'accepted' && (qStatus === 'accepted' || qStatus === 'booked')) ||
-        (sf === 'rejected' && (qStatus.includes('reject') || qStatus === 'declined')) ||
+        (sf === 'rejected' && (qStatus.includes('reject') || qStatus.includes('decline'))) ||
         (sf === 'documents requested' && qStatus.includes('doc'))
 
       return matchSearch && matchLane && matchMode && matchStatus

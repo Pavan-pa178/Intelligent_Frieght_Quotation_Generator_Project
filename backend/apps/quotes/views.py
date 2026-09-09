@@ -253,9 +253,16 @@ class QuoteAgentActionView(APIView):
         }
 
         if action == 'approved':
-            # If customer already accepted revised price, final agent approval confirms the booking!
-            quote_status = 'Accepted' if has_accepted_revision else 'Agent Approved'
-            pipeline_status = 'ACCEPTED' if has_accepted_revision else 'AGENT_APPROVED'
+            # Check if customs already approved
+            is_customs_done = bool(
+                q and (
+                    q.get('customs_review', {}).get('status') == 'approved' or
+                    q.get('pipeline_status') == 'CUSTOMS_APPROVED' or
+                    q.get('m3_customs', {}).get('compliance_status') == 'APPROVED'
+                )
+            )
+            quote_status = 'Approved by Customs' if is_customs_done else 'Approved by Agent'
+            pipeline_status = 'CUSTOMS_APPROVED' if is_customs_done else 'AGENT_APPROVED'
         else:
             quote_status = 'Rejected by Agent'
             pipeline_status = 'AGENT_REJECTED'
@@ -281,7 +288,7 @@ class QuoteAgentActionView(APIView):
             # Update shipment if linked
             shipments_col = get_collection('shipments')
             if shipments_col is not None and q and q.get('shipment_id'):
-                shipment_status = 'Booked' if quote_status == 'Accepted' else ('In Review' if action == 'approved' else 'Rejected')
+                shipment_status = 'In Review' if action == 'approved' else 'Rejected'
                 shipments_col.update_one(
                     {'shipment_id': q.get('shipment_id')},
                     {'$set': {'pipeline_status': pipeline_status, 'status': shipment_status}}
@@ -383,12 +390,12 @@ class QuoteCustomsActionView(APIView):
                 # Both Agent and Customs approved -> Quote is ready for customer acceptance
                 _update_quote_anywhere(qid, {
                     'customs_review': customs_review,
-                    'status': 'Approved',
+                    'status': 'Approved by Customs',
                     'pipeline_status': 'CUSTOMS_APPROVED',
                     'm3_customs.compliance_status': 'APPROVED',
                     'm3_customs.requires_officer_review': False
                 })
-                status_label = 'Approved'
+                status_label = 'Approved by Customs'
 
             elif action == 'request_documents':
                 doc_request = {
@@ -533,39 +540,41 @@ class QuoteCustomerDecisionView(APIView):
             return Response({'detail': 'decision must be accepted or rejected'}, status=status.HTTP_400_BAD_REQUEST)
 
         q = _find_quote_anywhere(qid) or {}
-        has_revision = bool(
-            q.get('agent_price_edit') and
-            isinstance(q.get('agent_price_edit'), dict) and
-            q.get('agent_price_edit', {}).get('revised_price', 0) > 0
+        q_status_upper = (q.get('status') or '').upper()
+        is_revision_acceptance = bool(
+            decision == 'accept_revision' or
+            ('PRICE REVISED' in q_status_upper and decision == 'accepted')
         )
 
         record = {
-            'status': decision.upper(),
+            'status': 'ACCEPTED' if is_revision_acceptance else ('BOOKED' if decision in ('accepted', 'booked') else 'REJECTED'),
             'notes': notes,
             'customer_email': customer_email,
             'customer_name': customer_name,
             'decided_at': datetime.now(timezone.utc).isoformat(),
-            'is_revised_price': has_revision
+            'is_revised_price': is_revision_acceptance,
+            'is_booking_confirmation': not is_revision_acceptance and decision in ('accepted', 'booked')
         }
 
-        if has_revision:
-            if decision == 'accepted':
+        if decision in ('accepted', 'booked'):
+            if is_revision_acceptance:
                 quote_status = 'Price Accepted (Pending Agent Sign-off)'
                 pipeline_status = 'PRICE_ACCEPTED_PENDING_AGENT'
             else:
-                quote_status = 'Revised Price Declined'
-                pipeline_status = 'REVISED_PRICE_DECLINED'
+                quote_status = 'Booked'
+                pipeline_status = 'BOOKED'
         else:
-            quote_status = 'Accepted' if decision == 'accepted' else 'Rejected'
-            pipeline_status = quote_status.upper()
+            quote_status = 'Revised Price Declined' if 'PRICE REVISED' in q_status_upper else 'Declined by Customer'
+            pipeline_status = 'REJECTED'
 
         try:
             update_payload = {
                 'customer_decision': record,
                 'status': quote_status,
-                'pipeline_status': pipeline_status
+                'pipeline_status': pipeline_status,
+                'booking_confirmed': quote_status == 'Booked'
             }
-            if has_revision and decision == 'accepted':
+            if is_revision_acceptance:
                 rev_val = float(q.get('agent_price_edit', {}).get('revised_price', 0))
                 if rev_val > 0:
                     orig = q.get('original_indicative_total') or q.get('indicativeTotal')
@@ -577,14 +586,14 @@ class QuoteCustomerDecisionView(APIView):
             # If shipment linked, update shipment too
             shipments_col = get_collection('shipments')
             if shipments_col is not None and q:
-                shipment_status = 'Booked' if (decision == 'accepted' and not has_revision) else ('Under Review' if has_revision and decision == 'accepted' else 'Cancelled')
-                pipe_status = 'CONFIRMED' if (decision == 'accepted' and not has_revision) else ('REVISION_ACCEPTED' if has_revision and decision == 'accepted' else 'CANCELLED')
+                shipment_status = 'Booked' if quote_status == 'Booked' else ('Under Review' if is_revision_acceptance else 'Cancelled')
+                pipe_status = 'CONFIRMED' if quote_status == 'Booked' else ('REVISION_ACCEPTED' if is_revision_acceptance else 'CANCELLED')
                 query_clauses = [{'quote_id': qid}, {'quoteId': qid}]
                 if q.get('shipment_id'):
                     query_clauses.append({'shipment_id': q.get('shipment_id')})
                 shipments_col.update_many(
                     {'$or': query_clauses},
-                    {'$set': {'status': shipment_status, 'pipeline_status': pipe_status}}
+                    {'$set': {'pipeline_status': pipe_status, 'status': shipment_status}}
                 )
         except Exception as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

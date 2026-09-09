@@ -425,29 +425,37 @@ export default function QuoteDetail() {
   const handleCustomerDecision = async (decision) => {
     setDeciding(true)
     try {
-      const isAccept = decision === 'accepted'
-      const note = decisionNotes || (isAccept ? 'Accepted quote offer' : 'Declined quote offer')
-      await customerDecisionOnQuote(quote.id, decision, note, user)
-      const newStatus = isAccept
-        ? (hasPriceRevision ? 'Price Accepted (Pending Agent Sign-off)' : 'Accepted')
-        : (hasPriceRevision ? 'Revised Price Declined' : 'Rejected')
+      const isBooking = decision === 'booked' || (decision === 'accepted' && isReadyForCustomerBooking)
+      const isAcceptRevision = !isBooking && (decision === 'accept_revision' || (decision === 'accepted' && hasPriceRevision && !quote.customer_decision?.status))
+      const isDecline = decision === 'rejected' || decision === 'declined'
+
+      const effectiveDecision = isBooking ? 'booked' : (isAcceptRevision ? 'accept_revision' : 'rejected')
+      const note = decisionNotes || (isBooking ? 'Confirmed shipment booking' : (isAcceptRevision ? 'Accepted revised price offer' : 'Declined quote offer'))
+
+      await customerDecisionOnQuote(quote.id, effectiveDecision, note, user)
+
+      const newStatus = isBooking
+        ? 'Booked'
+        : (isAcceptRevision ? 'Price Accepted (Pending Agent Sign-off)' : (hasPriceRevision ? 'Revised Price Declined' : 'Rejected'))
 
       const revPrice = (hasPriceRevision && activeRevisedPrice > 0) ? activeRevisedPrice : null
 
-      toast(`Quotation ${quote.id} ${isAccept ? 'accepted' : 'declined'} successfully!`)
+      toast(isBooking ? `Quotation ${quote.id} booked successfully! Carrier slot secured.` : `Quotation ${quote.id} updated.`)
       setQuote(prev => ({
         ...prev,
         status: newStatus,
-        pipeline_status: newStatus.toUpperCase(),
-        ...(isAccept && revPrice ? {
+        pipeline_status: isBooking ? 'BOOKED' : newStatus.toUpperCase(),
+        booking_confirmed: isBooking,
+        ...(revPrice ? {
           indicativeTotal: revPrice,
           original_indicative_total: prev.original_indicative_total || prev.indicativeTotal
         } : {}),
         customer_decision: {
-          status: decision.toUpperCase(),
+          status: isBooking ? 'BOOKED' : (isAcceptRevision ? 'ACCEPTED' : 'REJECTED'),
           notes: note,
           decided_at: new Date().toISOString(),
-          is_revised_price: hasPriceRevision
+          is_revised_price: hasPriceRevision,
+          is_booking_confirmation: isBooking
         }
       }))
       setShowDeclineModal(false)
@@ -538,17 +546,22 @@ export default function QuoteDetail() {
 
   const agentApproved = 
     quote?.agent_review?.status === 'approved' || 
+    quote?.status === 'Approved by Agent' ||
+    quote?.status === 'Agent Approved' ||
+    quote?.pipeline_status === 'AGENT_APPROVED' ||
+    quote?.status === 'Approved by Customs' ||
     quote?.status === 'Approved' ||
-    quote?.pipeline_status === 'CUSTOMS_APPROVED' ||
-    quote?.status === 'Accepted'
+    quote?.pipeline_status === 'CUSTOMS_APPROVED'
 
   const agentRejected = 
     quote?.agent_review?.status === 'rejected' || 
+    quote?.status === 'Rejected by Agent' ||
+    quote?.pipeline_status === 'AGENT_REJECTED' ||
     (quote?.status === 'Rejected' && !quote?.customer_decision?.status && quote?.customs_review?.status !== 'rejected')
 
   const customsApproved = 
     quote?.customs_review?.status === 'approved' || 
-    quote?.status === 'Approved' ||
+    quote?.status === 'Approved by Customs' ||
     quote?.pipeline_status === 'CUSTOMS_APPROVED' ||
     quote?.m3_customs?.compliance_status === 'APPROVED'
 
@@ -558,10 +571,36 @@ export default function QuoteDetail() {
     quote?.pipeline_status === 'CUSTOMS_REJECTED' ||
     quote?.m3_customs?.compliance_status === 'REJECTED'
 
-  const canCustomerAccept = ((agentApproved || quote?.status === 'Approved') && customsApproved) || hasPriceRevision
+  const isQuoteBooked = Boolean(
+    (quote?.status === 'Booked' ||
+     quote?.pipeline_status === 'BOOKED' ||
+     quote?.customer_decision?.status === 'BOOKED' ||
+     quote?.booking_confirmed === true ||
+     (quote?.status === 'Accepted' && quote?.customer_decision?.is_booking_confirmation)) &&
+    quote?.status !== 'Price Accepted (Pending Agent Sign-off)' &&
+    quote?.status !== 'Price Revised (Awaiting Customer Decision)'
+  )
 
-  const isAcceptedByCustomer = quote?.customer_decision?.status === 'ACCEPTED' || quote?.status === 'Accepted'
-  const isRejectedByCustomer = quote?.customer_decision?.status === 'REJECTED' || (quote?.status === 'Rejected' && quote?.customer_decision?.status === 'REJECTED')
+  const isRejectedByCustomer = 
+    quote?.customer_decision?.status === 'REJECTED' ||
+    quote?.status === 'Revised Price Declined' ||
+    quote?.status === 'Declined by Customer' ||
+    (quote?.status === 'Rejected' && quote?.customer_decision?.status === 'REJECTED')
+
+  // Both Agent and Customs must have approved for the customer to be ready to book
+  const isReadyForCustomerBooking = 
+    !isAgentOrAdmin &&
+    !isQuoteBooked &&
+    !isRejectedByCustomer &&
+    !agentRejected &&
+    !customsRejected &&
+    agentApproved &&
+    customsApproved &&
+    quote?.status !== 'Price Accepted (Pending Agent Sign-off)' &&
+    quote?.status !== 'Price Revised (Awaiting Customer Decision)'
+
+  const canCustomerAccept = isReadyForCustomerBooking || hasPriceRevision
+  const isAcceptedByCustomer = isQuoteBooked
 
   const docReq = quote?.customs_document_request
   const docsSubmitted = 
@@ -694,7 +733,7 @@ export default function QuoteDetail() {
               <ArrowLeft className="h-4 w-4" /> {backNav.label}
             </button>
             <div className="flex items-center gap-3">
-              <StatusBadge status={customsApproved && quote.status !== 'Accepted' ? 'Approved' : quote.status} />
+              <StatusBadge status={resolveEffectiveQuoteStatus(quote)} />
               <span className="font-mono text-xs text-brand-slateLight">Generated {displayTimestamp}</span>
               {(isOwner || isAgentOrAdmin) && (
                 <button
@@ -717,59 +756,68 @@ export default function QuoteDetail() {
           </div>
 
           {/* ─── AGENT FINAL SIGN-OFF CARD AFTER CUSTOMER ACCEPTED REVISION ─── */}
-              {isAgentOrAdmin && agentPriceEdit && agentPriceEdit.revised_price > 0 && quote.customer_decision?.status === 'ACCEPTED' && quote.status !== 'Accepted' && (
-                <div className="mb-6 rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-6 shadow-sm animate-in fade-in">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-                    <div className="flex items-start gap-3.5">
-                      <div className="rounded-xl bg-emerald-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
-                        <CheckCircle2 className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-base font-bold text-emerald-950">Customer Accepted Revised Price: ₹{Number(agentPriceEdit.revised_price).toLocaleString('en-IN')}</h4>
-                          <span className="rounded-full bg-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-900 border border-emerald-300">Action Required</span>
-                        </div>
-                        <p className="text-xs text-emerald-800 mt-1">
-                          The customer has agreed to your revised tariff. Grant your final agent approval below to finalize booking and allocate carrier slots.
-                        </p>
-                      </div>
+          {isAgentOrAdmin && agentPriceEdit && agentPriceEdit.revised_price > 0 && 
+           (quote.customer_decision?.status === 'ACCEPTED' || quote.status === 'Price Accepted (Pending Agent Sign-off)') && 
+           quote.agent_review?.status !== 'approved' && !isQuoteBooked && (
+            <div className="mb-6 rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-5 sm:p-6 shadow-sm animate-in fade-in">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+                <div className="flex items-start gap-3.5">
+                  <div className="rounded-xl bg-emerald-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-sm sm:text-base font-bold text-emerald-950">
+                        Customer Accepted Revised Price: ₹{Number(agentPriceEdit.revised_price).toLocaleString('en-IN')}
+                      </h4>
+                      <span className="rounded-full bg-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-900 border border-emerald-300">
+                        Action Required
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await agentActionOnQuote(quote.id, 'approved', 'Agent sign-off granted after customer accepted revised price', user)
-                          const revPrice = Number(agentPriceEdit?.revised_price || quote.agent_price_edit?.revised_price || quote.indicativeTotal)
-                          setQuote(prev => ({
-                            ...prev,
-                            status: 'Accepted',
-                            indicativeTotal: revPrice,
-                            original_indicative_total: prev.original_indicative_total || prev.indicativeTotal,
-                            pipeline_status: 'ACCEPTED',
-                            agent_review: { status: 'approved', reviewed_at: new Date().toISOString(), agent_name: user?.name || 'Agent' }
-                          }))
-                          toast('Quotation approved! Booking confirmed.')
-                        }}
-                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-sm transition-all"
-                      >
-                        <Check className="h-4 w-4" /> Approve & Confirm Booking
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const note = prompt('Enter rejection reason:') || 'Agent rejected after revision'
-                          await agentActionOnQuote(quote.id, 'rejected', note, user)
-                          setQuote(prev => ({ ...prev, status: 'Rejected by Agent', agent_review: { status: 'rejected', comment: note } }))
-                          toast('Quotation rejected.')
-                        }}
-                        className="rounded-xl border border-rose-300 bg-white px-4 py-3.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 transition-colors"
-                      >
-                        <X className="h-4 w-4" /> Reject
-                      </button>
-                    </div>
+                    <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
+                      The customer has agreed to your revised tariff. Grant your agent sign-off below to advance this quotation to customs clearance and lock in carrier slots.
+                    </p>
                   </div>
                 </div>
-              )}
+                <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await agentActionOnQuote(quote.id, 'approved', 'Agent sign-off granted after customer accepted revised price', user)
+                      const revPrice = Number(agentPriceEdit?.revised_price || quote.agent_price_edit?.revised_price || quote.indicativeTotal)
+                      const isCustomsDone = customsApproved || quote?.customs_review?.status === 'approved'
+                      const nextStatus = isCustomsDone ? 'Approved by Customs' : 'Approved by Agent'
+                      const nextPipe = isCustomsDone ? 'CUSTOMS_APPROVED' : 'AGENT_APPROVED'
+                      setQuote(prev => ({
+                        ...prev,
+                        status: nextStatus,
+                        indicativeTotal: revPrice,
+                        original_indicative_total: prev.original_indicative_total || prev.indicativeTotal,
+                        pipeline_status: nextPipe,
+                        agent_review: { status: 'approved', reviewed_at: new Date().toISOString(), agent_name: user?.name || 'Agent' }
+                      }))
+                      toast('Agent sign-off recorded! Consignment advanced to customs review.')
+                    }}
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs transition-all cursor-pointer"
+                  >
+                    <Check className="h-3.5 w-3.5 stroke-[2.5]" /> Approve & Sign-off Tariff
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const note = prompt('Enter rejection reason:') || 'Agent rejected after revision'
+                      await agentActionOnQuote(quote.id, 'rejected', note, user)
+                      setQuote(prev => ({ ...prev, status: 'Rejected by Agent', agent_review: { status: 'rejected', comment: note } }))
+                      toast('Quotation rejected.')
+                    }}
+                    className="rounded-xl border border-rose-300 bg-white px-4 py-2.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <X className="h-3.5 w-3.5" /> Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* DYNAMIC CONSIGNMENT LIFECYCLE UPDATE WINDOW */}
           {quote.status === 'Price Accepted (Pending Agent Sign-off)' && !isAgentOrAdmin ? (
@@ -844,7 +892,7 @@ export default function QuoteDetail() {
                 )}
               </div>
             </div>
-          ) : isAcceptedByCustomer ? (
+          ) : isQuoteBooked ? (
             /* 1c. POST-ACCEPTANCE: QUOTATION BOOKED SUCCESSFULLY */
             <div className="mb-8 rounded-2xl border-2 border-emerald-500 bg-emerald-50/95 p-5 shadow-xs">
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -1087,7 +1135,7 @@ export default function QuoteDetail() {
           )}
 
           {/* PROMINENT CUSTOMER ACTION HERO BANNER (When approved & ready to book) */}
-          {!isAgentOrAdmin && canCustomerAccept && !hasPriceRevision && !quote.customer_decision?.status && quote.status !== 'Accepted' && quote.status !== 'Rejected' && (
+          {isReadyForCustomerBooking && (
             <div className="mb-8 overflow-hidden rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-700 text-white shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
               <div className="p-6 sm:p-7 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                 <div className="space-y-2 max-w-2xl">
@@ -1109,8 +1157,8 @@ export default function QuoteDetail() {
                   <button
                     type="button"
                     disabled={deciding}
-                    onClick={() => handleCustomerDecision('accepted')}
-                    className="flex-1 lg:flex-initial flex items-center justify-center gap-2.5 rounded-xl bg-white px-7 py-4 text-sm font-bold text-emerald-900 shadow-lg hover:bg-emerald-50 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                    onClick={() => handleCustomerDecision('booked')}
+                    className="flex-1 lg:flex-initial flex items-center justify-center gap-2.5 rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-emerald-900 shadow-lg hover:bg-emerald-50 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
                   >
                     <ThumbsUp className="h-4 w-4 text-emerald-600 stroke-[2.5]" />
                     {deciding ? 'Confirming Booking...' : 'Accept & Book Quotation'}
@@ -1119,7 +1167,7 @@ export default function QuoteDetail() {
                     type="button"
                     disabled={deciding}
                     onClick={() => setShowDeclineModal(true)}
-                    className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700/60 border border-emerald-400/40 px-5 py-4 text-xs font-semibold text-white hover:bg-rose-600 hover:border-rose-500 transition-all"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700/60 border border-emerald-400/40 px-5 py-3.5 text-xs font-semibold text-white hover:bg-rose-600 hover:border-rose-500 transition-all cursor-pointer"
                   >
                     <ThumbsDown className="h-3.5 w-3.5" />
                     Decline / Revision
@@ -1514,7 +1562,7 @@ export default function QuoteDetail() {
                         You agreed to the revised tariff of ₹ {Number(agentPriceEdit?.revised_price || quote.agent_price_edit?.revised_price || 0).toLocaleString('en-IN')}. Awaiting final freight agent sign-off.
                       </p>
                     </div>
-                  ) : quote.customer_decision?.status === 'ACCEPTED' || quote.status === 'Accepted' ? (
+                  ) : isQuoteBooked ? (
                     <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-5 text-center">
                       <CheckCircle2 className="h-9 w-9 text-emerald-600 mx-auto mb-2" />
                       <h4 className="text-base font-bold text-emerald-900">Quotation Booked Successfully</h4>
@@ -1522,13 +1570,13 @@ export default function QuoteDetail() {
                         Carrier allocation secured with {quote.selected_route?.carrier || 'Carrier'}. Operations team notified.
                       </p>
                     </div>
-                  ) : quote.customer_decision?.status === 'REJECTED' || quote.status === 'Rejected' ? (
+                  ) : quote.customer_decision?.status === 'REJECTED' || quote.status === 'Rejected' || quote.status === 'Revised Price Declined' ? (
                     <div className="rounded-xl bg-rose-50 border border-rose-200 p-5 text-center">
                       <XCircle className="h-9 w-9 text-rose-600 mx-auto mb-2" />
                       <h4 className="text-base font-bold text-rose-900">Quotation Declined</h4>
                       <p className="text-xs text-rose-700 mt-1">This quotation was declined by customer.</p>
                     </div>
-                  ) : (canCustomerAccept || (agentPriceEdit && agentPriceEdit.revised_price > 0)) ? (
+                  ) : isReadyForCustomerBooking || (hasPriceRevision && !quote.customer_decision?.status && quote.status !== 'Accepted' && quote.status !== 'Rejected') ? (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-5 p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-emerald-50/50 to-white border-2 border-emerald-300">
                       <div className="flex items-start gap-3.5">
                         <div className="rounded-xl bg-emerald-600 p-2.5 text-white shrink-0 mt-0.5 shadow-xs">
@@ -1536,12 +1584,14 @@ export default function QuoteDetail() {
                         </div>
                         <div>
                           <div className="text-sm font-bold text-emerald-950">
-                            {agentPriceEdit && agentPriceEdit.revised_price > 0 ? 'Agent Revised Commercial Tariff · Action Required' : 'Approvals Complete · Ready For Your Booking'}
+                            {hasPriceRevision && !quote.customer_decision?.status
+                              ? 'Agent Revised Commercial Tariff · Action Required'
+                              : 'Approvals Complete · Ready For Your Booking'}
                           </div>
                           <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
-                            {agentPriceEdit && agentPriceEdit.revised_price > 0
-                              ? `Freight Agent revised tariff to ₹${Number(agentPriceEdit.revised_price).toLocaleString('en-IN')}: "${agentPriceEdit.reason}". Confirm acceptance to proceed.`
-                              : `Selected Carrier: ${quote.selected_route?.carrier || 'Standard Route'} · Click below to confirm your consignment.`}
+                            {hasPriceRevision && !quote.customer_decision?.status
+                              ? `Freight Agent revised tariff to ₹${Number(agentPriceEdit?.revised_price || quote.agent_price_edit?.revised_price).toLocaleString('en-IN')}: "${agentPriceEdit?.reason || quote.agent_price_edit?.reason}". Confirm acceptance to proceed.`
+                              : `Selected Carrier: ${quote.selected_route?.carrier || 'Standard Route'} · Click below to lock in carrier slots.`}
                           </p>
                         </div>
                       </div>
@@ -1549,17 +1599,17 @@ export default function QuoteDetail() {
                         <button
                           type="button"
                           disabled={deciding}
-                          onClick={() => handleCustomerDecision('accepted')}
-                          className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-7 py-3.5 text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                          onClick={() => handleCustomerDecision(isReadyForCustomerBooking ? 'booked' : 'accepted')}
+                          className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-7 py-3 text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
                         >
                           <ThumbsUp className="h-4 w-4" />
-                          {deciding ? 'Confirming...' : (agentPriceEdit && agentPriceEdit.revised_price > 0 ? `Accept Revised ₹${Number(agentPriceEdit.revised_price).toLocaleString('en-IN')}` : 'Accept & Book Quotation')}
+                          {deciding ? 'Confirming...' : (hasPriceRevision && !quote.customer_decision?.status ? `Accept Revised ₹${Number(agentPriceEdit?.revised_price || quote.agent_price_edit?.revised_price).toLocaleString('en-IN')}` : 'Accept & Book Quotation')}
                         </button>
                         <button
                           type="button"
                           disabled={deciding}
                           onClick={() => setShowDeclineModal(true)}
-                          className="rounded-xl border border-slate-300 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 px-5 py-3.5 text-xs font-semibold text-slate-700 transition-all"
+                          className="rounded-xl border border-slate-300 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 px-5 py-3 text-xs font-semibold text-slate-700 transition-all cursor-pointer"
                         >
                           <ThumbsDown className="h-3.5 w-3.5" />
                           Decline
