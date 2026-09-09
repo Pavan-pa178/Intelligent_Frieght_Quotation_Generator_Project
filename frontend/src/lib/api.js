@@ -688,25 +688,44 @@ export function resolveEffectiveQuoteStatus(q) {
   return rawStatus
 }
 
+export function sortQuotesByTime(list) {
+  if (!Array.isArray(list)) return []
+  return [...list].sort((a, b) => {
+    const timeA = new Date(a.created_at || a.created || a.date || a.timestamp || 0).getTime() || 0
+    const timeB = new Date(b.created_at || b.created || b.date || b.timestamp || 0).getTime() || 0
+    return timeB - timeA
+  })
+}
+
 function attachAgentPriceEditsToList(list) {
   if (!Array.isArray(list)) return list
   const edits = getAgentPriceEdits()
-  return list.map(q => {
+  const mapped = list.map(q => {
     if (!q || !q.id) return q
     const norm = (q.id || '').trim().toUpperCase()
     const edit = q.agent_price_edit || edits[q.id] || edits[norm]
-    if (edit && edit.revised_price > 0) {
-      const withEdit = { ...q, agent_price_edit: edit }
-      return {
-        ...withEdit,
-        status: resolveEffectiveQuoteStatus(withEdit)
-      }
-    }
+    const hasEdit = Boolean(edit && Number(edit.revised_price) > 0)
+    const effectiveStatus = resolveEffectiveQuoteStatus(hasEdit ? { ...q, agent_price_edit: edit } : q)
+    
+    // Check if revision has been accepted by customer or fully accepted
+    const isAcceptedRevision = Boolean(
+      hasEdit &&
+      (q.customer_decision?.status === 'ACCEPTED' ||
+       effectiveStatus === 'Price Accepted (Pending Agent Sign-off)' ||
+       effectiveStatus === 'Accepted')
+    )
+    const orig = q.original_indicative_total || (isAcceptedRevision && q.indicativeTotal !== Number(edit.revised_price) ? q.indicativeTotal : null)
+    const effectiveTotal = isAcceptedRevision ? Number(edit.revised_price) : q.indicativeTotal
+
     return {
       ...q,
-      status: resolveEffectiveQuoteStatus(q)
+      ...(hasEdit ? { agent_price_edit: edit } : {}),
+      status: effectiveStatus,
+      indicativeTotal: effectiveTotal,
+      ...(orig ? { original_indicative_total: orig } : {})
     }
   })
+  return sortQuotesByTime(mapped)
 }
 
 export async function fetchQuotes(email) {
@@ -744,11 +763,12 @@ export async function fetchQuotes(email) {
       resolvedRemote = [...resolvedRemote, ...missingDemoQuotes]
     }
 
+    const withEdits = attachAgentPriceEditsToList(resolvedRemote)
     if (email) {
-      return attachAgentPriceEditsToList(resolvedRemote).filter(q => (q.user_email || '').trim().toLowerCase() === emailLower)
+      return sortQuotesByTime(withEdits.filter(q => (q.user_email || '').trim().toLowerCase() === emailLower))
     }
 
-    return attachAgentPriceEditsToList(resolvedRemote)
+    return sortQuotesByTime(withEdits)
   }
 
   // Fallback to local storage
@@ -767,11 +787,12 @@ export async function fetchQuotes(email) {
     resolvedLocal = [...resolvedLocal, ...missingDemoQuotes]
   }
 
+  const withEdits = attachAgentPriceEditsToList(resolvedLocal)
   if (email) {
-    return attachAgentPriceEditsToList(resolvedLocal).filter(q => (q.user_email || '').trim().toLowerCase() === emailLower)
+    return sortQuotesByTime(withEdits.filter(q => (q.user_email || '').trim().toLowerCase() === emailLower))
   }
 
-  return attachAgentPriceEditsToList(resolvedLocal)
+  return sortQuotesByTime(withEdits)
 }
 
 export async function deleteQuote(id) {
@@ -901,10 +922,7 @@ export async function fetchAllQuotes() {
     try {
       const res = await apiFetch('/api/v1/quotes/')
       if (Array.isArray(res)) {
-        const resolved = res.map(q => ({
-          ...q,
-          status: resolveEffectiveQuoteStatus(q)
-        }))
+        const resolved = sortQuotesByTime(attachAgentPriceEditsToList(res))
         try {
           localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(resolved))
         } catch {}
@@ -913,7 +931,7 @@ export async function fetchAllQuotes() {
     } catch {}
   }
   const localList = getSavedQuotes()
-  return localList.map(q => ({ ...q, status: resolveEffectiveQuoteStatus(q) }))
+  return sortQuotesByTime(attachAgentPriceEditsToList(localList))
 }
 
 // Agent approves or rejects a quote
@@ -941,15 +959,24 @@ export async function agentActionOnQuote(quoteId, action, comment, agentUser) {
     ? (hasAcceptedRevision ? 'ACCEPTED' : 'AGENT_APPROVED')
     : 'AGENT_REJECTED'
 
+  const revisedVal = (hasAcceptedRevision && targetQ?.agent_price_edit?.revised_price > 0)
+    ? Number(targetQ.agent_price_edit.revised_price)
+    : null
+  const origIndicative = (revisedVal && targetQ)
+    ? (targetQ.original_indicative_total || (targetQ.indicativeTotal !== revisedVal ? targetQ.indicativeTotal : null))
+    : null
+
   // Always update local storage
   try {
     const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? {
       ...q,
       agent_review: reviewObj,
       status: quote_status,
-      pipeline_status: pipeStatus
+      pipeline_status: pipeStatus,
+      ...(revisedVal ? { indicativeTotal: revisedVal } : {}),
+      ...(origIndicative ? { original_indicative_total: origIndicative } : {})
     } : q)
-    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(sortQuotesByTime(updated)))
     const raw = localStorage.getItem(AGENT_ACTIONS_KEY)
     const actions = raw ? JSON.parse(raw) : {}
     actions[quoteId] = reviewObj
@@ -1141,8 +1168,22 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
   try {
     const all = getSavedQuotes()
     const targetQid = (quoteId || '').trim().toUpperCase()
-    const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? { ...q, customer_decision: record, status, pipeline_status: status.toUpperCase() } : q)
-    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+    const revisedVal = (hasRevision && decision === 'accepted' && targetQ?.agent_price_edit?.revised_price > 0)
+      ? Number(targetQ.agent_price_edit.revised_price)
+      : null
+    const origIndicative = (revisedVal && targetQ)
+      ? (targetQ.original_indicative_total || (targetQ.indicativeTotal !== revisedVal ? targetQ.indicativeTotal : null))
+      : null
+
+    const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? {
+      ...q,
+      customer_decision: record,
+      status,
+      pipeline_status: status.toUpperCase(),
+      ...(revisedVal ? { indicativeTotal: revisedVal } : {}),
+      ...(origIndicative ? { original_indicative_total: origIndicative } : {})
+    } : q)
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(sortQuotesByTime(updated)))
 
     // Also sync linked shipment in user's localStorage
     for (let i = 0; i < localStorage.length; i++) {

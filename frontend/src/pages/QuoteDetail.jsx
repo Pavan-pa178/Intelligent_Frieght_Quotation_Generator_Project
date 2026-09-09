@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { FileText, ArrowLeft, Ship, Check, ShieldCheck, CheckCircle2, XCircle, Clock, ThumbsUp, ThumbsDown, Upload, X, Loader2, AlertTriangle, Receipt, Lock, Sparkles, Trash2, Edit3, IndianRupee, BadgeCheck, RotateCcw } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
@@ -362,45 +362,26 @@ export default function QuoteDetail() {
     })
   }, [quote, liveML, d])
 
+  const activeRevisedPrice = Number(agentPriceEdit?.revised_price || quote?.agent_price_edit?.revised_price || 0)
+  const hasPriceRevision = Boolean(activeRevisedPrice > 0 || quote?.agent_price_edit?.revised_price > 0 || quote?.original_indicative_total)
+  const isRevisionAccepted = Boolean(
+    activeRevisedPrice > 0 &&
+    (quote?.customer_decision?.status === 'ACCEPTED' ||
+     quote?.status === 'Price Accepted (Pending Agent Sign-off)' ||
+     quote?.status === 'Accepted')
+  )
+  const effectiveDisplayTotal = isRevisionAccepted
+    ? activeRevisedPrice
+    : Number(quote?.indicativeTotal || 0)
+
   // Clean, transparent commercial tariff breakdown for customers & invoices
   const customerTariffBreakdown = useMemo(() => {
     if (!quote) return []
-    const total = (agentPriceEdit?.revised_price > 0 ? agentPriceEdit.revised_price : quote.indicativeTotal) || 0
+    const total = effectiveDisplayTotal || (quote.indicativeTotal || 0)
     const modeLabel = quote.mode || 'Freight'
     const basisLabel = quote.basis || 'Per Unit Tariff'
 
-    if (Array.isArray(d.costBreakdown) && d.costBreakdown.length > 0) {
-      const cleanItems = d.costBreakdown
-        .filter(item => !item.isSubtotal && !item.label?.toLowerCase().includes('margin'))
-        .map(item => {
-          let note = ''
-          if (item.label?.toLowerCase().includes('baf')) note = 'Bunker & marine fuel price adjustment surcharge'
-          else if (item.label?.toLowerCase().includes('thc')) note = 'Origin port container terminal handling charge'
-          else if (item.label?.toLowerCase().includes('doc')) note = 'Statutory carrier bill of lading & booking fee'
-          else if (item.label?.toLowerCase().includes('base')) note = `Linehaul carriage across ${quote.laneCode || 'route'}`
-
-          return {
-            label: item.label,
-            val: item.val,
-            basis: item.isTotal ? 'All-Inclusive Total' : basisLabel,
-            isTotal: item.isTotal,
-            note
-          }
-        })
-
-      if (!cleanItems.some(i => i.isTotal)) {
-        cleanItems.push({
-          label: 'Total Commercial Tariff',
-          val: total,
-          basis: 'All-Inclusive Total',
-          isTotal: true,
-          note: 'Applicable all-in carrier rate'
-        })
-      }
-      return cleanItems
-    }
-
-    // Default commercial tariff build-up calculated from indicativeTotal
+    // Clean commercial tariff build-up calculated from effectiveDisplayTotal
     const baseVal = Math.round(total * 0.72)
     const bafVal = Math.round(total * 0.10)
     const thcVal = Math.round(total * 0.15)
@@ -428,18 +409,18 @@ export default function QuoteDetail() {
       {
         label: 'Carrier Documentation & Port Filing',
         val: docVal > 0 ? docVal : 3000,
-        basis: 'Flat Statutory Fee',
-        note: 'Electronic manifest transmission and document generation'
+        basis: 'Statutory BL Fee',
+        note: 'Export declarations and customs manifest transmission'
       },
       {
-        label: 'Total Commercial Tariff (Indicative)',
+        label: isRevisionAccepted ? 'Revised All-Inclusive Total' : 'Total Commercial Tariff (Indicative)',
         val: total,
         basis: 'All-Inclusive Total',
         isTotal: true,
-        note: 'Guaranteed valid for standard dispatch window'
+        note: isRevisionAccepted ? 'Agreed agent revised tariff' : 'Guaranteed valid for standard dispatch window'
       }
     ]
-  }, [quote, d.costBreakdown])
+  }, [quote, effectiveDisplayTotal, isRevisionAccepted])
 
   const handleCustomerDecision = async (decision) => {
     setDeciding(true)
@@ -451,11 +432,17 @@ export default function QuoteDetail() {
         ? (hasPriceRevision ? 'Price Accepted (Pending Agent Sign-off)' : 'Accepted')
         : (hasPriceRevision ? 'Revised Price Declined' : 'Rejected')
 
+      const revPrice = (hasPriceRevision && activeRevisedPrice > 0) ? activeRevisedPrice : null
+
       toast(`Quotation ${quote.id} ${isAccept ? 'accepted' : 'declined'} successfully!`)
       setQuote(prev => ({
         ...prev,
         status: newStatus,
         pipeline_status: newStatus.toUpperCase(),
+        ...(isAccept && revPrice ? {
+          indicativeTotal: revPrice,
+          original_indicative_total: prev.original_indicative_total || prev.indicativeTotal
+        } : {}),
         customer_decision: {
           status: decision.toUpperCase(),
           notes: note,
@@ -571,7 +558,6 @@ export default function QuoteDetail() {
     quote?.pipeline_status === 'CUSTOMS_REJECTED' ||
     quote?.m3_customs?.compliance_status === 'REJECTED'
 
-  const hasPriceRevision = Boolean((agentPriceEdit?.revised_price > 0) || (quote?.agent_price_edit?.revised_price > 0))
   const canCustomerAccept = ((agentApproved || quote?.status === 'Approved') && customsApproved) || hasPriceRevision
 
   const isAcceptedByCustomer = quote?.customer_decision?.status === 'ACCEPTED' || quote?.status === 'Accepted'
@@ -753,7 +739,15 @@ export default function QuoteDetail() {
                         type="button"
                         onClick={async () => {
                           await agentActionOnQuote(quote.id, 'approved', 'Agent sign-off granted after customer accepted revised price', user)
-                          setQuote(prev => ({ ...prev, status: 'Accepted', pipeline_status: 'ACCEPTED', agent_review: { status: 'approved', reviewed_at: new Date().toISOString(), agent_name: user?.name || 'Agent' } }))
+                          const revPrice = Number(agentPriceEdit?.revised_price || quote.agent_price_edit?.revised_price || quote.indicativeTotal)
+                          setQuote(prev => ({
+                            ...prev,
+                            status: 'Accepted',
+                            indicativeTotal: revPrice,
+                            original_indicative_total: prev.original_indicative_total || prev.indicativeTotal,
+                            pipeline_status: 'ACCEPTED',
+                            agent_review: { status: 'approved', reviewed_at: new Date().toISOString(), agent_name: user?.name || 'Agent' }
+                          }))
                           toast('Quotation approved! Booking confirmed.')
                         }}
                         className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-sm transition-all"
@@ -778,8 +772,8 @@ export default function QuoteDetail() {
               )}
 
           {/* DYNAMIC CONSIGNMENT LIFECYCLE UPDATE WINDOW */}
-          {quote.status === 'Price Accepted (Pending Agent Sign-off)' ? (
-            /* 1a. CUSTOMER ACCEPTED REVISED PRICE · PENDING FINAL AGENT SIGN-OFF */
+          {quote.status === 'Price Accepted (Pending Agent Sign-off)' && !isAgentOrAdmin ? (
+            /* 1a. CUSTOMER ACCEPTED REVISED PRICE · PENDING FINAL AGENT SIGN-OFF (CUSTOMER ONLY) */
             <div className="mb-8 rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-5 shadow-xs">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-start gap-3.5">
@@ -1139,6 +1133,8 @@ export default function QuoteDetail() {
           {Boolean((agentPriceEdit?.revised_price > 0) || (quote?.agent_price_edit?.revised_price > 0)) && (() => {
             const activeEdit = agentPriceEdit?.revised_price > 0 ? agentPriceEdit : quote?.agent_price_edit
             if (!activeEdit || !activeEdit.revised_price) return null
+            // 1) After customer accepts Agent Revised Quote Price, this should be gone in agent dashboard but present in customer dashboard
+            if (isAgentOrAdmin && (quote?.customer_decision?.status === 'ACCEPTED' || quote?.status === 'Accepted')) return null
             const customerDecided = Boolean(quote?.customer_decision?.status)
             return (
               <div className="mb-6 overflow-hidden rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-5 sm:p-6 shadow-sm">
@@ -1596,7 +1592,7 @@ export default function QuoteDetail() {
                   <DetailRow label="Customer" val={quote.customer} />
                   <DetailRow label="Commodity" val={d.commodity || 'General Cargo'} />
                   {d.hsCode && <DetailRow label="HS Code" val={d.hsCode} mono />}
-                  <DetailRow label="Gross weight" val={`${(d.grossWeightKg || quote.indicativeTotal || 0).toLocaleString()} kg`} />
+                  <DetailRow label="Gross weight" val={`${(d.grossWeightKg || 3000).toLocaleString()} kg`} />
                   <DetailRow label="Mode" val={quote.mode} />
                   <DetailRow label="Basis" val={quote.basis} />
                   {d.destinationPhone && <DetailRow label="Mobile / Phone" val={d.destinationPhone} />}
@@ -1606,12 +1602,132 @@ export default function QuoteDetail() {
                 </div>
 
                 <div className="mt-6 border-t border-brand-line pt-4">
-                  <div className="text-[11px] font-semibold text-brand-slate uppercase">Indicative Total</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[11px] font-semibold text-brand-slate uppercase">Indicative Total</div>
+                    {isRevisionAccepted && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        Revised Tariff
+                      </span>
+                    )}
+                  </div>
                   <div className="font-display text-2xl font-bold text-brand-navy mt-1">
-                    ₹ {(quote.indicativeTotal || 0).toLocaleString('en-IN')}
+                    ₹ {Number(effectiveDisplayTotal).toLocaleString('en-IN')}
                   </div>
                 </div>
               </div>
+
+              {/* ─── PRICE HISTORY (FOR REVISED QUOTES ONLY) ─── */}
+              {hasPriceRevision && (() => {
+                const activeEdit = agentPriceEdit?.revised_price > 0 ? agentPriceEdit : quote.agent_price_edit
+                const revisedPrice = Number(activeEdit?.revised_price || 0)
+                const origPrice = Number(quote.original_indicative_total || (quote.indicativeTotal !== revisedPrice ? quote.indicativeTotal : null) || 242407)
+                const priceDiff = revisedPrice - origPrice
+                const pctDiff = origPrice > 0 ? Math.round((priceDiff / origPrice) * 100) : 0
+                const customerDec = quote.customer_decision
+
+                return (
+                  <div className="rounded-lg2 border border-amber-300/80 bg-gradient-to-b from-amber-50/40 via-white to-white p-6 shadow-sm2 animate-in fade-in">
+                    <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-amber-200/70">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-lg bg-amber-500 p-1.5 text-white shadow-2xs">
+                          <RotateCcw className="h-4 w-4" />
+                        </div>
+                        <h4 className="text-base font-bold text-brand-navy">Price History</h4>
+                      </div>
+                      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">
+                        Revised Tariff
+                      </span>
+                    </div>
+
+                    <div className="relative pl-5 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-amber-200">
+                      
+                      {/* 1. Original System Price */}
+                      <div className="relative">
+                        <span className="absolute -left-5 top-1.5 h-2 w-2 rounded-full bg-brand-slate border-2 border-white ring-2 ring-brand-slate/30" />
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs font-semibold text-brand-slate">Original System Tariff</span>
+                          <span className="font-mono text-xs font-bold text-brand-navy line-through">₹ {origPrice.toLocaleString('en-IN')}</span>
+                        </div>
+                        <p className="text-[10px] text-brand-slateLight mt-0.5">
+                          Initial generated tariff schedule
+                        </p>
+                      </div>
+
+                      {/* 2. Agent Revision */}
+                      <div className="relative">
+                        <span className="absolute -left-5 top-1.5 h-2 w-2 rounded-full bg-amber-500 border-2 border-white ring-2 ring-amber-400" />
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs font-semibold text-amber-950">
+                            Revised by {activeEdit?.agent_name || 'Freight Agent'}
+                          </span>
+                          <span className="font-mono text-xs font-bold text-amber-900">
+                            ₹ {revisedPrice.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-amber-800">
+                          <span className="font-semibold">{priceDiff >= 0 ? `+₹${priceDiff.toLocaleString('en-IN')}` : `-₹${Math.abs(priceDiff).toLocaleString('en-IN')}`} ({priceDiff >= 0 ? '+' : ''}{pctDiff}%)</span>
+                          {activeEdit?.edited_at && (
+                            <>
+                              <span>•</span>
+                              <span>{new Date(activeEdit.edited_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                            </>
+                          )}
+                        </div>
+                        {activeEdit?.reason && (
+                          <div className="mt-1.5 rounded-lg border border-amber-200/80 bg-white/90 px-2.5 py-1 text-[11px] italic text-amber-950">
+                            &ldquo;{activeEdit.reason}&rdquo;
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 3. Customer Decision */}
+                      <div className="relative">
+                        <span className={`absolute -left-5 top-1.5 h-2 w-2 rounded-full border-2 border-white ring-2 ${customerDec?.status === 'ACCEPTED' ? 'bg-emerald-600 ring-emerald-400' : customerDec?.status === 'REJECTED' ? 'bg-rose-600 ring-rose-400' : 'bg-amber-400 ring-amber-300'}`} />
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs font-semibold text-brand-navy">Customer Acceptance</span>
+                          {customerDec?.status === 'ACCEPTED' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              <CheckCircle2 className="h-3 w-3" /> Accepted
+                            </span>
+                          ) : customerDec?.status === 'REJECTED' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                              <XCircle className="h-3 w-3" /> Declined
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                              <Clock className="h-3 w-3" /> Awaiting
+                            </span>
+                          )}
+                        </div>
+                        {customerDec?.decided_at && (
+                          <p className="text-[10px] text-brand-slateLight mt-0.5">
+                            {customerDec.status === 'ACCEPTED' ? 'Offer accepted on ' : 'Offer declined on '}
+                            {new Date(customerDec.decided_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* 4. Final Sign-off (if approved) */}
+                      {quote.status === 'Accepted' && quote.agent_review?.status === 'approved' && (
+                        <div className="relative">
+                          <span className="absolute -left-5 top-1.5 h-2 w-2 rounded-full bg-emerald-600 border-2 border-white ring-2 ring-emerald-500" />
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs font-bold text-emerald-950">Final Agent Sign-off</span>
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                              Confirmed
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-emerald-800 mt-0.5">
+                            Signed off by {quote.agent_review.agent_name || 'Carrier Agent'}
+                            {quote.agent_review.reviewed_at && ` • ${new Date(quote.agent_review.reviewed_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                          </p>
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+                )
+              })()}
 
 
               {/* ─── AGENT EDIT QUOTE PRICE PANEL ─── */}

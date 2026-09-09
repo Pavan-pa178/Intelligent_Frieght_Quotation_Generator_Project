@@ -12,6 +12,17 @@ class QuoteListCreateView(APIView):
 
     def get(self, request):
         import re
+        from datetime import datetime
+
+        def _sort_key(item):
+            val = item.get('created_at') or item.get('created') or ''
+            if isinstance(val, str) and val:
+                try:
+                    return datetime.fromisoformat(val.replace('Z', '+00:00')).timestamp()
+                except Exception:
+                    pass
+            return 0
+
         user_email = request.query_params.get('email', '').strip()
         try:
             col = get_collection('quotes')
@@ -22,6 +33,7 @@ class QuoteListCreateView(APIView):
                 else:
                     query = {}
                 db_quotes = list(col.find(query, {'_id': 0}))
+                db_quotes.sort(key=_sort_key, reverse=True)
                 return Response(db_quotes)
         except Exception:
             pass
@@ -31,8 +43,11 @@ class QuoteListCreateView(APIView):
                 q for q in IN_MEMORY_QUOTES
                 if q.get('user_email', '').strip().lower() == user_email.lower()
             ]
+            matched.sort(key=_sort_key, reverse=True)
             return Response(matched)
-        return Response(IN_MEMORY_QUOTES)
+        sorted_mem = list(IN_MEMORY_QUOTES)
+        sorted_mem.sort(key=_sort_key, reverse=True)
+        return Response(sorted_mem)
 
     def post(self, request):
         payload = request.data
@@ -251,6 +266,14 @@ class QuoteAgentActionView(APIView):
                 'status': quote_status,
                 'pipeline_status': pipeline_status
             }
+            if has_accepted_revision and action == 'approved':
+                rev_val = float(q.get('agent_price_edit', {}).get('revised_price', 0))
+                if rev_val > 0:
+                    orig = q.get('original_indicative_total') or q.get('indicativeTotal')
+                    update_data['indicativeTotal'] = rev_val
+                    if orig and orig != rev_val:
+                        update_data['original_indicative_total'] = orig
+
             updated = _update_quote_anywhere(qid, update_data)
             if not updated:
                 return Response({'detail': f'Quote {qid} not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -537,11 +560,20 @@ class QuoteCustomerDecisionView(APIView):
             pipeline_status = quote_status.upper()
 
         try:
-            _update_quote_anywhere(qid, {
+            update_payload = {
                 'customer_decision': record,
                 'status': quote_status,
                 'pipeline_status': pipeline_status
-            })
+            }
+            if has_revision and decision == 'accepted':
+                rev_val = float(q.get('agent_price_edit', {}).get('revised_price', 0))
+                if rev_val > 0:
+                    orig = q.get('original_indicative_total') or q.get('indicativeTotal')
+                    update_payload['indicativeTotal'] = rev_val
+                    if orig and orig != rev_val:
+                        update_payload['original_indicative_total'] = orig
+
+            _update_quote_anywhere(qid, update_payload)
             # If shipment linked, update shipment too
             shipments_col = get_collection('shipments')
             if shipments_col is not None and q:

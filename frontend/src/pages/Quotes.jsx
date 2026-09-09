@@ -59,10 +59,15 @@ export default function Quotes() {
         setQuotes(prev => prev.map(q => {
           if (q.id === quoteId) {
             const newStatus = isAccept ? 'Price Accepted (Pending Agent Sign-off)' : 'Revised Price Declined'
+            const revPrice = (isAccept && q.agent_price_edit?.revised_price > 0) ? Number(q.agent_price_edit.revised_price) : null
             return {
               ...q,
               status: newStatus,
               pipeline_status: newStatus.toUpperCase(),
+              ...(revPrice ? {
+                indicativeTotal: revPrice,
+                original_indicative_total: q.original_indicative_total || q.indicativeTotal
+              } : {}),
               customer_decision: {
                 status: decision.toUpperCase(),
                 decided_at: new Date().toISOString(),

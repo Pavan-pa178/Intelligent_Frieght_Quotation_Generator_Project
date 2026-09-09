@@ -7,7 +7,7 @@ import {
 import StatusBadge from '../components/StatusBadge'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { fetchAllQuotes, agentActionOnQuote, getAgentActions } from '../lib/api'
+import { fetchAllQuotes, agentActionOnQuote, getAgentActions, sortQuotesByTime } from '../lib/api'
 import { seedQuotes, resolveAssignedAgent, getAgentDesk, CARRIER_DESK_CONFIG, isCarrierMatch, DEFAULT_CARRIER_THEME } from '../lib/mockData'
 
 const DEFAULT_THEME = DEFAULT_CARRIER_THEME || {
@@ -74,9 +74,9 @@ export default function Agent() {
     try {
       const all = await fetchAllQuotes()
       const agentActions = getAgentActions()
-      setQuotes(mergeAgentData(Array.isArray(all) ? all : seedQuotes, agentActions))
+      setQuotes(sortQuotesByTime(mergeAgentData(Array.isArray(all) ? all : seedQuotes, agentActions)))
     } catch {
-      setQuotes(mergeAgentData(seedQuotes, getAgentActions()))
+      setQuotes(sortQuotesByTime(mergeAgentData(seedQuotes, getAgentActions())))
     } finally {
       setLoading(false)
     }
@@ -401,27 +401,13 @@ export default function Agent() {
 
                     {/* Customer Accepted Revision Alert */}
                     {q.agent_price_edit && q.customer_decision?.status === 'ACCEPTED' && q.status !== 'Accepted' && (
-                      <div className="mt-3 rounded-xl bg-emerald-50 border-2 border-emerald-300 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="mx-6 mt-4 rounded-xl bg-emerald-50 border border-emerald-300 p-4 flex items-center justify-between gap-3 shadow-2xs">
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-emerald-950">Customer Accepted Revised Price: ₹{Number(q.agent_price_edit.revised_price).toLocaleString('en-IN')}</span>
-                            <span className="rounded-full bg-emerald-200 text-emerald-900 text-[10px] px-2 py-0.5 font-bold">Action Needed</span>
+                            <span className="rounded-full bg-emerald-200 text-emerald-900 text-[10px] px-2.5 py-0.5 font-bold border border-emerald-300">Action Needed</span>
                           </div>
-                          <p className="text-[11px] text-emerald-800 mt-0.5">Customer accepted your revised tariff. Please grant final sign-off or reject.</p>
-                        </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                          <button
-                            onClick={() => handleAction(q.id, 'approved')}
-                            className="flex-1 sm:flex-initial rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 shadow-2xs"
-                          >
-                            Approve Quote
-                          </button>
-                          <button
-                            onClick={() => handleAction(q.id, 'rejected')}
-                            className="rounded-lg border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"
-                          >
-                            Reject
-                          </button>
+                          <p className="text-[11px] text-emerald-800 mt-1">Customer accepted your revised tariff. Please review and grant final carrier sign-off or reject using the actions below.</p>
                         </div>
                       </div>
                     )}

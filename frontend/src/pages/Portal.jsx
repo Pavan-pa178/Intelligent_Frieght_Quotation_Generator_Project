@@ -5,7 +5,7 @@ import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { updateUserProfile, fetchQuotes, customerDecisionOnQuote, resolveEffectiveQuoteStatus } from '../lib/api'
+import { updateUserProfile, fetchQuotes, customerDecisionOnQuote, resolveEffectiveQuoteStatus, sortQuotesByTime } from '../lib/api'
 
 export default function Portal() {
   const { loggedIn, user, shipments = [], logout, cancelShipment, deleteShipment, updateProfile } = useApp()
@@ -25,10 +25,10 @@ export default function Portal() {
       fetchQuotes(user.email)
         .then((res) => {
           const list = Array.isArray(res) ? res : []
-          setQuotes(list.map(q => ({
+          setQuotes(sortQuotesByTime(list.map(q => ({
             ...q,
             status: resolveEffectiveQuoteStatus(q)
-          })))
+          }))))
         })
         .catch(err => console.warn('Failed to load quotes for customer portal', err))
         .finally(() => setQuotesLoading(false))
@@ -48,10 +48,15 @@ export default function Portal() {
         setQuotes(prev => prev.map(q => {
           if (q.id === quoteId) {
             const newStatus = isAccept ? 'Price Accepted (Pending Agent Sign-off)' : 'Revised Price Declined'
+            const revPrice = (isAccept && (revisedPrice || q.agent_price_edit?.revised_price)) ? Number(revisedPrice || q.agent_price_edit?.revised_price) : null
             return {
               ...q,
               status: newStatus,
               pipeline_status: newStatus.toUpperCase(),
+              ...(revPrice ? {
+                indicativeTotal: revPrice,
+                original_indicative_total: q.original_indicative_total || q.indicativeTotal
+              } : {}),
               customer_decision: {
                 status: decision.toUpperCase(),
                 decided_at: new Date().toISOString(),
