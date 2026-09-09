@@ -778,102 +778,107 @@ export function sortQuotesByTime(list) {
   })
 }
 
-function attachAgentPriceEditsToList(list) {
-  if (!Array.isArray(list)) return list
-  const edits = getAgentPriceEdits()
-  const mapped = list.map(q => {
-    if (!q || !q.id) return q
-    const norm = (q.id || '').trim().toUpperCase()
-    const edit = q.agent_price_edit || edits[q.id] || edits[norm]
-    const hasEdit = Boolean(edit && Number(edit.revised_price) > 0)
-    const effectiveStatus = resolveEffectiveQuoteStatus(hasEdit ? { ...q, agent_price_edit: edit } : q)
-    
-    // Check if revision has been accepted by customer or fully accepted
-    const isAcceptedRevision = Boolean(
-      hasEdit &&
-      (q.customer_decision?.status === 'ACCEPTED' ||
-       effectiveStatus === 'Price Accepted (Pending Agent Sign-off)' ||
-       effectiveStatus === 'Accepted')
-    )
-    const orig = q.original_indicative_total || (isAcceptedRevision && q.indicativeTotal !== Number(edit.revised_price) ? q.indicativeTotal : null)
-    const effectiveTotal = isAcceptedRevision ? Number(edit.revised_price) : q.indicativeTotal
+export function enrichQuoteWithLocalState(q) {
+  if (!q || !q.id) return q
+  const normId = (q.id || '').trim().toUpperCase()
+  const localQuotes = getSavedQuotes()
+  const localMatch = localQuotes.find(lq => (lq.id || '').trim().toUpperCase() === normId)
+  const agentActions = getAgentActions()
+  const localAction = agentActions[q.id] || agentActions[normId]
+  const priceEdits = getAgentPriceEdits()
+  const priceEdit = q.agent_price_edit || priceEdits[q.id] || priceEdits[normId]
 
-    return {
-      ...q,
-      ...(hasEdit ? { agent_price_edit: edit } : {}),
-      status: effectiveStatus,
-      indicativeTotal: effectiveTotal,
-      ...(orig ? { original_indicative_total: orig } : {})
-    }
-  })
-  return sortQuotesByTime(mapped)
+  // Deeply merge fields so latest agent review, customs review, and customer decision are always preserved
+  const merged = {
+    ...q,
+    ...(localMatch || {}),
+    ...(priceEdit && Number(priceEdit.revised_price) > 0 ? { agent_price_edit: priceEdit } : {}),
+    ...(localAction ? { agent_review: localAction } : {}),
+  }
+
+  // Preserve customer decision if either remote or local has it
+  if (!merged.customer_decision && (q.customer_decision || localMatch?.customer_decision)) {
+    merged.customer_decision = q.customer_decision || localMatch?.customer_decision
+  }
+
+  // Preserve customs review if either remote or local has it
+  if (!merged.customs_review && (q.customs_review || localMatch?.customs_review)) {
+    merged.customs_review = q.customs_review || localMatch?.customs_review
+  }
+
+  // Preserve customs docs request if either remote or local has it
+  if (!merged.customs_document_request && (q.customs_document_request || localMatch?.customs_document_request)) {
+    merged.customs_document_request = q.customs_document_request || localMatch?.customs_document_request
+  }
+
+  // Preserve customer uploaded documents if either remote or local has it
+  if ((!merged.customer_uploaded_documents || merged.customer_uploaded_documents.length === 0) &&
+      (q.customer_uploaded_documents?.length > 0 || localMatch?.customer_uploaded_documents?.length > 0)) {
+    merged.customer_uploaded_documents = q.customer_uploaded_documents || localMatch?.customer_uploaded_documents
+  }
+
+  const effectiveStatus = resolveEffectiveQuoteStatus(merged)
+
+  return {
+    ...merged,
+    status: effectiveStatus,
+    pipeline_status: merged.pipeline_status || (effectiveStatus === 'Booked' ? 'BOOKED' : effectiveStatus.toUpperCase().replace(/\s+/g, '_'))
+  }
+}
+
+function attachAgentPriceEditsToList(list) {
+  if (!Array.isArray(list)) return []
+  return list.map(enrichQuoteWithLocalState)
 }
 
 export async function fetchQuotes(email) {
   const emailLower = (email || '').trim().toLowerCase()
   const isDemoEmail = emailLower && DEMO_EMAIL_LIST.some(d => d.toLowerCase() === emailLower)
 
-  let remoteList = null
-  let remoteSuccess = false
+  let list = []
 
   if (!MOCK_MODE) {
     const query = email ? `?email=${encodeURIComponent(email)}` : ''
     try {
       const res = await apiFetch(`/api/v1/quotes/${query}`)
       if (Array.isArray(res)) {
-        remoteList = res
-        remoteSuccess = true
+        list = res
       }
     } catch {
       // Backend unavailable, fallback to local storage
     }
   }
 
-  if (remoteSuccess && remoteList !== null) {
-    let resolvedRemote = remoteList.map(q => ({
-      ...q,
-      status: resolveEffectiveQuoteStatus(q)
-    }))
-
-    // For demo accounts: merge hardcoded demo quotes that aren't already in backend results
-    if (isDemoEmail) {
-      const remoteIds = new Set(resolvedRemote.map(r => (r.id || '').toUpperCase()))
-      const missingDemoQuotes = DEMO_QUOTES
-        .filter(dq => dq.user_email.toLowerCase() === emailLower && !remoteIds.has((dq.id || '').toUpperCase()))
-        .map(dq => ({ ...dq, status: resolveEffectiveQuoteStatus(dq) }))
-      resolvedRemote = [...resolvedRemote, ...missingDemoQuotes]
-    }
-
-    const withEdits = attachAgentPriceEditsToList(resolvedRemote)
-    if (email) {
-      return sortQuotesByTime(withEdits.filter(q => (q.user_email || '').trim().toLowerCase() === emailLower))
-    }
-
-    return sortQuotesByTime(withEdits)
-  }
-
-  // Fallback to local storage
+  // Merge with locally saved quotes so any quotes created or updated in the session are not lost
   const localQuotes = getSavedQuotes()
-  let resolvedLocal = localQuotes.map(q => ({
-    ...q,
-    status: resolveEffectiveQuoteStatus(q)
-  }))
+  const seenIds = new Set(list.map(q => (q.id || '').trim().toUpperCase()))
 
-  // For demo accounts in offline mode: merge hardcoded demo quotes
+  for (const lq of localQuotes) {
+    const lqId = (lq.id || '').trim().toUpperCase()
+    if (lqId && !seenIds.has(lqId)) {
+      if (!emailLower || (lq.user_email || '').trim().toLowerCase() === emailLower) {
+        seenIds.add(lqId)
+        list.push(lq)
+      }
+    }
+  }
+
   if (isDemoEmail) {
-    const localIds = new Set(resolvedLocal.map(r => (r.id || '').toUpperCase()))
-    const missingDemoQuotes = DEMO_QUOTES
-      .filter(dq => dq.user_email.toLowerCase() === emailLower && !localIds.has((dq.id || '').toUpperCase()))
-      .map(dq => ({ ...dq, status: resolveEffectiveQuoteStatus(dq) }))
-    resolvedLocal = [...resolvedLocal, ...missingDemoQuotes]
+    for (const dq of DEMO_QUOTES) {
+      const dqId = (dq.id || '').trim().toUpperCase()
+      if (dqId && !seenIds.has(dqId) && dq.user_email.toLowerCase() === emailLower) {
+        seenIds.add(dqId)
+        list.push(dq)
+      }
+    }
   }
 
-  const withEdits = attachAgentPriceEditsToList(resolvedLocal)
-  if (email) {
-    return sortQuotesByTime(withEdits.filter(q => (q.user_email || '').trim().toLowerCase() === emailLower))
+  const enriched = list.map(enrichQuoteWithLocalState)
+  if (emailLower) {
+    return sortQuotesByTime(enriched.filter(q => (q.user_email || '').trim().toLowerCase() === emailLower))
   }
 
-  return sortQuotesByTime(withEdits)
+  return sortQuotesByTime(enriched)
 }
 
 export async function deleteQuote(id) {
@@ -934,40 +939,21 @@ export async function clearAllQuotes() {
 export async function fetchQuoteById(id) {
   if (!id) return null
   const normId = id.trim().toUpperCase()
-  const edits = getAgentPriceEdits()
-  const attachEdit = (q) => {
-    if (!q) return q
-    const edit = q.agent_price_edit || edits[q.id] || edits[normId]
-    if (edit && edit.revised_price > 0) {
-      const withEdit = { ...q, agent_price_edit: edit }
-      return {
-        ...withEdit,
-        status: resolveEffectiveQuoteStatus(withEdit)
-      }
-    }
-    return {
-      ...q,
-      status: resolveEffectiveQuoteStatus(q)
-    }
+  let found = null
+
+  if (!MOCK_MODE) {
+    try {
+      const res = await apiFetch(`/api/v1/quotes/${encodeURIComponent(id)}/`)
+      if (res && res.id) found = res
+    } catch {}
   }
 
-  if (MOCK_MODE) {
-    await delay(20)
+  if (!found) {
     const all = [...getSavedQuotes(), ...seedQuotes]
-    const found = all.find(q => q.id?.toUpperCase() === normId) || null
-    return attachEdit(found)
+    found = all.find(q => (q.id || '').trim().toUpperCase() === normId) || null
   }
-  try {
-    const res = await apiFetch(`/api/v1/quotes/${id}/`)
-    if (res && res.id) return attachEdit(res)
-    const all = [...getSavedQuotes(), ...seedQuotes]
-    const found = all.find(q => q.id?.toUpperCase() === normId) || null
-    return attachEdit(found)
-  } catch {
-    const all = [...getSavedQuotes(), ...seedQuotes]
-    const found = all.find(q => q.id?.toUpperCase() === normId) || null
-    return attachEdit(found)
-  }
+
+  return found ? enrichQuoteWithLocalState(found) : null
 }
 
 export async function fetchRouteAnalytics() {
@@ -999,20 +985,31 @@ export async function sendContactMessage(payload) {
 
 // Fetch ALL quotes (for admin panel — all users)
 export async function fetchAllQuotes() {
+  let list = []
   if (!MOCK_MODE) {
     try {
       const res = await apiFetch('/api/v1/quotes/')
       if (Array.isArray(res)) {
-        const resolved = sortQuotesByTime(attachAgentPriceEditsToList(res))
-        try {
-          localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(resolved))
-        } catch {}
-        return resolved
+        list = res
       }
     } catch {}
   }
-  const localList = getSavedQuotes()
-  return sortQuotesByTime(attachAgentPriceEditsToList(localList))
+
+  const localSaved = getSavedQuotes()
+  const seenIds = new Set(list.map(q => (q.id || '').trim().toUpperCase()))
+  for (const lq of localSaved) {
+    const lqId = (lq.id || '').trim().toUpperCase()
+    if (lqId && !seenIds.has(lqId)) {
+      seenIds.add(lqId)
+      list.push(lq)
+    }
+  }
+
+  const enriched = list.map(enrichQuoteWithLocalState)
+  try {
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(sortQuotesByTime(enriched)))
+  } catch {}
+  return sortQuotesByTime(enriched)
 }
 
 // Agent approves or rejects a quote

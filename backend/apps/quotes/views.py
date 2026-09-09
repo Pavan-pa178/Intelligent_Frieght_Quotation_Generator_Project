@@ -163,9 +163,11 @@ def _update_quote_anywhere(qid, update_fields):
         except Exception:
             pass
 
+    found_in_mem = False
     for pool in (IN_MEMORY_QUOTES, SEED_QUOTES):
         mq = next((m for m in pool if m.get('id', '').lower() == qid.lower()), None)
         if mq:
+            found_in_mem = True
             for k, v in update_fields.items():
                 if '.' in k:
                     parts = k.split('.')
@@ -178,6 +180,9 @@ def _update_quote_anywhere(qid, update_fields):
                 else:
                     mq[k] = v
             updated = True
+    if not found_in_mem:
+        new_q = {'id': qid, **update_fields}
+        IN_MEMORY_QUOTES.insert(0, new_q)
     return True
 
 
@@ -286,6 +291,13 @@ class QuoteAgentActionView(APIView):
                 'status': quote_status,
                 'pipeline_status': pipeline_status
             }
+            if q:
+                if q.get('user_email'):
+                    update_data['user_email'] = q['user_email']
+                if q.get('customer'):
+                    update_data['customer'] = q['customer']
+                if q.get('laneName'):
+                    update_data['laneName'] = q['laneName']
             if has_accepted_revision and action == 'approved':
                 rev_val = float(q.get('agent_price_edit', {}).get('revised_price', 0)) if q else 0
                 if rev_val > 0:

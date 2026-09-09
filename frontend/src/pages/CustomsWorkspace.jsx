@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { FileCheck, ShieldCheck, Search, Check, X, FileText, Send, CheckCircle2, Eye } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useApp } from '../context/AppContext'
@@ -31,7 +31,7 @@ export default function CustomsWorkspace() {
     }
   ])
 
-  useEffect(() => {
+  const loadCustomsData = useCallback(() => {
     fetchAllQuotes().then((quotes) => {
       if (!quotes || quotes.length === 0) return
       const relevantQuotes = quotes.filter(q => 
@@ -40,6 +40,7 @@ export default function CustomsWorkspace() {
         q.pipeline_status === 'CUSTOMS_DOCS_REQUESTED' ||
         q.pipeline_status === 'DOCS_SUBMITTED' ||
         q.status === 'Agent Approved' ||
+        q.status === 'Approved by Agent' ||
         q.status === 'Documents Requested' ||
         q.status === 'Documents Submitted (Pending Customs Sign-off)'
       )
@@ -94,6 +95,21 @@ export default function CustomsWorkspace() {
       }
     })
   }, [])
+
+  useEffect(() => {
+    loadCustomsData()
+  }, [loadCustomsData])
+
+  useEffect(() => {
+    window.addEventListener('portline_quote_updated', loadCustomsData)
+    window.addEventListener('portline_shipment_updated', loadCustomsData)
+    window.addEventListener('storage', loadCustomsData)
+    return () => {
+      window.removeEventListener('portline_quote_updated', loadCustomsData)
+      window.removeEventListener('portline_shipment_updated', loadCustomsData)
+      window.removeEventListener('storage', loadCustomsData)
+    }
+  }, [loadCustomsData])
 
   const handleDecision = async (decision) => {
     if (!selectedCase) return

@@ -7,7 +7,7 @@ import {
 import StatusBadge from '../components/StatusBadge'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { fetchAllQuotes, agentActionOnQuote, getAgentActions, sortQuotesByTime } from '../lib/api'
+import { fetchAllQuotes, agentActionOnQuote, getAgentActions, sortQuotesByTime, enrichQuoteWithLocalState } from '../lib/api'
 import { seedQuotes, resolveAssignedAgent, getAgentDesk, CARRIER_DESK_CONFIG, isCarrierMatch, DEFAULT_CARRIER_THEME } from '../lib/mockData'
 
 const DEFAULT_THEME = DEFAULT_CARRIER_THEME || {
@@ -29,12 +29,12 @@ const TABS = [
   { key: 'messages', label: 'Customer Messages', icon: MessageSquare },
 ]
 
-// Merge seed agent_review data with localStorage agent actions
+// Merge seed agent_review data with localStorage agent actions & enrich
 function mergeAgentData(quotes, agentActions) {
   return quotes.map(q => {
     const localAction = agentActions[q.id]
-    if (localAction) return { ...q, agent_review: localAction }
-    return q
+    const base = localAction ? { ...q, agent_review: localAction } : q
+    return enrichQuoteWithLocalState(base)
   })
 }
 
@@ -579,9 +579,7 @@ export default function Agent() {
                         <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border shadow-xs ${cardTheme.badgeBg || 'bg-slate-50'} ${cardTheme.badgeText || 'text-slate-700'} ${cardTheme.badgeBorder || 'border-slate-200'}`}>
                           <Ship className="h-2.5 w-2.5" /> {assigned?.carrierKey || 'General'} Desk
                         </span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isApproved ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                          {isApproved ? 'Approved' : 'Rejected'}
-                        </span>
+                        <StatusBadge status={q.status || (isApproved ? 'Approved by Agent' : 'Rejected by Agent')} />
                       </div>
                       <div className="mt-1 text-[13px] font-semibold text-brand-navy">{q.customer} — {q.laneName}</div>
                       <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-brand-slate">
