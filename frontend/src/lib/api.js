@@ -493,15 +493,43 @@ export async function updateUserProfile(payload) {
 
 export async function fetchShipments(email = '') {
   const getLocalShipments = () => {
-    if (email && email !== 'customer.demo@portline.in' && email !== 'demo@portline.in' && email !== 'admin@portline.in') {
-      try {
-        const raw = localStorage.getItem(`portline_shipments_${email.toLowerCase()}`)
-        return raw ? JSON.parse(raw) : []
-      } catch {
-        return []
+    const list = []
+    const seen = new Set()
+    const targetEmail = (email || '').trim().toLowerCase()
+
+    try {
+      if (targetEmail && targetEmail !== 'customer.demo@portline.in' && targetEmail !== 'demo@portline.in' && targetEmail !== 'admin@portline.in') {
+        const raw = localStorage.getItem(`portline_shipments_${targetEmail}`)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          if (Array.isArray(parsed)) list.push(...parsed)
+        }
+      } else {
+        // Collect from all user keys
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i)
+          if (k && (k.startsWith('portline_shipments_') || k === 'portline_customer_shipments')) {
+            try {
+              const raw = localStorage.getItem(k)
+              if (raw) {
+                const arr = JSON.parse(raw)
+                if (Array.isArray(arr)) {
+                  for (const s of arr) {
+                    const idKey = (s.tn || s.id || s.shipment_id || '').toUpperCase()
+                    if (idKey && !seen.has(idKey)) {
+                      seen.add(idKey)
+                      list.push(s)
+                    }
+                  }
+                }
+              }
+            } catch {}
+          }
+        }
       }
-    }
-    return []
+    } catch {}
+
+    return list
   }
 
   if (MOCK_MODE) {
@@ -511,7 +539,16 @@ export async function fetchShipments(email = '') {
   const query = email ? `?email=${encodeURIComponent(email)}` : ''
   try {
     const res = await apiFetch(`/api/v1/shipments/${query}`)
-    return Array.isArray(res) ? res : getLocalShipments()
+    if (Array.isArray(res)) {
+      const local = getLocalShipments()
+      const seen = new Set(res.map(s => (s.tn || s.id || s.shipment_id || '').toUpperCase()))
+      const extras = local.filter(s => {
+        const idKey = (s.tn || s.id || s.shipment_id || '').toUpperCase()
+        return idKey && !seen.has(idKey)
+      })
+      return [...res, ...extras]
+    }
+    return getLocalShipments()
   } catch {
     return getLocalShipments()
   }
@@ -1209,9 +1246,10 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
     decision === 'accept_revision' ||
     (targetQ?.status === 'Price Revised (Awaiting Customer Decision)' && decision === 'accepted')
   )
+  const isDecline = decision === 'rejected' || decision === 'declined'
 
   let status
-  if (decision === 'rejected') {
+  if (isDecline) {
     status = (targetQ?.status || '').includes('Price Revised') ? 'Revised Price Declined' : 'Declined by Customer'
   } else if (isRevisionAcceptance) {
     status = 'Price Accepted (Pending Agent Sign-off)'
@@ -1220,12 +1258,14 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
     status = 'Booked'
   }
 
+  const isBooking = status === 'Booked'
+
   const record = {
-    status: isRevisionAcceptance ? 'ACCEPTED' : (decision === 'rejected' ? 'REJECTED' : 'BOOKED'),
+    status: isRevisionAcceptance ? 'ACCEPTED' : (isDecline ? 'REJECTED' : 'BOOKED'),
     notes,
     decided_at: new Date().toISOString(),
     is_revised_price: isRevisionAcceptance,
-    is_booking_confirmation: !isRevisionAcceptance && decision !== 'rejected'
+    is_booking_confirmation: isBooking
   }
 
   // Always update local storage
@@ -1239,21 +1279,25 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
       ? (targetQ.original_indicative_total || (targetQ.indicativeTotal !== revisedVal ? targetQ.indicativeTotal : null))
       : null
 
+    const effectiveTotal = revisedVal || targetQ?.indicativeTotal || 0
+    const effectiveCarrier = targetQ?.selected_route?.carrier || targetQ?.carrier || 'Carrier'
+
     const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? {
       ...q,
       customer_decision: record,
       status,
-      pipeline_status: status.toUpperCase(),
-      booking_confirmed: status === 'Booked',
+      pipeline_status: isBooking ? 'BOOKED' : (isRevisionAcceptance ? 'PRICE_ACCEPTED_PENDING_AGENT' : 'REJECTED'),
+      booking_confirmed: isBooking,
       ...(revisedVal ? { indicativeTotal: revisedVal } : {}),
       ...(origIndicative ? { original_indicative_total: origIndicative } : {})
     } : q)
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(sortQuotesByTime(updated)))
 
-    // Also sync linked shipment in user's localStorage
+    // Sync linked shipment in user's localStorage
+    let shipmentFound = false
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)
-      if (k && k.startsWith('portline_shipments_')) {
+      if (k && (k.startsWith('portline_shipments_') || k === 'portline_customer_shipments')) {
         try {
           const raw = localStorage.getItem(k)
           if (raw) {
@@ -1261,12 +1305,26 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
             if (Array.isArray(shps)) {
               let changed = false
               const mapped = shps.map(s => {
-                if (s.quote_id === quoteId || s.quoteId === quoteId) {
+                if (s.quote_id === quoteId || s.quoteId === quoteId || s.id === targetQ?.shipment_id) {
                   changed = true
+                  shipmentFound = true
+                  const updatedSteps = (s.steps || []).map(st => {
+                    if (st.label === 'Booking confirmed' && isBooking) {
+                      return { ...st, done: true, current: true, ts: 'Just now' }
+                    }
+                    if (st.label === 'Quoted') {
+                      return { ...st, done: true, current: !isBooking }
+                    }
+                    return st
+                  })
                   return {
                     ...s,
-                    status: status === 'Booked' ? 'Booked' : (decision === 'rejected' ? 'Cancelled' : s.status),
-                    pipeline_status: status === 'Booked' ? 'CONFIRMED' : (decision === 'rejected' ? 'CANCELLED' : s.pipeline_status)
+                    status: isBooking ? 'Booked' : (isDecline ? 'Cancelled' : s.status),
+                    pipeline_status: isBooking ? 'CONFIRMED' : (isDecline ? 'CANCELLED' : s.pipeline_status),
+                    booking_status: isBooking ? 'CONFIRMED' : s.booking_status,
+                    carrier: effectiveCarrier,
+                    cost: effectiveTotal || s.cost,
+                    steps: updatedSteps.length ? updatedSteps : s.steps
                   }
                 }
                 return s
@@ -1279,6 +1337,60 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
         } catch {}
       }
     }
+
+    // If booked and no shipment was in localStorage yet, create and store it
+    if (isBooking && !shipmentFound) {
+      const custEmail = (customerUser?.email || targetQ?.user_email || targetQ?.email || '').toLowerCase()
+      const newShipment = {
+        id: targetQ?.shipment_id || `SHP-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+        shipment_id: targetQ?.shipment_id || `SHP-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+        tn: targetQ?.tn || `TN26-${(quoteId || '').replace('QT-', '')}`,
+        quote_id: quoteId,
+        quoteId: quoteId,
+        customer: targetQ?.customer || customerUser?.name || customerUser?.company || 'Shipper',
+        user_email: custEmail,
+        userName: customerUser?.name || 'Shipper',
+        lane: targetQ?.laneCode || targetQ?.laneName || 'Global Lane',
+        from: targetQ?.origin || (targetQ?.laneCode?.includes('->') ? targetQ.laneCode.split('->')[0].trim() : 'Origin Gateway'),
+        to: targetQ?.destination || (targetQ?.laneCode?.includes('->') ? targetQ.laneCode.split('->')[1].trim() : 'Destination Gateway'),
+        mode: targetQ?.mode || 'Ocean FCL',
+        service: targetQ?.mode || 'Ocean FCL',
+        carrier: effectiveCarrier,
+        cost: effectiveTotal,
+        status: 'Booked',
+        pipeline_status: 'CONFIRMED',
+        booking_status: 'CONFIRMED',
+        customs_status: 'Approved by Customs',
+        customs_verified: true,
+        date: new Date().toISOString().slice(0, 10),
+        steps: [
+          { label: 'Quoted', loc: 'Origin Hub', ts: 'Completed', done: true },
+          { label: 'Booking confirmed', loc: 'Customer Acceptance Desk', ts: 'Just now', done: true, current: true },
+          { label: 'Picked up', loc: 'Origin Port CFS', ts: 'Scheduled', done: false },
+          { label: 'In transit', loc: '—', ts: 'Pending', done: false },
+          { label: 'Customs clearance', loc: 'Destination Port', ts: 'Approved', done: true },
+          { label: 'Out for delivery', loc: 'Gateway Terminal', ts: 'Pending', done: false },
+          { label: 'Delivered', loc: 'Consignee Facility', ts: 'Pending', done: false },
+        ]
+      }
+      if (custEmail) {
+        const userKey = `portline_shipments_${custEmail}`
+        try {
+          const prev = JSON.parse(localStorage.getItem(userKey) || '[]')
+          localStorage.setItem(userKey, JSON.stringify([newShipment, ...prev]))
+        } catch {}
+      }
+      try {
+        const prevCust = JSON.parse(localStorage.getItem('portline_customer_shipments') || '[]')
+        localStorage.setItem('portline_customer_shipments', JSON.stringify([newShipment, ...prevCust]))
+      } catch {}
+    }
+
+    // Broadcast synchronization events across panels
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('portline_quote_updated', { detail: { quoteId, status, decision } }))
+      window.dispatchEvent(new CustomEvent('portline_shipment_updated', { detail: { quoteId, status, decision } }))
+    }
   } catch {}
 
   if (MOCK_MODE) {
@@ -1288,7 +1400,8 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
   return apiFetch(`/api/v1/quotes/${quoteId}/customer-decision/`, {
     method: 'POST',
     body: JSON.stringify({
-      decision,
+      decision: isBooking ? 'booked' : (isRevisionAcceptance ? 'accept_revision' : 'rejected'),
+      action: isBooking ? 'booked' : (isRevisionAcceptance ? 'accept_revision' : 'rejected'),
       notes,
       customer_email: customerUser?.email,
       customer_name: customerUser?.name

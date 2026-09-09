@@ -231,6 +231,19 @@ export default function Admin() {
 
   useEffect(() => { loadData() }, [loadData])
 
+  // Live synchronization across platform components and tabs
+  useEffect(() => {
+    const handleSync = () => { loadData() }
+    window.addEventListener('portline_quote_updated', handleSync)
+    window.addEventListener('portline_shipment_updated', handleSync)
+    window.addEventListener('storage', handleSync)
+    return () => {
+      window.removeEventListener('portline_quote_updated', handleSync)
+      window.removeEventListener('portline_shipment_updated', handleSync)
+      window.removeEventListener('storage', handleSync)
+    }
+  }, [loadData])
+
   // Handlers for User Management
   const handleCreateUser = async (e) => {
     e.preventDefault()

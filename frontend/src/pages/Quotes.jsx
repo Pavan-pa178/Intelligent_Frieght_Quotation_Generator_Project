@@ -98,7 +98,7 @@ export default function Quotes() {
     })
   }, [quotes, isElevated])
 
-  useEffect(() => {
+  const loadQuotesData = () => {
     if (!user) {
       setQuotes([])
       setLoading(false)
@@ -110,12 +110,10 @@ export default function Quotes() {
 
     fetchQuotes(queryEmail).then((res) => {
       let list = Array.isArray(res) ? res : []
-      // Normalize effective quote status (ensure booked quotes reflect Accepted)
       list = list.map(q => ({
         ...q,
         status: resolveEffectiveQuoteStatus(q)
       }))
-      // Sort newest first
       list.sort((a, b) => {
         const dateA = new Date(a.created_at || a.created || 0)
         const dateB = new Date(b.created_at || b.created || 0)
@@ -124,6 +122,21 @@ export default function Quotes() {
       setQuotes(list)
       setLoading(false)
     })
+  }
+
+  useEffect(() => {
+    loadQuotesData()
+  }, [user, isElevated, activeTab])
+
+  useEffect(() => {
+    window.addEventListener('portline_quote_updated', loadQuotesData)
+    window.addEventListener('portline_shipment_updated', loadQuotesData)
+    window.addEventListener('storage', loadQuotesData)
+    return () => {
+      window.removeEventListener('portline_quote_updated', loadQuotesData)
+      window.removeEventListener('portline_shipment_updated', loadQuotesData)
+      window.removeEventListener('storage', loadQuotesData)
+    }
   }, [user, isElevated, activeTab])
 
   const filteredQuotes = useMemo(() => {

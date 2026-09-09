@@ -529,15 +529,16 @@ class QuoteCustomerDecisionView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, quote_id):
+        import uuid
         from datetime import datetime, timezone
         qid = (quote_id or '').strip()
-        decision = (request.data.get('decision') or request.data.get('action') or '').strip().lower() # 'accepted' | 'rejected'
+        decision = (request.data.get('decision') or request.data.get('action') or '').strip().lower() # 'accepted' | 'booked' | 'rejected' | 'declined' | 'accept_revision'
         notes = request.data.get('notes', '').strip()
         customer_email = request.data.get('customer_email') or (request.user.email if request.user and request.user.is_authenticated else '')
         customer_name = request.data.get('customer_name') or 'Customer'
 
-        if decision not in ('accepted', 'rejected'):
-            return Response({'detail': 'decision must be accepted or rejected'}, status=status.HTTP_400_BAD_REQUEST)
+        if decision not in ('accepted', 'booked', 'rejected', 'declined', 'accept_revision'):
+            return Response({'detail': 'decision must be accepted, booked, or rejected'}, status=status.HTTP_400_BAD_REQUEST)
 
         q = _find_quote_anywhere(qid) or {}
         q_status_upper = (q.get('status') or '').upper()
@@ -545,27 +546,32 @@ class QuoteCustomerDecisionView(APIView):
             decision == 'accept_revision' or
             ('PRICE REVISED' in q_status_upper and decision == 'accepted')
         )
+        is_booking_confirmation = bool(
+            decision in ('accepted', 'booked') and not is_revision_acceptance
+        )
 
         record = {
-            'status': 'ACCEPTED' if is_revision_acceptance else ('BOOKED' if decision in ('accepted', 'booked') else 'REJECTED'),
+            'status': 'ACCEPTED' if is_revision_acceptance else ('BOOKED' if is_booking_confirmation else 'REJECTED'),
             'notes': notes,
             'customer_email': customer_email,
             'customer_name': customer_name,
             'decided_at': datetime.now(timezone.utc).isoformat(),
             'is_revised_price': is_revision_acceptance,
-            'is_booking_confirmation': not is_revision_acceptance and decision in ('accepted', 'booked')
+            'is_booking_confirmation': is_booking_confirmation
         }
 
-        if decision in ('accepted', 'booked'):
-            if is_revision_acceptance:
-                quote_status = 'Price Accepted (Pending Agent Sign-off)'
-                pipeline_status = 'PRICE_ACCEPTED_PENDING_AGENT'
-            else:
-                quote_status = 'Booked'
-                pipeline_status = 'BOOKED'
+        if is_booking_confirmation:
+            quote_status = 'Booked'
+            pipeline_status = 'BOOKED'
+        elif is_revision_acceptance:
+            quote_status = 'Price Accepted (Pending Agent Sign-off)'
+            pipeline_status = 'PRICE_ACCEPTED_PENDING_AGENT'
         else:
             quote_status = 'Revised Price Declined' if 'PRICE REVISED' in q_status_upper else 'Declined by Customer'
             pipeline_status = 'REJECTED'
+
+        rev_val = float(q.get('agent_price_edit', {}).get('revised_price', 0)) if q.get('agent_price_edit') else 0
+        effective_cost = rev_val if rev_val > 0 else (q.get('indicativeTotal') or 0)
 
         try:
             update_payload = {
@@ -574,15 +580,14 @@ class QuoteCustomerDecisionView(APIView):
                 'pipeline_status': pipeline_status,
                 'booking_confirmed': quote_status == 'Booked'
             }
-            if is_revision_acceptance:
-                rev_val = float(q.get('agent_price_edit', {}).get('revised_price', 0))
-                if rev_val > 0:
-                    orig = q.get('original_indicative_total') or q.get('indicativeTotal')
-                    update_payload['indicativeTotal'] = rev_val
-                    if orig and orig != rev_val:
-                        update_payload['original_indicative_total'] = orig
+            if rev_val > 0:
+                orig = q.get('original_indicative_total') or q.get('indicativeTotal')
+                update_payload['indicativeTotal'] = rev_val
+                if orig and orig != rev_val:
+                    update_payload['original_indicative_total'] = orig
 
             _update_quote_anywhere(qid, update_payload)
+
             # If shipment linked, update shipment too
             shipments_col = get_collection('shipments')
             if shipments_col is not None and q:
@@ -591,10 +596,48 @@ class QuoteCustomerDecisionView(APIView):
                 query_clauses = [{'quote_id': qid}, {'quoteId': qid}]
                 if q.get('shipment_id'):
                     query_clauses.append({'shipment_id': q.get('shipment_id')})
-                shipments_col.update_many(
+                if q.get('tn'):
+                    query_clauses.append({'tn': q.get('tn')})
+
+                matched_res = shipments_col.update_many(
                     {'$or': query_clauses},
-                    {'$set': {'pipeline_status': pipe_status, 'status': shipment_status}}
+                    {'$set': {
+                        'pipeline_status': pipe_status,
+                        'status': shipment_status,
+                        'booking_status': 'CONFIRMED' if quote_status == 'Booked' else shipment_status,
+                        'cost': effective_cost,
+                        'carrier': q.get('selected_route', {}).get('carrier') or q.get('carrier') or 'Standard Carrier'
+                    }}
                 )
+
+                # If booked and no shipment document existed yet in MongoDB, create it so tracking and portals show it immediately
+                if quote_status == 'Booked' and (not matched_res or matched_res.matched_count == 0):
+                    new_shp_id = q.get('shipment_id') or f"SHP-{uuid.uuid4().hex[:8].upper()}"
+                    tn_num = q.get('tn') or f"TN26-{qid.replace('QT-', '')}"
+                    created_shipment = {
+                        'id': new_shp_id,
+                        'shipment_id': new_shp_id,
+                        'tn': tn_num,
+                        'quote_id': qid,
+                        'quoteId': qid,
+                        'customer': q.get('customer') or customer_name or 'Shipper',
+                        'user_email': (customer_email or q.get('user_email') or '').lower(),
+                        'lane': q.get('laneCode') or q.get('laneName') or 'Global Lane',
+                        'origin': q.get('origin') or (q.get('laneCode', '').split('->')[0].strip() if '->' in q.get('laneCode', '') else 'Origin Gateway'),
+                        'destination': q.get('destination') or (q.get('laneCode', '').split('->')[1].strip() if '->' in q.get('laneCode', '') else 'Dest Gateway'),
+                        'mode': q.get('mode') or 'Ocean FCL',
+                        'basis': q.get('basis') or 'Standard',
+                        'carrier': q.get('selected_route', {}).get('carrier') or q.get('carrier') or 'Carrier',
+                        'cost': effective_cost,
+                        'status': 'Booked',
+                        'pipeline_status': 'CONFIRMED',
+                        'booking_status': 'CONFIRMED',
+                        'customs_status': 'Approved by Customs',
+                        'customs_verified': True,
+                        'created_at': datetime.now(timezone.utc).isoformat(),
+                        'route': q.get('selected_route') or {}
+                    }
+                    shipments_col.insert_one(created_shipment)
         except Exception as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

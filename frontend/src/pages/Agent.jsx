@@ -24,6 +24,7 @@ const DEFAULT_THEME = DEFAULT_CARRIER_THEME || {
 
 const TABS = [
   { key: 'queue', label: 'Review Queue', icon: Inbox },
+  { key: 'booked', label: 'Booked Shipments', icon: Ship },
   { key: 'activity', label: 'My Activity', icon: CheckCircle2 },
   { key: 'messages', label: 'Customer Messages', icon: MessageSquare },
 ]
@@ -84,6 +85,19 @@ export default function Agent() {
 
   useEffect(() => { loadData() }, [loadData])
 
+  // Live synchronization across tabs & components
+  useEffect(() => {
+    const handleSync = () => { loadData() }
+    window.addEventListener('portline_quote_updated', handleSync)
+    window.addEventListener('portline_shipment_updated', handleSync)
+    window.addEventListener('storage', handleSync)
+    return () => {
+      window.removeEventListener('portline_quote_updated', handleSync)
+      window.removeEventListener('portline_shipment_updated', handleSync)
+      window.removeEventListener('storage', handleSync)
+    }
+  }, [loadData])
+
   const safeQuotes = Array.isArray(quotes) ? quotes : []
 
   // Strictly filter quotes for this agent's specific carrier desk
@@ -107,7 +121,16 @@ export default function Agent() {
     return Boolean(matchCarrier || matchEmail)
   })
 
-  const pending = myDeskQuotes.filter(q => !q.agent_review || q.agent_review.status === 'pending')
+  const isBookingComplete = (q) => Boolean(
+    q.status === 'Booked' ||
+    q.pipeline_status === 'BOOKED' ||
+    q.booking_confirmed === true ||
+    q.customer_decision?.status === 'BOOKED' ||
+    (q.status === 'Accepted' && q.customer_decision?.is_booking_confirmation)
+  )
+
+  const booked = myDeskQuotes.filter(isBookingComplete)
+  const pending = myDeskQuotes.filter(q => (!q.agent_review || q.agent_review.status === 'pending') && !isBookingComplete(q))
   const reviewed = myDeskQuotes.filter(q => q.agent_review && q.agent_review.status !== 'pending')
 
   const getState = (id) => actionStates[id] || { loading: false, comment: '', showComment: false }
@@ -238,15 +261,19 @@ export default function Agent() {
               </button>
 
               <div className="flex items-center gap-2 bg-black/35 rounded-xl p-2.5 border border-white/15">
-                <div className="flex-1 text-center px-3 border-r border-white/15">
+                <div className="flex-1 text-center px-2.5 border-r border-white/15">
                   <div className="text-lg font-bold font-mono text-amber-400">{pending.length}</div>
                   <div className="text-[10px] uppercase font-bold tracking-wider text-slate-300">Pending</div>
                 </div>
-                <div className="flex-1 text-center px-3 border-r border-white/15">
-                  <div className="text-lg font-bold font-mono text-emerald-400">{reviewed.length}</div>
+                <div className="flex-1 text-center px-2.5 border-r border-white/15">
+                  <div className="text-lg font-bold font-mono text-emerald-400">{booked.length}</div>
+                  <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-300 font-semibold">Booked</div>
+                </div>
+                <div className="flex-1 text-center px-2.5 border-r border-white/15">
+                  <div className="text-lg font-bold font-mono text-slate-200">{reviewed.length}</div>
                   <div className="text-[10px] uppercase font-bold tracking-wider text-slate-300">Reviewed</div>
                 </div>
-                <div className="flex-1 text-center px-3">
+                <div className="flex-1 text-center px-2.5">
                   <div className="text-xs font-bold font-mono text-white truncate max-w-[100px]">
                     {user?.marginApprovalLimit || 'Rs. 15L'}
                   </div>
@@ -316,7 +343,7 @@ export default function Agent() {
             {TABS.map(tab => {
               const Icon = tab.icon
               const active = activeTab === tab.key
-              const badge = tab.key === 'queue' ? pending.length : tab.key === 'activity' ? reviewed.length : null
+              const badge = tab.key === 'queue' ? pending.length : tab.key === 'booked' ? booked.length : tab.key === 'activity' ? reviewed.length : null
               return (
                 <button
                   key={tab.key}
@@ -326,7 +353,7 @@ export default function Agent() {
                   <Icon className="h-4 w-4" />
                   {tab.label}
                   {badge !== null && badge > 0 && (
-                    <span className={`ml-1 rounded-full px-2 py-0.5 text-xs font-bold ${active ? 'bg-white/20 text-white' : 'bg-brand-cloud text-brand-slate'}`}>
+                    <span className={`ml-1 rounded-full px-2 py-0.5 text-xs font-bold ${active ? 'bg-white/20 text-white' : (tab.key === 'booked' ? 'bg-emerald-100 text-emerald-800' : 'bg-brand-cloud text-brand-slate')}`}>
                       {badge}
                     </span>
                   )}
@@ -339,6 +366,74 @@ export default function Agent() {
               </button>
             </div>
           </div>
+
+          {/* BOOKED SHIPMENTS TAB */}
+          {activeTab === 'booked' && (
+            <div className="space-y-4">
+              {booked.length === 0 && (
+                <div className="rounded-xl border border-dashed border-brand-line bg-white p-12 text-center">
+                  <Ship className="mx-auto mb-3 h-10 w-10 text-emerald-500" />
+                  <h4 className="mb-1 text-base font-semibold text-brand-navy">No booked shipments yet</h4>
+                  <p className="text-sm text-brand-slate">Quotations confirmed and booked by customers for this carrier desk will appear here with live tracking & slot status.</p>
+                </div>
+              )}
+              {booked.map(q => {
+                const assigned = resolveAssignedAgent(q)
+                const deskConf = (assigned?.carrierKey && CARRIER_DESK_CONFIG[assigned.carrierKey]) || CARRIER_DESK_CONFIG['General'] || CARRIER_DESK_CONFIG['default'] || {}
+                const cardTheme = deskConf?.theme || assigned?.theme || DEFAULT_THEME
+                const bookingTs = q.customer_decision?.decided_at || q.updated_at || q.created_at
+                const finalCost = q.agent_price_edit?.revised_price > 0 ? Number(q.agent_price_edit.revised_price) : Number(q.indicativeTotal || 0)
+
+                return (
+                  <div key={q.id} className="rounded-xl border-2 border-emerald-500/40 bg-white shadow-sm overflow-hidden hover:border-emerald-500 transition-colors">
+                    <div className="flex flex-wrap items-start gap-4 border-b border-brand-line px-6 py-4 bg-emerald-50/40">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300">{q.id}</span>
+                          <span className="font-mono text-xs font-bold text-brand-navy bg-white px-2 py-0.5 rounded border border-brand-line">
+                            {q.tn || `TN26-${q.id.replace('QT-', '')}`}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-0.5 text-xs font-bold text-white shadow-xs">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Booked & Slot Secured
+                          </span>
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border shadow-xs ${cardTheme.badgeBg || 'bg-slate-50'} ${cardTheme.badgeText || 'text-slate-700'} ${cardTheme.badgeBorder || 'border-slate-200'}`}>
+                            <Ship className="h-3 w-3" /> {assigned?.carrierKey || 'Carrier'} Desk
+                          </span>
+                        </div>
+                        <h4 className="mt-1.5 text-base font-bold text-brand-navy">{q.customer} — {q.laneName}</h4>
+                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-brand-slate">
+                          <span className="font-semibold text-brand-navy">Carrier: {assigned?.carrier || 'Carrier Line'}</span>
+                          <span>{q.mode}</span>
+                          <span>{q.basis}</span>
+                          <span>Transit: {q.transit || 'Direct Maritime'}</span>
+                          <span className="font-mono font-bold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                            Booked Tariff: ₹ {finalCost.toLocaleString('en-IN')}
+                          </span>
+                          {bookingTs && (
+                            <span className="text-slate-400">Booked: {new Date(bookingTs).toLocaleString()}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => navigate(`/quotes/${q.id}?view=agent`, { state: { from: '/agent' } })}
+                          className="flex items-center gap-1.5 rounded-lg border border-brand-line bg-brand-cloud px-3.5 py-2 text-xs font-semibold text-brand-navy hover:bg-brand-marinePale hover:text-brand-marine transition-colors"
+                        >
+                          <Eye className="h-3.5 w-3.5" /> Quote File
+                        </button>
+                        <button
+                          onClick={() => navigate(`/tracking?tn=${encodeURIComponent(q.tn || `TN26-${q.id.replace('QT-', '')}`)}`)}
+                          className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs transition-colors"
+                        >
+                          <Ship className="h-3.5 w-3.5" /> Live Tracking
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           {/* REVIEW QUEUE TAB */}
           {activeTab === 'queue' && (

@@ -19,7 +19,7 @@ export default function Portal() {
   const [quotesLoading, setQuotesLoading] = useState(true)
   const [quoteDecisionLoading, setQuoteDecisionLoading] = useState(null)
 
-  useEffect(() => {
+  const loadPortalQuotes = () => {
     if (user?.email) {
       setQuotesLoading(true)
       fetchQuotes(user.email)
@@ -32,6 +32,21 @@ export default function Portal() {
         })
         .catch(err => console.warn('Failed to load quotes for customer portal', err))
         .finally(() => setQuotesLoading(false))
+    }
+  }
+
+  useEffect(() => {
+    loadPortalQuotes()
+  }, [user?.email])
+
+  useEffect(() => {
+    window.addEventListener('portline_quote_updated', loadPortalQuotes)
+    window.addEventListener('portline_shipment_updated', loadPortalQuotes)
+    window.addEventListener('storage', loadPortalQuotes)
+    return () => {
+      window.removeEventListener('portline_quote_updated', loadPortalQuotes)
+      window.removeEventListener('portline_shipment_updated', loadPortalQuotes)
+      window.removeEventListener('storage', loadPortalQuotes)
     }
   }, [user?.email])
 

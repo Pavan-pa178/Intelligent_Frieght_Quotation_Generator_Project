@@ -74,6 +74,28 @@ export function AppProvider({ children }) {
     }
   }, [user])
 
+  useEffect(() => {
+    const refreshUserShipments = () => {
+      if (user && typeof user === 'object' && user.email) {
+        const local = loadUserShipments(user)
+        if (local && local.length) setShipments(local)
+        fetchShipments(user.email).then(remote => {
+          if (Array.isArray(remote)) {
+            setShipments(remote)
+            saveUserShipments(user, remote)
+          }
+        }).catch(() => {})
+      }
+    }
+
+    window.addEventListener('portline_shipment_updated', refreshUserShipments)
+    window.addEventListener('storage', refreshUserShipments)
+    return () => {
+      window.removeEventListener('portline_shipment_updated', refreshUserShipments)
+      window.removeEventListener('storage', refreshUserShipments)
+    }
+  }, [user])
+
   const login = useCallback(async ({ email, password }) => {
     const loggedInUser = await loginRequest({ email, password })
     setUser(loggedInUser)

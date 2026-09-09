@@ -78,13 +78,22 @@ class TrackingDetailView(APIView):
         try:
             col = get_collection('shipments')
             if col is not None:
-                found_db = col.find_one({'tn': {'$regex': f'^{tn}$', '$options': 'i'}}, {'_id': 0})
+                query = {
+                    '$or': [
+                        {'tn': {'$regex': f'^{tn}$', '$options': 'i'}},
+                        {'shipment_id': {'$regex': f'^{tn}$', '$options': 'i'}},
+                        {'id': {'$regex': f'^{tn}$', '$options': 'i'}},
+                        {'quote_id': {'$regex': f'^{tn}$', '$options': 'i'}},
+                        {'quoteId': {'$regex': f'^{tn}$', '$options': 'i'}}
+                    ]
+                }
+                found_db = col.find_one(query, {'_id': 0})
                 if found_db:
                     return Response(found_db)
         except Exception:
             pass
 
-        found = next((s for s in SEED_SHIPMENTS if s['tn'].upper() == tn), None)
+        found = next((s for s in SEED_SHIPMENTS if (s.get('tn') or '').upper() == tn or (s.get('shipment_id') or '').upper() == tn or (s.get('quote_id') or '').upper() == tn), None)
         if found:
             return Response(found)
         return Response({'detail': f'Shipment {tracking_number} not found'}, status=status.HTTP_404_NOT_FOUND)
