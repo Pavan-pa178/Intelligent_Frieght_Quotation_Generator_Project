@@ -73,8 +73,11 @@ class ShipmentListCreateView(APIView):
 class TrackingDetailView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    def get(self, request, tracking_number):
-        tn = (tracking_number or '').strip().upper()
+    def get(self, request, tracking_number=None):
+        tn = (tracking_number or request.query_params.get('tracking_number') or request.query_params.get('tn') or request.query_params.get('id') or '').strip().upper()
+        if not tn:
+            return Response({'detail': 'Tracking number or Quote ID required'}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             col = get_collection('shipments')
             if col is not None:
@@ -96,7 +99,31 @@ class TrackingDetailView(APIView):
         found = next((s for s in SEED_SHIPMENTS if (s.get('tn') or '').upper() == tn or (s.get('shipment_id') or '').upper() == tn or (s.get('quote_id') or '').upper() == tn), None)
         if found:
             return Response(found)
-        return Response({'detail': f'Shipment {tracking_number} not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if matching quote exists and synthesize shipment
+        from apps.quotes.views import _find_quote_anywhere
+        q = _find_quote_anywhere(tn)
+        if q and (q.get('status') == 'Booked' or q.get('pipeline_status') == 'BOOKED' or q.get('booking_confirmed')):
+            carrier_name = q.get('selected_route', {}).get('carrier') or q.get('carrier') or 'Ocean Liner'
+            synth_shipment = {
+                'shipment_id': q.get('shipment_id') or f"SHP-{q.get('id', '').replace('QT-', '')}",
+                'tn': q.get('tn') or f"TN26-{q.get('id', '').replace('QT-', '')}",
+                'id': q.get('id'),
+                'quote_id': q.get('id'),
+                'customer': q.get('customer') or 'Direct Consignor',
+                'user_email': q.get('user_email', ''),
+                'origin': q.get('origin', 'Port of Loading'),
+                'destination': q.get('destination', 'Port of Discharge'),
+                'mode': q.get('mode', 'Ocean FCL'),
+                'carrier': carrier_name,
+                'status': 'Booked',
+                'pipeline_status': 'CONFIRMED',
+                'cost': q.get('indicativeTotal', 0),
+                'booking_status': 'CONFIRMED'
+            }
+            return Response(synth_shipment)
+
+        return Response({'detail': f'Shipment {tn} not found'}, status=status.HTTP_404_NOT_FOUND)
 
     def delete(self, request, tracking_number):
         tn = (tracking_number or '').strip().upper()
