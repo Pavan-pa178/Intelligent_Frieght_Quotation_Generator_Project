@@ -11,6 +11,7 @@ urlpatterns = [
     path('api/v1/master/', include('apps.masterdata.urls')),
     path('api/v1/ports/', include('apps.masterdata.urls')),
     path('api/v1/shipments/', include('apps.shipments.urls')),
+    path('api/v1/companies/', include('apps.masterdata.company_urls')),
     path('api/v1/runs/<str:run_id>/', AgentRunStatusView.as_view(), name='run_status'),
     path('api/v1/quotes/', include('apps.quotes.urls')),
     path('api/v1/estimate/', include('apps.quotes.estimate_urls')),

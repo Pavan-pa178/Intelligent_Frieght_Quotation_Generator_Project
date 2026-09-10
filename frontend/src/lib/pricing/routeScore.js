@@ -1,3 +1,42 @@
+
+/**
+ * Filters route options against Admin Verification & Eligibility status
+ */
+function filterEligibleRoutes(routes) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem('portline_companies')
+      if (raw) {
+        const companies = JSON.parse(raw)
+        if (Array.isArray(companies) && companies.length > 0) {
+          const eligible = routes.filter(r => {
+            const rCarrier = (r.carrier || '').toLowerCase().trim()
+            const comp = companies.find(c => {
+              const cKey = (c.carrier_key || '').toLowerCase().trim()
+              const cName = (c.name || '').toLowerCase().trim()
+              return (cKey && rCarrier.includes(cKey)) || (cName && rCarrier.includes(cName)) || (cKey && cKey.includes(rCarrier))
+            })
+            // If the company is tracked and explicitly suspended/unapproved, exclude it!
+            if (comp) {
+              return comp.is_eligible !== false && comp.status !== 'SUSPENDED'
+            }
+            return true
+          })
+          if (eligible.length > 0) {
+            if (!eligible.some(r => r.recommended)) {
+              eligible[0].recommended = true
+            }
+            return eligible
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error filtering eligible routes:', err)
+  }
+  return routes
+}
+
 /**
  * Computes composite ranking score for a route option (0 to 1)
  */
@@ -17,7 +56,7 @@ export function buildRouteOptions(originGw, destGw, mode = 'OCEAN', baseCost = 3
   const dgCode = destGw?.code || 'AEJEA'
 
   if (mode === 'OCEAN') {
-    return [
+    const oceanRoutes = [
       {
         id: 'r1',
         carrier: 'Maersk',
@@ -65,8 +104,9 @@ export function buildRouteOptions(originGw, destGw, mode = 'OCEAN', baseCost = 3
         scores: { transit: 0.58, cost: 0.70, reliability: 0.91, congestion: 0.71, composite: 0.71 }
       }
     ]
+    return filterEligibleRoutes(oceanRoutes)
   } else if (mode === 'AIR' || mode === 'EXPRESS_AIR') {
-    return [
+    const oceanRoutes = [
       {
         id: 'r1',
         carrier: 'Emirates SkyCargo',
@@ -99,9 +139,10 @@ export function buildRouteOptions(originGw, destGw, mode = 'OCEAN', baseCost = 3
         scores: { transit: 0.82, cost: 0.88, reliability: 0.92, congestion: 0.80, composite: 0.85 }
       }
     ]
+    return filterEligibleRoutes(airRoutes)
   } else {
     // GROUND_RAIL
-    return [
+    const oceanRoutes = [
       {
         id: 'r1',
         carrier: 'GCC Express Logistics',

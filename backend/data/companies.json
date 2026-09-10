@@ -1,0 +1,261 @@
+[
+  {
+    "company_id": "COMP-CMA-01",
+    "name": "CMA CGM",
+    "carrier_key": "CMA CGM",
+    "modes": [
+      "Ocean FCL",
+      "Ocean LCL",
+      "Ground FTL"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Tier 1 Strategic Ocean Carrier",
+    "sla_hours": "2h Fast-Track Review",
+    "manager_email": "manager.cma@portline.in",
+    "logo_color": "#E11D48",
+    "agents": [
+      {
+        "agent_id": "AGT-CMA-01",
+        "name": "Deepa Nair",
+        "email": "agent.cmacgm@portline.in",
+        "role": "agent",
+        "phone": "+91 98201 10021",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-MSC-02",
+    "name": "MSC (Mediterranean Shipping Co)",
+    "carrier_key": "MSC",
+    "modes": [
+      "Ocean FCL",
+      "Ocean LCL"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Global Alliance Direct Contract",
+    "sla_hours": "2h Guaranteed SLA",
+    "manager_email": "manager.msc@portline.in",
+    "logo_color": "#D97706",
+    "agents": [
+      {
+        "agent_id": "AGT-MSC-01",
+        "name": "Vikram Singh",
+        "email": "agent.msc@portline.in",
+        "role": "agent",
+        "phone": "+91 98202 10022",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-MSK-03",
+    "name": "Maersk Line",
+    "carrier_key": "Maersk",
+    "modes": [
+      "Ocean FCL",
+      "Ocean LCL",
+      "Rail Intermodal"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Premier Partner EDI Verified",
+    "sla_hours": "1.5h Priority Review",
+    "manager_email": "manager.maersk@portline.in",
+    "logo_color": "#0284C7",
+    "agents": [
+      {
+        "agent_id": "AGT-MSK-01",
+        "name": "Kiran Reddy",
+        "email": "agent.maersk@portline.in",
+        "role": "agent",
+        "phone": "+91 98203 10023",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-EVG-04",
+    "name": "Evergreen Marine",
+    "carrier_key": "Evergreen",
+    "modes": [
+      "Ocean FCL"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Ocean Alliance Verified Partner",
+    "sla_hours": "2h Guaranteed SLA",
+    "manager_email": "manager.evergreen@portline.in",
+    "logo_color": "#059669",
+    "agents": [
+      {
+        "agent_id": "AGT-EVG-01",
+        "name": "Amrita Pillai",
+        "email": "agent.evergreen@portline.in",
+        "role": "agent",
+        "phone": "+91 98204 10024",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-HLG-05",
+    "name": "Hapag-Lloyd",
+    "carrier_key": "Hapag-Lloyd",
+    "modes": [
+      "Ocean FCL",
+      "Ocean LCL"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "THE Alliance Verified Contract",
+    "sla_hours": "2h Standard SLA",
+    "manager_email": "manager.hapag@portline.in",
+    "logo_color": "#EA580C",
+    "agents": [
+      {
+        "agent_id": "AGT-HLG-01",
+        "name": "Sunil Verma",
+        "email": "agent.hapag@portline.in",
+        "role": "agent",
+        "phone": "+91 98205 10025",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-COS-06",
+    "name": "COSCO Shipping Lines",
+    "carrier_key": "COSCO",
+    "modes": [
+      "Ocean FCL"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Ocean Alliance Direct Contract",
+    "sla_hours": "2h Guaranteed SLA",
+    "manager_email": "manager.cosco@portline.in",
+    "logo_color": "#2563EB",
+    "agents": [
+      {
+        "agent_id": "AGT-COS-01",
+        "name": "Ravi Shankar",
+        "email": "agent.cosco@portline.in",
+        "role": "agent",
+        "phone": "+91 98206 10026",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-ONE-07",
+    "name": "Ocean Network Express (ONE)",
+    "carrier_key": "ONE",
+    "modes": [
+      "Ocean FCL"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "THE Alliance Verified Partner",
+    "sla_hours": "2h Standard SLA",
+    "manager_email": "manager.one@portline.in",
+    "logo_color": "#DB2777",
+    "agents": [
+      {
+        "agent_id": "AGT-ONE-01",
+        "name": "Pooja Menon",
+        "email": "agent.one@portline.in",
+        "role": "agent",
+        "phone": "+91 98207 10027",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-AIR-08",
+    "name": "Air Cargo Express",
+    "carrier_key": "Air",
+    "modes": [
+      "Air Priority",
+      "Air Pharma/Cold Chain",
+      "Air Freight"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "IATA Direct Carrier Integration",
+    "sla_hours": "1h Priority SLA",
+    "manager_email": "manager.air@portline.in",
+    "logo_color": "#7C3AED",
+    "agents": [
+      {
+        "agent_id": "AGT-AIR-01",
+        "name": "Meera Iyer",
+        "email": "agent.air@portline.in",
+        "role": "agent",
+        "phone": "+91 98208 10028",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-EXP-09",
+    "name": "Express Courier & Parcel",
+    "carrier_key": "Express",
+    "modes": [
+      "Express Courier",
+      "Air Charter"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Express Integrator Direct Contract",
+    "sla_hours": "30m Rapid SLA",
+    "manager_email": "manager.express@portline.in",
+    "logo_color": "#D97706",
+    "agents": [
+      {
+        "agent_id": "AGT-EXP-01",
+        "name": "Nitesh Dubey",
+        "email": "agent.express@portline.in",
+        "role": "agent",
+        "phone": "+91 98209 10029",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-GEN-10",
+    "name": "PORTLINE General Carrier Network",
+    "carrier_key": "General",
+    "modes": [
+      "Multimodal Unified"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Master Brokerage Operations Hub",
+    "sla_hours": "2h SLA",
+    "manager_email": "manager@portline.in",
+    "logo_color": "#0A2540",
+    "agents": [
+      {
+        "agent_id": "AGT-GEN-01",
+        "name": "Arjun Agent",
+        "email": "agent@portline.in",
+        "role": "agent",
+        "phone": "+91 98210 10030",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  }
+]

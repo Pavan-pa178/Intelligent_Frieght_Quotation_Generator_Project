@@ -1817,3 +1817,95 @@ export async function triggerMasterSeed(drop = false) {
   })
 }
 
+
+
+// ---------------- Companies & Agents B2B Management ----------------
+
+export async function fetchCompanies(eligibleOnly = false) {
+  try {
+    const url = eligibleOnly ? '/api/v1/companies/?eligible=true' : '/api/v1/companies/'
+    const res = await apiFetch(url)
+    if (Array.isArray(res)) return res
+  } catch (err) {
+    console.warn('Backend companies endpoint unavailable, using cached companies:', err.message)
+  }
+
+  // Fallback from localStorage
+  try {
+    const raw = localStorage.getItem('portline_companies')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        return eligibleOnly ? parsed.filter(c => c.is_eligible) : parsed
+      }
+    }
+  } catch {}
+
+  return []
+}
+
+export async function createCompany(companyData) {
+  try {
+    const res = await apiFetch('/api/v1/companies/', {
+      method: 'POST',
+      body: JSON.stringify(companyData)
+    })
+    window.dispatchEvent(new CustomEvent('portline_companies_updated'))
+    return res
+  } catch (err) {
+    console.error('Failed to create company on backend:', err)
+    throw err
+  }
+}
+
+export async function verifyCompany(companyId, { status, is_eligible, sla_hours, contract_tier }) {
+  try {
+    const res = await apiFetch(`/api/v1/companies/${companyId}/verify/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, is_eligible, sla_hours, contract_tier })
+    })
+    window.dispatchEvent(new CustomEvent('portline_companies_updated'))
+    return res
+  } catch (err) {
+    console.error('Failed to update company verification status:', err)
+    throw err
+  }
+}
+
+export async function addCompanyAgent(companyId, { name, email, password, phone }) {
+  try {
+    const res = await apiFetch(`/api/v1/companies/${companyId}/agents/`, {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password, phone })
+    })
+    // Also save into mock users so agent can login offline if needed
+    saveMockUser(email, {
+      password,
+      user: {
+        name,
+        email: email.trim().toLowerCase(),
+        role: 'agent',
+        phone,
+        company: res?.company?.name || 'Carrier Desk'
+      }
+    })
+    window.dispatchEvent(new CustomEvent('portline_companies_updated'))
+    return res
+  } catch (err) {
+    console.error('Failed to add agent to company:', err)
+    throw err
+  }
+}
+
+export async function removeCompanyAgent(companyId, agentEmail) {
+  try {
+    const res = await apiFetch(`/api/v1/companies/${companyId}/agents/?email=${encodeURIComponent(agentEmail)}`, {
+      method: 'DELETE'
+    })
+    window.dispatchEvent(new CustomEvent('portline_companies_updated'))
+    return res
+  } catch (err) {
+    console.error('Failed to remove agent from company:', err)
+    throw err
+  }
+}

@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   LayoutDashboard, Route, FileText, Package, ChevronRight, CheckCircle2,
   XCircle, Clock, AlertTriangle, DollarSign, Ship, Plane, Truck, RefreshCw,
-  Eye, Database, Users, UserPlus, ShieldCheck, UserCheck, Building, Key,
-  Trash2, Edit3, Filter, Check, X, Lock, Plus, Search, Shield, LogOut
+  Eye, Database, Users, UserPlus, ShieldCheck, UserCheck, Building, Building2, Key,
+  Trash2, Edit3, Filter, Check, X, Lock, Plus, Search, Shield, LogOut, Award, ExternalLink, Sparkles, UserX
 } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import StatusBadge from '../components/StatusBadge'
@@ -14,12 +14,14 @@ import { useToast } from '../context/ToastContext'
 import {
   fetchAllQuotes, fetchShipments, clearAllShipments, fetchAllUsers,
   adminCreateUser, adminUpdateUser, adminDeleteUser,
-  agentActionOnQuote, clearAllQuotes, deleteQuote
+  agentActionOnQuote, clearAllQuotes, deleteQuote,
+  fetchCompanies, verifyCompany, createCompany, addCompanyAgent, removeCompanyAgent
 } from '../lib/api'
 import { routeAnalytics, resolveAssignedAgent } from '../lib/mockData'
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { key: 'companies', label: 'Companies & Agents', icon: Building2 },
   { key: 'users', label: 'User Management', icon: Users },
   { key: 'masterdata', label: 'Master Database', icon: Database },
   { key: 'routes', label: 'Route Management', icon: Route },
@@ -197,19 +199,40 @@ export default function Admin() {
   })
   const [creatingUser, setCreatingUser] = useState(false)
 
+  // Companies & Company Agents state
+  const [companies, setCompanies] = useState([])
+  const [companiesLoading, setCompaniesLoading] = useState(false)
+  const [companySearch, setCompanySearch] = useState('')
+  const [companyStatusFilter, setCompanyStatusFilter] = useState('ALL')
+  const [selectedCompForAgent, setSelectedCompForAgent] = useState(null)
+  const [newAgentForm, setNewAgentForm] = useState({ name: '', email: '', password: '', phone: '' })
+  const [addingAgent, setAddingAgent] = useState(false)
+  const [showAddCompanyModal, setShowAddCompanyModal] = useState(false)
+  const [newCompanyForm, setNewCompanyForm] = useState({
+    name: '',
+    carrier_key: '',
+    contract_tier: 'Tier 1 Strategic Carrier',
+    sla_hours: '2h SLA',
+    manager_email: '',
+    modes: 'Ocean FCL, Ocean LCL'
+  })
+  const [creatingCompany, setCreatingCompany] = useState(false)
+
   const isAdmin = user?.role === 'admin'
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const [q, s, u] = await Promise.all([
+      const [q, s, u, c] = await Promise.all([
         fetchAllQuotes(),
         fetchShipments(''),
         fetchAllUsers(),
+        fetchCompanies(),
       ])
       setQuotes(Array.isArray(q) ? q : [])
       setShipments(Array.isArray(s) ? s : [])
       setUsersList(Array.isArray(u) ? u : [])
+      setCompanies(Array.isArray(c) ? c : [])
     } catch {
       // Graceful fallback to seeded dashboard
     } finally {
@@ -236,13 +259,106 @@ export default function Admin() {
     const handleSync = () => { loadData() }
     window.addEventListener('portline_quote_updated', handleSync)
     window.addEventListener('portline_shipment_updated', handleSync)
+    window.addEventListener('portline_companies_updated', handleSync)
     window.addEventListener('storage', handleSync)
     return () => {
       window.removeEventListener('portline_quote_updated', handleSync)
       window.removeEventListener('portline_shipment_updated', handleSync)
+      window.removeEventListener('portline_companies_updated', handleSync)
       window.removeEventListener('storage', handleSync)
     }
   }, [loadData])
+
+
+  const handleToggleVerifyCompany = async (company) => {
+    const nextEligible = !company.is_eligible
+    const nextStatus = nextEligible ? 'APPROVED' : 'SUSPENDED'
+    try {
+      await verifyCompany(company.company_id, { status: nextStatus, is_eligible: nextEligible })
+      toast(nextEligible 
+        ? `${company.name} verified & marked ELIGIBLE for customer recommendations!` 
+        : `${company.name} suspended from customer recommendations.`
+      )
+      loadData()
+    } catch (err) {
+      toast('Failed to update company verification')
+    }
+  }
+
+  const handleAddAgentToCompany = async (e) => {
+    e.preventDefault()
+    if (!selectedCompForAgent) return
+    if (!newAgentForm.email.trim() || !newAgentForm.password.trim()) {
+      toast('Agent email and password are required.')
+      return
+    }
+    setAddingAgent(true)
+    try {
+      await addCompanyAgent(selectedCompForAgent.company_id, {
+        name: newAgentForm.name.trim() || newAgentForm.email.split('@')[0],
+        email: newAgentForm.email.trim().toLowerCase(),
+        password: newAgentForm.password.trim(),
+        phone: newAgentForm.phone.trim() || '+91 98200 00000'
+      })
+      toast(`Agent ${newAgentForm.email} onboarded for ${selectedCompForAgent.name}!`)
+      setNewAgentForm({ name: '', email: '', password: '', phone: '' })
+      setSelectedCompForAgent(null)
+      loadData()
+    } catch (err) {
+      toast(err.message || 'Failed to onboard agent')
+    } finally {
+      setAddingAgent(false)
+    }
+  }
+
+  const handleRemoveAgent = async (companyId, agentEmail) => {
+    if (!window.confirm(`Are you sure you want to remove agent ${agentEmail} from this company?`)) return
+    try {
+      await removeCompanyAgent(companyId, agentEmail)
+      toast(`Agent ${agentEmail} removed from company.`)
+      loadData()
+    } catch (err) {
+      toast('Failed to remove agent')
+    }
+  }
+
+  const handleCreateCompany = async (e) => {
+    e.preventDefault()
+    if (!newCompanyForm.name.trim()) {
+      toast('Company name is required.')
+      return
+    }
+    setCreatingCompany(true)
+    try {
+      const carrierKey = newCompanyForm.carrier_key.trim() || newCompanyForm.name.trim()
+      const modesList = newCompanyForm.modes.split(',').map(m => m.trim()).filter(Boolean)
+      await createCompany({
+        name: newCompanyForm.name.trim(),
+        carrier_key: carrierKey,
+        contract_tier: newCompanyForm.contract_tier.trim(),
+        sla_hours: newCompanyForm.sla_hours.trim(),
+        manager_email: newCompanyForm.manager_email.trim().toLowerCase(),
+        modes: modesList,
+        status: 'APPROVED',
+        is_eligible: true
+      })
+      toast(`Freight company ${newCompanyForm.name} created & verified!`)
+      setShowAddCompanyModal(false)
+      setNewCompanyForm({
+        name: '',
+        carrier_key: '',
+        contract_tier: 'Tier 1 Strategic Carrier',
+        sla_hours: '2h SLA',
+        manager_email: '',
+        modes: 'Ocean FCL, Ocean LCL'
+      })
+      loadData()
+    } catch (err) {
+      toast(err.message || 'Failed to create company')
+    } finally {
+      setCreatingCompany(false)
+    }
+  }
 
   // Handlers for User Management
   const handleCreateUser = async (e) => {
@@ -540,6 +656,271 @@ export default function Admin() {
                     <div className="text-[11px] text-emerald-600 mt-0.5">From enquiry to booking</div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          
+          {/* COMPANIES & AGENTS MANAGEMENT TAB */}
+          {activeTab === 'companies' && (
+            <div className="space-y-6">
+              {/* Header & Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-brand-line bg-white p-6 shadow-xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-brand-orange" />
+                    <h3 className="text-base font-bold text-brand-navy">Freight Carrier Companies & Desk Agents</h3>
+                  </div>
+                  <p className="text-xs text-brand-slate mt-0.5">
+                    Verify partner carriers, manage SLA tiers, control customer recommendation eligibility, and onboard company agents.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddCompanyModal(true)}
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-orange to-brand-orangeLight px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:brightness-105 transition-all self-start sm:self-auto"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Register Freight Company</span>
+                </button>
+              </div>
+
+              {/* KPI Strip */}
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div className="rounded-xl border border-brand-line bg-white p-4 shadow-xs">
+                  <span className="text-[11px] font-semibold text-brand-slate uppercase tracking-wider">Total Carriers</span>
+                  <div className="mt-1 font-display text-2xl font-bold text-brand-navy">{companies.length}</div>
+                  <span className="text-[10px] text-brand-slateLight">Multi-modal Freight Providers</span>
+                </div>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-xs">
+                  <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider">Verified & Eligible</span>
+                  <div className="mt-1 font-display text-2xl font-bold text-emerald-700">
+                    {companies.filter(c => c.is_eligible).length}
+                  </div>
+                  <span className="text-[10px] text-emerald-600 font-medium">Active in Customer Recommendations</span>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 shadow-xs">
+                  <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider">Pending / Suspended</span>
+                  <div className="mt-1 font-display text-2xl font-bold text-amber-700">
+                    {companies.filter(c => !c.is_eligible).length}
+                  </div>
+                  <span className="text-[10px] text-amber-600 font-medium">Hidden from Customer Recommendations</span>
+                </div>
+                <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4 shadow-xs">
+                  <span className="text-[11px] font-semibold text-purple-800 uppercase tracking-wider">Operational Agents</span>
+                  <div className="mt-1 font-display text-2xl font-bold text-purple-700">
+                    {companies.reduce((sum, c) => sum + (c.agents?.length || 0), 0)}
+                  </div>
+                  <span className="text-[10px] text-purple-600 font-medium">Assigned to Carrier Desks</span>
+                </div>
+              </div>
+
+              {/* Search & Status Filters */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-brand-line bg-white p-3 shadow-xs">
+                <div className="relative w-full sm:w-80">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-slateLight" />
+                  <input
+                    type="text"
+                    value={companySearch}
+                    onChange={(e) => setCompanySearch(e.target.value)}
+                    placeholder="Search company, ID, carrier key, or agent..."
+                    className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-brand-line focus:border-brand-marine focus:outline-none"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                  {[
+                    { id: 'ALL', label: 'All Companies' },
+                    { id: 'ELIGIBLE', label: 'Eligible & Approved' },
+                    { id: 'PENDING', label: 'Pending Verification' },
+                    { id: 'SUSPENDED', label: 'Suspended' }
+                  ].map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => setCompanyStatusFilter(f.id)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                        companyStatusFilter === f.id
+                          ? 'bg-brand-navy text-white shadow-xs'
+                          : 'bg-brand-cloud/70 text-brand-slate hover:bg-brand-cloud hover:text-brand-navy'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Companies Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {companies
+                  .filter(c => {
+                    if (companyStatusFilter === 'ELIGIBLE' && !c.is_eligible) return false
+                    if (companyStatusFilter === 'PENDING' && c.status !== 'PENDING') return false
+                    if (companyStatusFilter === 'SUSPENDED' && c.status !== 'SUSPENDED') return false
+                    if (!companySearch) return true
+                    const s = companySearch.toLowerCase()
+                    return (
+                      (c.name || '').toLowerCase().includes(s) ||
+                      (c.company_id || '').toLowerCase().includes(s) ||
+                      (c.carrier_key || '').toLowerCase().includes(s) ||
+                      (c.agents || []).some(a => (a.name || '').toLowerCase().includes(s) || (a.email || '').toLowerCase().includes(s))
+                    )
+                  })
+                  .map(comp => (
+                    <div
+                      key={comp.company_id}
+                      className={`rounded-2xl border transition-all bg-white p-5 shadow-xs flex flex-col justify-between ${
+                        comp.is_eligible ? 'border-brand-line hover:border-brand-marine/50' : 'border-amber-300 bg-amber-50/20'
+                      }`}
+                    >
+                      <div>
+                        {/* Company Card Header */}
+                        <div className="flex items-start justify-between gap-3 mb-3 border-b border-brand-line pb-3">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-white shadow-xs text-sm"
+                              style={{ backgroundColor: comp.logo_color || '#0A2540' }}
+                            >
+                              {(comp.carrier_key || comp.name || 'CO').slice(0, 3).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-display font-bold text-brand-navy text-sm">{comp.name}</h4>
+                                <span className="font-mono text-[10px] font-bold text-brand-slateLight px-1.5 py-0.5 rounded bg-brand-cloud border border-brand-line">
+                                  {comp.company_id}
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-brand-slate font-medium mt-0.5">
+                                {comp.contract_tier || 'Partner Ocean Carrier'} · <span className="text-brand-orange font-semibold">{comp.sla_hours || '2h SLA'}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Eligibility Badge */}
+                          {comp.is_eligible ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="h-3 w-3" /> Eligible (Recommended)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 border border-amber-300">
+                              <Clock className="h-3 w-3" /> {comp.status === 'SUSPENDED' ? 'Suspended' : 'Pending Verification'}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Live Activity & Performance Counters */}
+                        <div className="grid grid-cols-3 gap-2 bg-brand-cloud/60 rounded-xl p-2.5 mb-3 border border-brand-line text-center">
+                          <div>
+                            <span className="text-[10px] text-brand-slate uppercase font-semibold">Total Requests</span>
+                            <div className="text-sm font-bold text-brand-navy font-mono">
+                              {comp.stats?.total_requests || 0}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-brand-slate uppercase font-semibold">Pending Reviews</span>
+                            <div className="text-sm font-bold text-amber-700 font-mono">
+                              {comp.stats?.pending_verifications || 0}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-brand-slate uppercase font-semibold">Bookings Secured</span>
+                            <div className="text-sm font-bold text-emerald-700 font-mono">
+                              {comp.stats?.booked_shipments || 0}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Operating Modes */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {(comp.modes || []).map((m, idx) => (
+                            <span key={idx} className="rounded-md bg-white border border-brand-line px-2 py-0.5 text-[10px] font-semibold text-brand-slate">
+                              {m}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Mapped Company Agents */}
+                        <div className="border-t border-brand-line pt-3 mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-brand-navy flex items-center gap-1.5">
+                              <Users className="h-3.5 w-3.5 text-brand-marine" />
+                              Assigned Agents ({comp.agents?.length || 0})
+                            </span>
+                            <button
+                              onClick={() => {
+                                setSelectedCompForAgent(comp)
+                                setNewAgentForm({ name: '', email: '', password: '', phone: '' })
+                              }}
+                              className="text-[11px] font-bold text-brand-orange hover:text-brand-orangeLight flex items-center gap-1"
+                            >
+                              <Plus className="h-3 w-3" /> Add Agent
+                            </button>
+                          </div>
+
+                          <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                            {(comp.agents || []).map((agt, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between bg-white rounded-lg border border-brand-line px-2.5 py-1.5 text-xs"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="h-6 w-6 rounded-full bg-brand-cloud flex items-center justify-center text-[10px] font-bold text-brand-navy">
+                                    {(agt.name || agt.email).slice(0, 1).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-semibold text-brand-navy text-[11px] leading-tight">{agt.name || 'Agent'}</div>
+                                    <div className="text-[10px] text-brand-slate font-mono">{agt.email}</div>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleRemoveAgent(comp.company_id, agt.email)}
+                                  className="text-brand-slateLight hover:text-red-600 p-1 transition-colors"
+                                  title="Remove agent from company"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                            {(!comp.agents || comp.agents.length === 0) && (
+                              <div className="text-[11px] text-brand-slateLight italic py-1">
+                                No agents mapped yet. Click "+ Add Agent" to onboard an agent with email & password.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Action Footer */}
+                      <div className="flex items-center justify-between gap-2 border-t border-brand-line pt-3 mt-2">
+                        <button
+                          onClick={() => handleToggleVerifyCompany(comp)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            comp.is_eligible
+                              ? 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
+                              : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs'
+                          }`}
+                        >
+                          {comp.is_eligible ? (
+                            <>
+                              <XCircle className="h-3.5 w-3.5" />
+                              <span>Suspend Eligibility</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              <span>Verify & Approve (Make Eligible)</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() => navigate(`/agent?desk=${encodeURIComponent(comp.carrier_key || comp.name)}`)}
+                          className="flex items-center gap-1 text-xs font-bold text-brand-navy hover:text-brand-marine px-2 py-1 rounded hover:bg-brand-cloud transition-colors"
+                        >
+                          <span>Open Carrier Desk</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
@@ -1276,6 +1657,194 @@ export default function Admin() {
             </div>
           </div>
         )}
+
+      {/* MODAL: ADD AGENT TO COMPANY */}
+      {selectedCompForAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-brand-line animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-brand-line pb-3 mb-4">
+              <div>
+                <h3 className="font-display font-bold text-brand-navy text-base">Onboard Company Agent</h3>
+                <p className="text-xs text-brand-slate">Assign operational agent to {selectedCompForAgent.name} ({selectedCompForAgent.company_id})</p>
+              </div>
+              <button onClick={() => setSelectedCompForAgent(null)} className="text-brand-slate hover:text-brand-navy p-1">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddAgentToCompany} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-brand-navy mb-1">Agent Full Name</label>
+                <input
+                  type="text"
+                  value={newAgentForm.name}
+                  onChange={(e) => setNewAgentForm({ ...newAgentForm, name: e.target.value })}
+                  placeholder="e.g. Ramesh Chandra"
+                  className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-navy mb-1">Agent Email (Login ID) *</label>
+                <input
+                  type="email"
+                  required
+                  value={newAgentForm.email}
+                  onChange={(e) => setNewAgentForm({ ...newAgentForm, email: e.target.value })}
+                  placeholder={`e.g. agent.${selectedCompForAgent.carrier_key.toLowerCase().replace(/[^a-z0-9]/g, '')}@portline.in`}
+                  className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-navy mb-1">Password *</label>
+                <input
+                  type="password"
+                  required
+                  value={newAgentForm.password}
+                  onChange={(e) => setNewAgentForm({ ...newAgentForm, password: e.target.value })}
+                  placeholder="Create secure password for agent"
+                  className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-navy mb-1">Contact Phone</label>
+                <input
+                  type="text"
+                  value={newAgentForm.phone}
+                  onChange={(e) => setNewAgentForm({ ...newAgentForm, phone: e.target.value })}
+                  placeholder="+91 98200 00000"
+                  className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-brand-line">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCompForAgent(null)}
+                  className="px-4 py-2 text-xs font-semibold text-brand-slate hover:bg-brand-cloud rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addingAgent}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-brand-orange hover:bg-brand-orangeLight rounded-xl disabled:opacity-50 shadow-xs"
+                >
+                  {addingAgent ? 'Creating Agent...' : 'Onboard Agent'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: REGISTER NEW FREIGHT COMPANY */}
+      {showAddCompanyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-brand-line animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-brand-line pb-3 mb-4">
+              <div>
+                <h3 className="font-display font-bold text-brand-navy text-base">Register New Freight Carrier Company</h3>
+                <p className="text-xs text-brand-slate">Add a new freight provider, set SLA commitments, and enable customer recommendations.</p>
+              </div>
+              <button onClick={() => setShowAddCompanyModal(false)} className="text-brand-slate hover:text-brand-navy p-1">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCompany} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-brand-navy mb-1">Company Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCompanyForm.name}
+                    onChange={(e) => setNewCompanyForm({ ...newCompanyForm, name: e.target.value })}
+                    placeholder="e.g. ZIM Integrated Shipping"
+                    className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-brand-navy mb-1">Carrier Short Key</label>
+                  <input
+                    type="text"
+                    value={newCompanyForm.carrier_key}
+                    onChange={(e) => setNewCompanyForm({ ...newCompanyForm, carrier_key: e.target.value })}
+                    placeholder="e.g. ZIM"
+                    className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-brand-navy mb-1">Contract / Partnership Tier</label>
+                  <input
+                    type="text"
+                    value={newCompanyForm.contract_tier}
+                    onChange={(e) => setNewCompanyForm({ ...newCompanyForm, contract_tier: e.target.value })}
+                    placeholder="e.g. Tier 1 Ocean Carrier"
+                    className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-brand-navy mb-1">SLA Review Time Window</label>
+                  <input
+                    type="text"
+                    value={newCompanyForm.sla_hours}
+                    onChange={(e) => setNewCompanyForm({ ...newCompanyForm, sla_hours: e.target.value })}
+                    placeholder="e.g. 2h Standard SLA"
+                    className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-navy mb-1">Company Manager Email</label>
+                <input
+                  type="email"
+                  value={newCompanyForm.manager_email}
+                  onChange={(e) => setNewCompanyForm({ ...newCompanyForm, manager_email: e.target.value })}
+                  placeholder="manager.zim@portline.in"
+                  className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-brand-navy mb-1">Operational Freight Modes (comma-separated)</label>
+                <input
+                  type="text"
+                  value={newCompanyForm.modes}
+                  onChange={(e) => setNewCompanyForm({ ...newCompanyForm, modes: e.target.value })}
+                  placeholder="Ocean FCL, Ocean LCL, Rail Intermodal"
+                  className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy focus:border-brand-marine focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-brand-line">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCompanyModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-brand-slate hover:bg-brand-cloud rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingCompany}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-brand-navy hover:bg-brand-marine rounded-xl disabled:opacity-50 shadow-xs"
+                >
+                  {creatingCompany ? 'Registering...' : 'Register & Verify Company'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </>
   )
 }
