@@ -136,7 +136,18 @@ class LoginView(APIView):
                 user_obj.save()
                 UserProfile.objects.update_or_create(user=user_obj, defaults={'role': 'admin', 'company': 'PORTLINE Operations'})
                 user = user_obj
-            elif (email == 'agent@portline.in' or (email.startswith('agent.') and email.endswith('@portline.in'))) and _valid_seed('agent', password):
+            elif email in [
+                'agent@portline.in',
+                'agent.cmacgm@portline.in',
+                'agent.msc@portline.in',
+                'agent.maersk@portline.in',
+                'agent.evergreen@portline.in',
+                'agent.hapag@portline.in',
+                'agent.cosco@portline.in',
+                'agent.one@portline.in',
+                'agent.air@portline.in',
+                'agent.express@portline.in'
+            ] and _valid_seed('agent', password):
                 desk_label = email.split('@')[0].replace('agent.', '').replace('agent', '').strip('.').upper() or 'General'
                 user_obj, _ = User.objects.get_or_create(username=email, defaults={'email': email, 'first_name': desk_label, 'last_name': 'Agent'})
                 user_obj.set_password(password)
