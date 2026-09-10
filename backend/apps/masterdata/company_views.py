@@ -146,7 +146,7 @@ class CompanyAgentManagementView(APIView):
                 user=user_obj,
                 defaults={
                     'role': 'agent',
-                    'company': f"PORTLINE {comp.get('name')} Desk",
+                    'company': comp.get('name') or comp.get('carrier_key') or 'Carrier',
                     'phone': phone
                 }
             )

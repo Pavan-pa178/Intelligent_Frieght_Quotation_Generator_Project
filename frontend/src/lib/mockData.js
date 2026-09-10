@@ -444,19 +444,148 @@ CARRIER_DESK_CONFIG.General = CARRIER_DESK_CONFIG['default']
 export const CARRIER_AGENT_MAP = CARRIER_DESK_CONFIG
 
 /**
- * Determine which dedicated carrier desk an agent belongs to based on user profile.
+ * Extract clean carrier name from company strings (e.g. "PORTLINE Essar Desk" -> "Essar")
  */
-export function getAgentDesk(user) {
+export function extractCarrierName(str) {
+  if (!str || typeof str !== 'string') return ''
+  let s = str.trim()
+  s = s.replace(/^PORTLINE\s+/i, '')
+  s = s.replace(/\s+Desk$/i, '')
+  s = s.replace(/\s+Commercial\s+Operations$/i, '')
+  s = s.replace(/\s+Operations$/i, '')
+  s = s.replace(/\s+Network$/i, '')
+  s = s.replace(/\s*\(.*?\)\s*/g, '')
+  const lower = s.toLowerCase()
+  if (lower === 'independent shipper' || lower === 'company' || lower === 'general' || lower === 'default') {
+    return ''
+  }
+  return s.trim()
+}
+
+/**
+ * Safely retrieve dynamic registered companies from localStorage cache
+ */
+export function getRegisteredCompanies() {
+  try {
+    const raw = localStorage.getItem('portline_companies')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {}
+  return []
+}
+
+/**
+ * Dynamically construct carrier desk identity and theme for any custom company
+ */
+export function buildDynamicCarrierDesk(carrierName, compMeta = {}, agentUser = null) {
+  const cName = carrierName || compMeta?.name || 'Carrier'
+  const cKey = compMeta?.carrier_key || cName
+  const logoColor = compMeta?.logo_color || '#0E3B43'
+  const contractTier = compMeta?.contract_tier || agentUser?.contract_tier || 'Tier 1 Strategic Carrier'
+  const slaHours = compMeta?.sla_hours || agentUser?.sla_hours || '2h SLA'
+  const officerName = agentUser?.name || compMeta?.agents?.[0]?.name || `${cName} Operations Agent`
+  const officerEmail = agentUser?.email || compMeta?.agents?.[0]?.email || compMeta?.manager_email || `agent.${cKey.toLowerCase().replace(/[^a-z0-9]/g, '')}@portline.in`
+
+  return {
+    carrierKey: cKey,
+    carrierName: cName,
+    deskName: cName.toLowerCase().includes('desk') ? cName : `${cName} Commercial Operations Desk`,
+    agentName: officerName,
+    email: officerEmail,
+    short: `${cKey} Desk`,
+    theme: {
+      primaryColor: logoColor,
+      accentColor: '#D9500A',
+      badgeBg: 'bg-emerald-50',
+      badgeText: 'text-emerald-700',
+      badgeBorder: 'border-emerald-200',
+      bannerGradient: 'from-[#0B2538] via-[#0E354D] to-[#164E63]',
+      tagline: `${cName} Dedicated Logistics & Freight Operations Desk`,
+      contractTier,
+      slaHours
+    }
+  }
+}
+
+/**
+ * Determine which dedicated carrier desk an agent belongs to based on user profile or explicit queryDesk.
+ * Fully supports dynamically onboarded companies (e.g. Essar, dynamic freight forwarders).
+ */
+export function getAgentDesk(user, queryDesk = null) {
   const fallback = CARRIER_DESK_CONFIG['default']
+
+  // 1. Explicit queryDesk override (e.g. from Admin "Open Carrier Desk" or /agent?desk=Essar)
+  if (queryDesk && typeof queryDesk === 'string') {
+    const q = queryDesk.trim()
+    if (q && q !== 'ALL' && q !== 'default' && q !== 'General') {
+      // Check built-in carrier desk config
+      const hardcoded = Object.entries(CARRIER_DESK_CONFIG).find(([k]) => k !== 'default' && k !== 'General' && isCarrierMatch(k, q))
+      if (hardcoded) {
+        return {
+          ...hardcoded[1],
+          theme: { ...DEFAULT_CARRIER_THEME, ...(hardcoded[1]?.theme || {}) }
+        }
+      }
+      // Check registered dynamic companies
+      const reg = getRegisteredCompanies().find(c => isCarrierMatch(c.carrier_key || c.name, q))
+      if (reg) {
+        return buildDynamicCarrierDesk(reg.name, reg, user)
+      }
+      // Direct build for specified carrier key
+      return buildDynamicCarrierDesk(q, {}, user)
+    }
+  }
+
   if (!user) return { ...fallback, theme: { ...DEFAULT_CARRIER_THEME, ...(fallback.theme || {}) } }
+
   const email = (user.email || '').toLowerCase().trim()
   const name = (user.name || '').toLowerCase()
-  const company = (user.company || '').toLowerCase()
+  const carrierKey = (user.carrier_key || user.carrierKey || '').trim()
+  const userCompany = extractCarrierName(user.company_name || user.company || user.carrier_desk || user.carrierDesk || carrierKey)
   const deskField = (user.carrierDesk || user.desk || '').toLowerCase()
 
+  // 2. Check if user is explicit master platform supervisor
+  const isPlatformLead = (email === 'agent@portline.in' || email === 'agent.demo@portline.in') && !carrierKey && !userCompany
+  if (isPlatformLead) {
+    return { ...fallback, theme: { ...DEFAULT_CARRIER_THEME, ...(fallback.theme || {}) } }
+  }
+
+  // 3. Search dynamic registered companies
+  const registeredComps = getRegisteredCompanies()
+  if (registeredComps.length > 0) {
+    // 3a. Match by exact agent email listed in company agents
+    const byAgentEmail = registeredComps.find(c => (c.agents || []).some(a => (a.email || '').trim().toLowerCase() === email))
+    if (byAgentEmail) {
+      return buildDynamicCarrierDesk(byAgentEmail.name, byAgentEmail, user)
+    }
+
+    // 3b. Match by company manager email
+    const byManager = registeredComps.find(c => (c.manager_email || '').trim().toLowerCase() === email)
+    if (byManager) {
+      return buildDynamicCarrierDesk(byManager.name, byManager, user)
+    }
+
+    // 3c. Match by carrier key or company name
+    const byCompMatch = registeredComps.find(c => {
+      const cK = c.carrier_key || c.name || ''
+      const cN = c.name || ''
+      return (
+        (carrierKey && (isCarrierMatch(cK, carrierKey) || isCarrierMatch(cN, carrierKey))) ||
+        (userCompany && (isCarrierMatch(cK, userCompany) || isCarrierMatch(cN, userCompany))) ||
+        (deskField && (isCarrierMatch(cK, deskField) || isCarrierMatch(cN, deskField)))
+      )
+    })
+    if (byCompMatch) {
+      return buildDynamicCarrierDesk(byCompMatch.name, byCompMatch, user)
+    }
+  }
+
+  // 4. Search built-in CARRIER_DESK_CONFIG
   let matched = null
 
-  // Match by specific desk email first
+  // 4a. Match by desk email
   for (const [key, desk] of Object.entries(CARRIER_DESK_CONFIG)) {
     if (key === 'default' || key === 'General' || key === 'GENERAL') continue
     if (desk?.email && desk.email.toLowerCase() === email) {
@@ -465,24 +594,52 @@ export function getAgentDesk(user) {
     }
   }
 
-  // Match by desk/company/name keywords if not matched by email
-  if (!matched) {
+  // 4b. Match by carrierKey or company name
+  if (!matched && (carrierKey || userCompany)) {
+    const target = carrierKey || userCompany
     for (const [key, desk] of Object.entries(CARRIER_DESK_CONFIG)) {
       if (key === 'default' || key === 'General' || key === 'GENERAL') continue
-      const kLower = key.toLowerCase()
-      if (deskField.includes(kLower) || email.includes(kLower) || name.includes(kLower) || company.includes(kLower)) {
+      if (isCarrierMatch(key, target) || isCarrierMatch(desk.carrierName, target)) {
         matched = desk
         break
       }
     }
   }
 
-  const res = matched || fallback
+  // 4c. Match by desk/company/name keywords if not matched yet
+  if (!matched) {
+    for (const [key, desk] of Object.entries(CARRIER_DESK_CONFIG)) {
+      if (key === 'default' || key === 'General' || key === 'GENERAL') continue
+      const kLower = key.toLowerCase()
+      if (deskField.includes(kLower) || email.includes(kLower) || name.includes(kLower)) {
+        matched = desk
+        break
+      }
+    }
+  }
+
+  if (matched) {
+    return {
+      ...matched,
+      theme: {
+        ...DEFAULT_CARRIER_THEME,
+        ...(matched?.theme || {})
+      }
+    }
+  }
+
+  // 5. If company name is present and not a generic shipper, dynamically build desk
+  const candidateCarrier = carrierKey || userCompany
+  if (candidateCarrier && candidateCarrier.toLowerCase() !== 'general') {
+    return buildDynamicCarrierDesk(candidateCarrier, {}, user)
+  }
+
+  // 6. Fallback only if no carrier identity is associated
   return {
-    ...res,
+    ...fallback,
     theme: {
       ...DEFAULT_CARRIER_THEME,
-      ...(res?.theme || {})
+      ...(fallback?.theme || {})
     }
   }
 }
@@ -514,6 +671,7 @@ export function isCarrierMatch(deskKey, routeCarrier) {
 /**
  * Resolve the assigned carrier desk for a quote based on its selected route carrier.
  * Prioritizes explicitly selected routes, then quote-level carrier, then route recommendations.
+ * Fully supports dynamic carrier companies.
  */
 export function resolveAssignedAgent(quote) {
   const fallback = CARRIER_DESK_CONFIG['default']
@@ -532,15 +690,27 @@ export function resolveAssignedAgent(quote) {
     return { ...fallback, theme: { ...DEFAULT_CARRIER_THEME, ...(fallback.theme || {}) } }
   }
 
+  // 1. Check built-in carrier desk config
   const key = Object.keys(CARRIER_DESK_CONFIG).find(k => k !== 'default' && k !== 'General' && k !== 'GENERAL' && isCarrierMatch(k, carrier))
-  const found = (key && CARRIER_DESK_CONFIG[key]) || fallback
-  return {
-    ...found,
-    theme: {
-      ...DEFAULT_CARRIER_THEME,
-      ...(found?.theme || {})
+  if (key && CARRIER_DESK_CONFIG[key]) {
+    const found = CARRIER_DESK_CONFIG[key]
+    return {
+      ...found,
+      theme: {
+        ...DEFAULT_CARRIER_THEME,
+        ...(found?.theme || {})
+      }
     }
   }
+
+  // 2. Check registered dynamic companies
+  const regComp = getRegisteredCompanies().find(c => isCarrierMatch(c.carrier_key || c.name, carrier))
+  if (regComp) {
+    return buildDynamicCarrierDesk(regComp.name, regComp)
+  }
+
+  // 3. Dynamically build desk for carrier name
+  return buildDynamicCarrierDesk(carrier, {})
 }
 
 

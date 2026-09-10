@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { 
   UserCheck, CheckCircle2, XCircle, Clock, MessageSquare, AlertTriangle, 
   Send, Eye, RefreshCw, Inbox, Ship, ShieldCheck, MapPin, User, ArrowRight, Filter
@@ -49,6 +49,8 @@ function saveMessages(msgs) {
 export default function Agent() {
   const { user, loggedIn } = useApp()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const deskParam = searchParams.get('desk')
   const toast = useToast()
   const [activeTab, setActiveTab] = useState('queue')
   const [quotes, setQuotes] = useState([])
@@ -57,18 +59,15 @@ export default function Agent() {
   const [messages, setMessages] = useState(loadMessages())
   const [selectedQuote, setSelectedQuote] = useState(null)
   const [newMsg, setNewMsg] = useState('')
-  const [selectedDeskFilter, setSelectedDeskFilter] = useState('ALL')
+  const [selectedDeskFilter, setSelectedDeskFilter] = useState(deskParam || 'ALL')
 
   const isAgent = user?.role === 'agent' || user?.role === 'broker' || user?.role === 'admin'
-  const currentDesk = getAgentDesk(user) || CARRIER_DESK_CONFIG['default'] || {}
+  const currentDesk = getAgentDesk(user, deskParam) || CARRIER_DESK_CONFIG['default'] || {}
   const deskTheme = currentDesk?.theme || DEFAULT_THEME
-  const isSupervisor =
-    user?.role === 'admin' ||
-    user?.email?.toLowerCase() === 'agent@portline.in' ||
-    user?.email?.toLowerCase() === 'agent.demo@portline.in' ||
-    user?.email?.toLowerCase().startsWith('agent@') ||
-    user?.email?.toLowerCase().startsWith('agent.demo@') ||
-    currentDesk?.carrierKey?.toLowerCase() === 'general'
+  const isMasterAdmin = user?.role === 'admin'
+  const isPlatformLeadAgent = user?.email?.toLowerCase() === 'agent@portline.in' || user?.email?.toLowerCase() === 'agent.demo@portline.in'
+  // Supervisor mode applies ONLY to platform lead agents or admin who are not viewing a specific desk
+  const isSupervisor = (isMasterAdmin || isPlatformLeadAgent) && (!deskParam || deskParam === 'ALL')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -116,7 +115,10 @@ export default function Agent() {
     const matchCarrier =
       isCarrierMatch(currentDesk?.carrierKey, assigned?.carrierKey) ||
       isCarrierMatch(currentDesk?.carrierKey, assigned?.carrierName) ||
-      isCarrierMatch(currentDesk?.carrierKey, q.selected_route?.carrier)
+      isCarrierMatch(currentDesk?.carrierKey, q.selected_route?.carrier) ||
+      isCarrierMatch(currentDesk?.carrierName, assigned?.carrierKey) ||
+      isCarrierMatch(currentDesk?.carrierName, assigned?.carrierName) ||
+      isCarrierMatch(currentDesk?.carrierName, q.selected_route?.carrier)
     const matchEmail = assigned?.email && assigned.email.toLowerCase() === agentEmail
     return Boolean(matchCarrier || matchEmail)
   })
