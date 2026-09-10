@@ -6,6 +6,7 @@ SEED_QUOTES = []
 IN_MEMORY_QUOTES = []
 
 from core.mongodb import get_collection
+from core import storage
 
 class QuoteListCreateView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -24,30 +25,45 @@ class QuoteListCreateView(APIView):
             return 0
 
         user_email = request.query_params.get('email', '').strip()
+
+        # Load from disk storage
+        all_dict = {}
+        for q in storage.load_quotes():
+            qid = str(q.get('id', '')).strip().upper()
+            if qid:
+                all_dict[qid] = q
+
+        # Also merge with in-memory quotes
+        for q in IN_MEMORY_QUOTES:
+            qid = str(q.get('id', '')).strip().upper()
+            if qid and qid not in all_dict:
+                all_dict[qid] = q
+                storage.save_quote(q)
+
+        # Merge with MongoDB if available
         try:
             col = get_collection('quotes')
             if col is not None:
-                if user_email:
-                    # STRICT MATCH: Only return quotes belonging specifically to this user's account
-                    query = {'user_email': {'$regex': f'^{re.escape(user_email)}$', '$options': 'i'}}
-                else:
-                    query = {}
-                db_quotes = list(col.find(query, {'_id': 0}))
-                db_quotes.sort(key=_sort_key, reverse=True)
-                return Response(db_quotes)
+                db_quotes = list(col.find({}, {'_id': 0}))
+                for dbq in db_quotes:
+                    qid = str(dbq.get('id', '')).strip().upper()
+                    if qid and qid not in all_dict:
+                        all_dict[qid] = dbq
+                        storage.save_quote(dbq)
         except Exception:
             pass
 
+        all_quotes = list(all_dict.values())
         if user_email:
             matched = [
-                q for q in IN_MEMORY_QUOTES
-                if q.get('user_email', '').strip().lower() == user_email.lower()
+                q for q in all_quotes
+                if str(q.get('user_email', '')).strip().lower() == user_email.lower()
             ]
             matched.sort(key=_sort_key, reverse=True)
             return Response(matched)
-        sorted_mem = list(IN_MEMORY_QUOTES)
-        sorted_mem.sort(key=_sort_key, reverse=True)
-        return Response(sorted_mem)
+
+        all_quotes.sort(key=_sort_key, reverse=True)
+        return Response(all_quotes)
 
     def post(self, request):
         payload = request.data
@@ -59,6 +75,8 @@ class QuoteListCreateView(APIView):
             payload['user_email'] = user_email.lower()
 
         qid = payload.get('id')
+        saved = storage.save_quote(payload)
+
         if qid:
             idx = next((i for i, q in enumerate(IN_MEMORY_QUOTES) if q.get('id') == qid), None)
             if idx is not None:
@@ -78,7 +96,7 @@ class QuoteListCreateView(APIView):
         except Exception as e:
             pass
 
-        return Response(payload, status=status.HTTP_201_CREATED)
+        return Response(saved or payload, status=status.HTTP_201_CREATED)
 
     def delete(self, request):
         confirm = request.query_params.get('confirm') or (request.data.get('confirm') if isinstance(request.data, dict) else None)
@@ -91,6 +109,7 @@ class QuoteListCreateView(APIView):
                 col.delete_many({})
         except Exception:
             pass
+        storage.clear_all_quotes()
         global IN_MEMORY_QUOTES
         IN_MEMORY_QUOTES.clear()
         return Response({'ok': True, 'message': 'All quotations cleared successfully'})
@@ -137,35 +156,39 @@ class QuoteDetailView(APIView):
 
 
 def _find_quote_anywhere(qid):
+    if not qid:
+        return None
+    found_disk = storage.get_quote_by_id(qid)
+    if found_disk:
+        return found_disk
     col = get_collection('quotes')
     if col is not None:
         try:
             q = col.find_one({'id': {'$regex': f'^{qid}$', '$options': 'i'}}, {'_id': 0})
             if q:
+                storage.save_quote(q)
                 return q
         except Exception:
             pass
     for pool in (IN_MEMORY_QUOTES, SEED_QUOTES):
-        found = next((m for m in pool if m.get('id', '').lower() == qid.lower()), None)
+        found = next((m for m in pool if m.get('id', '').lower() == str(qid).lower()), None)
         if found:
             return found
     return None
 
 
 def _update_quote_anywhere(qid, update_fields):
-    updated = False
+    storage.update_quote_fields(qid, update_fields)
     col = get_collection('quotes')
     if col is not None:
         try:
-            res = col.update_one({'id': {'$regex': f'^{qid}$', '$options': 'i'}}, {'$set': update_fields}, upsert=True)
-            if res.matched_count > 0 or res.upserted_id is not None:
-                updated = True
+            col.update_one({'id': {'$regex': f'^{qid}$', '$options': 'i'}}, {'$set': update_fields}, upsert=True)
         except Exception:
             pass
 
     found_in_mem = False
     for pool in (IN_MEMORY_QUOTES, SEED_QUOTES):
-        mq = next((m for m in pool if m.get('id', '').lower() == qid.lower()), None)
+        mq = next((m for m in pool if m.get('id', '').lower() == str(qid).lower()), None)
         if mq:
             found_in_mem = True
             for k, v in update_fields.items():
@@ -179,7 +202,6 @@ def _update_quote_anywhere(qid, update_fields):
                     curr[parts[-1]] = v
                 else:
                     mq[k] = v
-            updated = True
     if not found_in_mem:
         new_q = {'id': qid, **update_fields}
         IN_MEMORY_QUOTES.insert(0, new_q)

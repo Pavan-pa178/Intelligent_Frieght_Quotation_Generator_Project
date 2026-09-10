@@ -6,26 +6,42 @@ from rest_framework.response import Response
 SEED_SHIPMENTS = []
 
 from core.mongodb import get_collection
+from core import storage
 
 class ShipmentListCreateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
         user_email = request.query_params.get('email', '').strip().lower()
+
+        # Load from disk storage
+        all_dict = {}
+        for s in storage.load_shipments():
+            sid = str(s.get('shipment_id') or s.get('id') or s.get('tn') or '').strip().upper()
+            if sid:
+                all_dict[sid] = s
+
+        # Merge with MongoDB if available
         try:
             col = get_collection('shipments')
             if col is not None:
-                query = {'user_email': user_email} if user_email else {}
-                db_shipments = list(col.find(query, {'_id': 0}))
-                if db_shipments:
-                    return Response(db_shipments)
-                elif user_email and user_email not in ['demo@portline.in', 'customer.demo@portline.in', 'shipper.demo@portline.in']:
-                    return Response([])
+                for dbs in col.find({}, {'_id': 0}):
+                    sid = str(dbs.get('shipment_id') or dbs.get('id') or dbs.get('tn') or '').strip().upper()
+                    if sid and sid not in all_dict:
+                        all_dict[sid] = dbs
+                        storage.save_shipment(dbs)
         except Exception:
             pass
-        if user_email and user_email not in ['demo@portline.in', 'customer.demo@portline.in', 'shipper.demo@portline.in']:
-            return Response([])
-        return Response([])
+
+        all_shipments = list(all_dict.values())
+        if user_email:
+            matched = [
+                s for s in all_shipments
+                if str(s.get('user_email', '')).strip().lower() == user_email
+            ]
+            return Response(matched)
+
+        return Response(all_shipments)
 
     def delete(self, request):
         user_email = request.query_params.get('email', '').strip().lower()
@@ -49,12 +65,13 @@ class ShipmentListCreateView(APIView):
             payload['user_email'] = user_email.lower()
 
         shipment_id = f"SHP-{uuid.uuid4().hex[:8].upper()}"
+        record = {**payload, 'shipment_id': shipment_id, 'pipeline_status': 'SUBMITTED'}
+        storage.save_shipment(record)
 
         try:
             col = get_collection('shipments')
             if col is not None:
                 tn = payload.get('tn')
-                record = {**payload, 'shipment_id': shipment_id, 'pipeline_status': 'SUBMITTED'}
                 if tn:
                     col.update_one({'tn': tn}, {'$set': record}, upsert=True)
                 else:
@@ -95,6 +112,10 @@ class TrackingDetailView(APIView):
                     return Response(found_db)
         except Exception:
             pass
+
+        found_disk = storage.get_shipment_by_id_or_tn(tn)
+        if found_disk:
+            return Response(found_disk)
 
         found = next((s for s in SEED_SHIPMENTS if (s.get('tn') or '').upper() == tn or (s.get('shipment_id') or '').upper() == tn or (s.get('quote_id') or '').upper() == tn), None)
         if found:

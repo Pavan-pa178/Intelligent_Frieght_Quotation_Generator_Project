@@ -446,6 +446,9 @@ export default function Ship() {
 
     const quoteUserEmail = (user?.email || email || 'customer@portline.in').trim().toLowerCase()
     const quoteCompany = (user?.company || companyName.trim() || 'Shipper').trim()
+    const recommendedRoute = estimate.routes?.find(r => r.recommended) || estimate.routes?.[0] || null
+    const chosenCarrier = recommendedRoute?.carrier || 'CMA CGM'
+
     const quoteRecord = {
       id: quoteId,
       user_email: quoteUserEmail,
@@ -465,7 +468,11 @@ export default function Ship() {
       basis: estimate.unitsLabel,
       transit: estimate.transitRange,
       indicativeTotal: estimate.totalAmount,
-      status: 'Draft',
+      status: 'Agent Approval Pending',
+      pipeline_status: 'AGENT_PENDING',
+      carrier: chosenCarrier,
+      selectedCarrier: chosenCarrier,
+      selected_route: recommendedRoute,
       created: new Date().toISOString(),
       created_at: new Date().toISOString(),
       details: {
@@ -485,6 +492,8 @@ export default function Ship() {
         costBreakdown: estimate.costBreakdown || [],
         cargoItems: cargo,
         routes: estimate.routes,
+        selected_route: recommendedRoute,
+        carrier: chosenCarrier,
         transitBreakdown: [
           { label: `Pickup leg (${finalPickup ? 'Door pickup' : 'Road transit'})`, val: `${estimate.transitBreakdown.pickupDays} d` },
           { label: `Origin dwell — ${loadType}`, val: `${estimate.transitBreakdown.originDwell} d` },
@@ -499,6 +508,7 @@ export default function Ship() {
     const shipmentRecord = {
       tn,
       quote_id: quoteId,
+      carrier: chosenCarrier,
       user_email: quoteUserEmail,
       userName: user?.name || 'Shipper',
       userCompany: quoteCompany,

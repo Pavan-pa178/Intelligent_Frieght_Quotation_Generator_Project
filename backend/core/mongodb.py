@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 from dotenv import load_dotenv
 
@@ -11,31 +12,39 @@ logger = logging.getLogger(__name__)
 
 _mongo_client = None
 _mongo_db = None
+_last_failed_attempt = 0
+_COOLDOWN_SECONDS = 60
 
 def get_mongo_db():
     """
     Returns MongoDB database instance using PyMongo.
-    Gracefully handles connection attempts to MongoDB Atlas or local MongoDB.
+    Gracefully handles connection attempts with fast failover so HTTP requests are never blocked.
     """
-    global _mongo_client, _mongo_db
+    global _mongo_client, _mongo_db, _last_failed_attempt
     if _mongo_db is not None:
         return _mongo_db
+
+    # If recent connection attempt failed, fail fast during cooldown
+    now = time.time()
+    if now - _last_failed_attempt < _COOLDOWN_SECONDS:
+        return None
 
     try:
         from pymongo import MongoClient
         _mongo_client = MongoClient(
             MONGO_URI,
-            serverSelectionTimeoutMS=15000,
-            connectTimeoutMS=15000,
-            socketTimeoutMS=20000
+            serverSelectionTimeoutMS=1500,
+            connectTimeoutMS=1500,
+            socketTimeoutMS=2000
         )
-        # Test connection
+        # Fast test connection
         _mongo_client.admin.command('ping')
         _mongo_db = _mongo_client[DB_NAME]
         logger.info(f"Connected successfully to MongoDB database: {DB_NAME}")
         return _mongo_db
     except Exception as e:
-        logger.warning(f"MongoDB connection notice: {e}. Falling back to Django ORM storage.")
+        _last_failed_attempt = time.time()
+        logger.warning(f"MongoDB connection notice (will retry after {_COOLDOWN_SECONDS}s): {e}. Using persistent local disk storage.")
         return None
 
 def get_collection(collection_name: str):
