@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   LayoutDashboard, Route, FileText, Package, ChevronRight, CheckCircle2,
@@ -15,7 +15,8 @@ import {
   fetchAllQuotes, fetchShipments, clearAllShipments, fetchAllUsers,
   adminCreateUser, adminUpdateUser, adminDeleteUser,
   agentActionOnQuote, clearAllQuotes, deleteQuote,
-  fetchCompanies, verifyCompany, createCompany, addCompanyAgent, removeCompanyAgent
+  fetchCompanies, verifyCompany, createCompany, addCompanyAgent, removeCompanyAgent,
+  resolveEffectiveQuoteStatus
 } from '../lib/api'
 import { routeAnalytics, resolveAssignedAgent } from '../lib/mockData'
 
@@ -204,6 +205,7 @@ export default function Admin() {
   const [companiesLoading, setCompaniesLoading] = useState(false)
   const [companySearch, setCompanySearch] = useState('')
   const [companyStatusFilter, setCompanyStatusFilter] = useState('ALL')
+  const [selectedServiceCategory, setSelectedServiceCategory] = useState('OCEAN')
   const [selectedCompForAgent, setSelectedCompForAgent] = useState(null)
   const [newAgentForm, setNewAgentForm] = useState({ name: '', email: '', password: '', phone: '' })
   const [addingAgent, setAddingAgent] = useState(false)
@@ -211,12 +213,29 @@ export default function Admin() {
   const [newCompanyForm, setNewCompanyForm] = useState({
     name: '',
     carrier_key: '',
+    service_category: 'OCEAN',
     contract_tier: 'Tier 1 Strategic Carrier',
     sla_hours: '2h SLA',
     manager_email: '',
     modes: 'Ocean FCL, Ocean LCL'
   })
   const [creatingCompany, setCreatingCompany] = useState(false)
+
+  const getCompanyCategory = (c) => {
+    if (c.service_category) return c.service_category
+    const modes = (Array.isArray(c.modes) ? c.modes.join(' ') : String(c.modes || '')).toLowerCase() + ' ' + (c.name || '').toLowerCase()
+    if (modes.includes('air') || modes.includes('express') || modes.includes('sky') || modes.includes('dart')) return 'AIR'
+    if (modes.includes('rail') || modes.includes('ground') || modes.includes('road') || modes.includes('truck') || modes.includes('concor')) return 'GROUND_RAIL'
+    return 'OCEAN'
+  }
+
+  const oceanCount = useMemo(() => companies.filter(c => getCompanyCategory(c) === 'OCEAN').length, [companies])
+  const airCount = useMemo(() => companies.filter(c => getCompanyCategory(c) === 'AIR').length, [companies])
+  const groundCount = useMemo(() => companies.filter(c => getCompanyCategory(c) === 'GROUND_RAIL').length, [companies])
+
+  const activeCategoryCompanies = useMemo(() => {
+    return companies.filter(c => getCompanyCategory(c) === selectedServiceCategory)
+  }, [companies, selectedServiceCategory])
 
   const isAdmin = user?.role === 'admin'
 
@@ -335,6 +354,7 @@ export default function Admin() {
       await createCompany({
         name: newCompanyForm.name.trim(),
         carrier_key: carrierKey,
+        service_category: newCompanyForm.service_category || selectedServiceCategory || 'OCEAN',
         contract_tier: newCompanyForm.contract_tier.trim(),
         sla_hours: newCompanyForm.sla_hours.trim(),
         manager_email: newCompanyForm.manager_email.trim().toLowerCase(),
@@ -347,10 +367,11 @@ export default function Admin() {
       setNewCompanyForm({
         name: '',
         carrier_key: '',
-        contract_tier: 'Tier 1 Strategic Carrier',
-        sla_hours: '2h SLA',
+        service_category: selectedServiceCategory,
+        contract_tier: selectedServiceCategory === 'AIR' ? 'Scheduled Cargo Airline Tier 1' : selectedServiceCategory === 'GROUND_RAIL' ? 'National Railhead & Road Hub' : 'Tier 1 Strategic Ocean Carrier',
+        sla_hours: selectedServiceCategory === 'AIR' ? '1h Priority SLA' : selectedServiceCategory === 'GROUND_RAIL' ? '2h Standard SLA' : '2h SLA',
         manager_email: '',
-        modes: 'Ocean FCL, Ocean LCL'
+        modes: selectedServiceCategory === 'AIR' ? 'Air Standard, Express Air Cargo' : selectedServiceCategory === 'GROUND_RAIL' ? 'Rail Intermodal ICD, Full Truckload (FTL)' : 'Ocean FCL, Ocean LCL'
       })
       loadData()
     } catch (err) {
@@ -676,7 +697,18 @@ export default function Admin() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowAddCompanyModal(true)}
+                  onClick={() => {
+                    setNewCompanyForm({
+                      name: '',
+                      carrier_key: '',
+                      service_category: selectedServiceCategory,
+                      contract_tier: selectedServiceCategory === 'AIR' ? 'Scheduled Cargo Airline Tier 1' : selectedServiceCategory === 'GROUND_RAIL' ? 'National Railhead & Road Hub' : 'Tier 1 Strategic Ocean Carrier',
+                      sla_hours: selectedServiceCategory === 'AIR' ? '1h Priority SLA' : selectedServiceCategory === 'GROUND_RAIL' ? '2h Standard SLA' : '2h SLA',
+                      manager_email: '',
+                      modes: selectedServiceCategory === 'AIR' ? 'Air Standard, Express Air Cargo' : selectedServiceCategory === 'GROUND_RAIL' ? 'Rail Intermodal ICD, Full Truckload (FTL)' : 'Ocean FCL, Ocean LCL'
+                    })
+                    setShowAddCompanyModal(true)
+                  }}
                   className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-orange to-brand-orangeLight px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:brightness-105 transition-all self-start sm:self-auto"
                 >
                   <Plus className="h-4 w-4" />
@@ -684,31 +716,92 @@ export default function Admin() {
                 </button>
               </div>
 
+              {/* Service Category Switcher: Ocean / Air & Express Air / Ground & Rail */}
+              <div className="flex flex-wrap items-center gap-3 p-1.5 bg-brand-cloud/40 rounded-2xl border border-brand-line/60">
+                <button
+                  type="button"
+                  onClick={() => setSelectedServiceCategory('OCEAN')}
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                    selectedServiceCategory === 'OCEAN'
+                      ? 'bg-brand-navy text-white shadow-md ring-2 ring-brand-navy/20'
+                      : 'bg-white text-brand-slate border border-brand-line hover:border-brand-navy/30 hover:text-brand-navy hover:bg-brand-cloud/40'
+                  }`}
+                >
+                  <Ship className={`h-4 w-4 ${selectedServiceCategory === 'OCEAN' ? 'text-cyan-300' : 'text-cyan-600'}`} />
+                  <span>Ocean Freight</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    selectedServiceCategory === 'OCEAN' ? 'bg-white/20 text-white' : 'bg-brand-cloud text-brand-slate'
+                  }`}>
+                    {oceanCount}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedServiceCategory('AIR')}
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                    selectedServiceCategory === 'AIR'
+                      ? 'bg-brand-navy text-white shadow-md ring-2 ring-brand-navy/20'
+                      : 'bg-white text-brand-slate border border-brand-line hover:border-brand-navy/30 hover:text-brand-navy hover:bg-brand-cloud/40'
+                  }`}
+                >
+                  <Plane className={`h-4 w-4 ${selectedServiceCategory === 'AIR' ? 'text-amber-300' : 'text-amber-600'}`} />
+                  <span>Air & Express Air</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    selectedServiceCategory === 'AIR' ? 'bg-white/20 text-white' : 'bg-brand-cloud text-brand-slate'
+                  }`}>
+                    {airCount}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedServiceCategory('GROUND_RAIL')}
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                    selectedServiceCategory === 'GROUND_RAIL'
+                      ? 'bg-brand-navy text-white shadow-md ring-2 ring-brand-navy/20'
+                      : 'bg-white text-brand-slate border border-brand-line hover:border-brand-navy/30 hover:text-brand-navy hover:bg-brand-cloud/40'
+                  }`}
+                >
+                  <Truck className={`h-4 w-4 ${selectedServiceCategory === 'GROUND_RAIL' ? 'text-emerald-300' : 'text-emerald-600'}`} />
+                  <span>Ground & Rail</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    selectedServiceCategory === 'GROUND_RAIL' ? 'bg-white/20 text-white' : 'bg-brand-cloud text-brand-slate'
+                  }`}>
+                    {groundCount}
+                  </span>
+                </button>
+              </div>
+
               {/* KPI Strip */}
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div className="rounded-xl border border-brand-line bg-white p-4 shadow-xs">
-                  <span className="text-[11px] font-semibold text-brand-slate uppercase tracking-wider">Total Carriers</span>
-                  <div className="mt-1 font-display text-2xl font-bold text-brand-navy">{companies.length}</div>
-                  <span className="text-[10px] text-brand-slateLight">Multi-modal Freight Providers</span>
+                  <span className="text-[11px] font-semibold text-brand-slate uppercase tracking-wider">
+                    {selectedServiceCategory === 'OCEAN' ? 'Ocean Carriers' : selectedServiceCategory === 'AIR' ? 'Air Cargo Carriers' : 'Ground / Rail Carriers'}
+                  </span>
+                  <div className="mt-1 font-display text-2xl font-bold text-brand-navy">{activeCategoryCompanies.length}</div>
+                  <span className="text-[10px] text-brand-slateLight">
+                    {selectedServiceCategory === 'OCEAN' ? 'Liner & Vessel Operators' : selectedServiceCategory === 'AIR' ? 'Airlines & Express Couriers' : 'Surface & ICD Railheads'}
+                  </span>
                 </div>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-xs">
                   <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider">Verified & Eligible</span>
                   <div className="mt-1 font-display text-2xl font-bold text-emerald-700">
-                    {companies.filter(c => c.is_eligible).length}
+                    {activeCategoryCompanies.filter(c => c.is_eligible).length}
                   </div>
                   <span className="text-[10px] text-emerald-600 font-medium">Active in Customer Recommendations</span>
                 </div>
                 <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 shadow-xs">
                   <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider">Pending / Suspended</span>
                   <div className="mt-1 font-display text-2xl font-bold text-amber-700">
-                    {companies.filter(c => !c.is_eligible).length}
+                    {activeCategoryCompanies.filter(c => !c.is_eligible).length}
                   </div>
                   <span className="text-[10px] text-amber-600 font-medium">Hidden from Customer Recommendations</span>
                 </div>
                 <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4 shadow-xs">
                   <span className="text-[11px] font-semibold text-purple-800 uppercase tracking-wider">Operational Agents</span>
                   <div className="mt-1 font-display text-2xl font-bold text-purple-700">
-                    {companies.reduce((sum, c) => sum + (c.agents?.length || 0), 0)}
+                    {activeCategoryCompanies.reduce((sum, c) => sum + (c.agents?.length || 0), 0)}
                   </div>
                   <span className="text-[10px] text-purple-600 font-medium">Assigned to Carrier Desks</span>
                 </div>
@@ -750,7 +843,7 @@ export default function Admin() {
 
               {/* Companies Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {companies
+                {activeCategoryCompanies
                   .filter(c => {
                     if (companyStatusFilter === 'ELIGIBLE' && !c.is_eligible) return false
                     if (companyStatusFilter === 'PENDING' && c.status !== 'PENDING') return false
@@ -921,6 +1014,31 @@ export default function Admin() {
                       </div>
                     </div>
                   ))}
+                {activeCategoryCompanies.filter(c => {
+                  if (companyStatusFilter === 'ELIGIBLE' && !c.is_eligible) return false
+                  if (companyStatusFilter === 'PENDING' && c.status !== 'PENDING') return false
+                  if (companyStatusFilter === 'SUSPENDED' && c.status !== 'SUSPENDED') return false
+                  if (!companySearch) return true
+                  const s = companySearch.toLowerCase()
+                  return (
+                    (c.name || '').toLowerCase().includes(s) ||
+                    (c.company_id || '').toLowerCase().includes(s) ||
+                    (c.carrier_key || '').toLowerCase().includes(s) ||
+                    (c.agents || []).some(a => (a.name || '').toLowerCase().includes(s) || (a.email || '').toLowerCase().includes(s))
+                  )
+                }).length === 0 && (
+                  <div className="col-span-full rounded-2xl border border-dashed border-brand-line bg-white p-12 text-center">
+                    <Building2 className="mx-auto h-10 w-10 text-brand-slateLight mb-3 opacity-60" />
+                    <h4 className="font-display text-sm font-bold text-brand-navy">
+                      No {selectedServiceCategory === 'OCEAN' ? 'Ocean Freight' : selectedServiceCategory === 'AIR' ? 'Air & Express' : 'Ground & Rail'} carriers found
+                    </h4>
+                    <p className="text-xs text-brand-slate mt-1 max-w-sm mx-auto">
+                      {companySearch || companyStatusFilter !== 'ALL'
+                        ? 'No carriers match your active search and status filters. Try resetting the search or filter.'
+                        : 'No carriers currently registered in this category. Click "Register Freight Company" above to add one.'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1291,7 +1409,7 @@ export default function Admin() {
                             ) : 'N/A'}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <StatusBadge status={q.status || 'Draft'} />
+                            <StatusBadge status={resolveEffectiveQuoteStatus(q)} />
                           </td>
                           <td className="px-4 py-3 text-xs">
                             <div className="font-medium text-brand-navy leading-snug">{agentDisplayName}</div>
@@ -1581,7 +1699,7 @@ export default function Admin() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-base font-bold text-brand-navy">{inspectQuote.id}</span>
-                    <StatusBadge status={inspectQuote.status || 'Draft'} />
+                    <StatusBadge status={resolveEffectiveQuoteStatus(inspectQuote)} />
                     <AgentReviewBadge review={inspectQuote.agent_review} />
                   </div>
                   <p className="text-xs text-brand-slate mt-0.5">{inspectQuote.laneName} · {inspectQuote.mode}</p>
@@ -1755,6 +1873,40 @@ export default function Admin() {
             </div>
 
             <form onSubmit={handleCreateCompany} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-brand-navy mb-1">Service Category *</label>
+                <select
+                  value={newCompanyForm.service_category || 'OCEAN'}
+                  onChange={(e) => {
+                    const cat = e.target.value
+                    let defaultModes = 'Ocean FCL, Ocean LCL'
+                    let defaultTier = 'Tier 1 Strategic Ocean Carrier'
+                    let defaultSla = '2h Standard SLA'
+                    if (cat === 'AIR') {
+                      defaultModes = 'Air Standard, Express Air Cargo'
+                      defaultTier = 'Scheduled Cargo Airline Tier 1'
+                      defaultSla = '1h Priority SLA'
+                    } else if (cat === 'GROUND_RAIL') {
+                      defaultModes = 'Rail Intermodal ICD, Full Truckload (FTL)'
+                      defaultTier = 'National Railhead & Road Hub'
+                      defaultSla = '2h Standard SLA'
+                    }
+                    setNewCompanyForm(prev => ({
+                      ...prev,
+                      service_category: cat,
+                      modes: defaultModes,
+                      contract_tier: defaultTier,
+                      sla_hours: defaultSla
+                    }))
+                  }}
+                  className="w-full rounded-xl border border-brand-line px-3 py-2 text-xs text-brand-navy bg-brand-cloud/20 focus:border-brand-marine focus:outline-none"
+                >
+                  <option value="OCEAN">🌊 Ocean Freight (FCL / LCL)</option>
+                  <option value="AIR">✈️ Air & Express Air</option>
+                  <option value="GROUND_RAIL">🚆 Ground & Rail (ICD / Intermodal / Road)</option>
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-brand-navy mb-1">Company Full Name *</label>

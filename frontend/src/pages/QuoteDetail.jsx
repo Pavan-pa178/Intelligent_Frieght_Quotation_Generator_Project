@@ -1253,10 +1253,10 @@ export default function QuoteDetail() {
             )
           })()}
 
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_370px] items-start">
 
             {/* LEFT DETAILS */}
-            <div className="space-y-8">
+            <div className="min-w-0 space-y-8">
 
               {/* Route Map Card */}
               <div className="rounded-lg2 border border-brand-line bg-brand-navy p-6 shadow-md2 text-white">
@@ -1675,103 +1675,125 @@ export default function QuoteDetail() {
                 const priceDiff = revisedPrice - origPrice
                 const pctDiff = origPrice > 0 ? Math.round((priceDiff / origPrice) * 100) : 0
                 const customerDec = quote.customer_decision
+                const normCustStatus = (customerDec?.status || '').toUpperCase()
 
                 return (
-                  <div className="rounded-lg2 border border-amber-300/80 bg-gradient-to-b from-amber-50/40 via-white to-white p-6 shadow-sm2 animate-in fade-in">
-                    <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-amber-200/70">
+                  <div className="rounded-2xl border border-amber-300/90 bg-gradient-to-b from-amber-50/50 via-white to-white p-5 shadow-sm animate-in fade-in">
+                    <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-amber-200/80">
                       <div className="flex items-center gap-2">
                         <div className="rounded-lg bg-amber-500 p-1.5 text-white shadow-2xs">
                           <RotateCcw className="h-4 w-4" />
                         </div>
-                        <h4 className="text-base font-bold text-brand-navy">Price History</h4>
+                        <h4 className="text-sm font-bold text-brand-navy">Price History</h4>
                       </div>
                       <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-300">
                         Revised Tariff
                       </span>
                     </div>
 
-                    <div className="relative pl-5 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-amber-200">
+                    <div className="space-y-4">
                       
                       {/* 1. Original System Price */}
-                      <div className="relative">
-                        <span className="absolute -left-5 top-1.5 h-2 w-2 rounded-full bg-brand-slate border-2 border-white ring-2 ring-brand-slate/30" />
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-xs font-semibold text-brand-slate">Original System Tariff</span>
-                          <span className="font-mono text-xs font-bold text-brand-navy line-through">₹ {origPrice.toLocaleString('en-IN')}</span>
+                      <div className="flex items-start gap-3 relative">
+                        <div className="flex flex-col items-center shrink-0 mt-0.5">
+                          <span className="h-2.5 w-2.5 rounded-full bg-brand-slate border-2 border-white ring-2 ring-brand-slate/30" />
+                          <span className="w-0.5 h-full min-h-[28px] bg-amber-200 mt-1" />
                         </div>
-                        <p className="text-[10px] text-brand-slateLight mt-0.5">
-                          Initial generated tariff schedule
-                        </p>
+                        <div className="flex-1 min-w-0 pb-1">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="text-xs font-semibold text-brand-slate">Original System Tariff</span>
+                            <span className="font-mono text-xs font-bold text-brand-navy line-through">₹ {origPrice.toLocaleString('en-IN')}</span>
+                          </div>
+                          <p className="text-[10px] text-brand-slateLight mt-0.5">
+                            Initial generated tariff schedule
+                          </p>
+                        </div>
                       </div>
 
                       {/* 2. Agent Revision */}
-                      <div className="relative">
-                        <span className="absolute -left-5 top-1.5 h-2 w-2 rounded-full bg-amber-500 border-2 border-white ring-2 ring-amber-400" />
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-xs font-semibold text-amber-950">
-                            Revised by {activeEdit?.agent_name || 'Freight Agent'}
-                          </span>
-                          <span className="font-mono text-xs font-bold text-amber-900">
-                            ₹ {revisedPrice.toLocaleString('en-IN')}
-                          </span>
+                      <div className="flex items-start gap-3 relative">
+                        <div className="flex flex-col items-center shrink-0 mt-0.5">
+                          <span className="h-2.5 w-2.5 rounded-full bg-amber-500 border-2 border-white ring-2 ring-amber-400" />
+                          <span className="w-0.5 h-full min-h-[32px] bg-amber-200 mt-1" />
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-amber-800">
-                          <span className="font-semibold">{priceDiff >= 0 ? `+₹${priceDiff.toLocaleString('en-IN')}` : `-₹${Math.abs(priceDiff).toLocaleString('en-IN')}`} ({priceDiff >= 0 ? '+' : ''}{pctDiff}%)</span>
-                          {activeEdit?.edited_at && (
-                            <>
-                              <span>•</span>
-                              <span>{new Date(activeEdit.edited_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                            </>
+                        <div className="flex-1 min-w-0 pb-1">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-amber-950">
+                              Revised by {activeEdit?.agent_name || 'Freight Agent'}
+                            </span>
+                            <span className="font-mono text-xs font-bold text-amber-900">
+                              ₹ {revisedPrice.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px] text-amber-800">
+                            <span className="font-semibold">{priceDiff >= 0 ? `+₹${priceDiff.toLocaleString('en-IN')}` : `-₹${Math.abs(priceDiff).toLocaleString('en-IN')}`} ({priceDiff >= 0 ? '+' : ''}{pctDiff}%)</span>
+                            {activeEdit?.edited_at && (
+                              <>
+                                <span>•</span>
+                                <span>{new Date(activeEdit.edited_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                              </>
+                            )}
+                          </div>
+                          {activeEdit?.reason && (
+                            <div className="mt-2 rounded-xl border border-amber-200/90 bg-white/95 px-3 py-2 text-xs italic text-amber-950 shadow-2xs leading-normal">
+                              &ldquo;{activeEdit.reason.trim()}&rdquo;
+                            </div>
                           )}
                         </div>
-                        {activeEdit?.reason && (
-                          <div className="mt-1.5 rounded-lg border border-amber-200/80 bg-white/90 px-2.5 py-1 text-[11px] italic text-amber-950">
-                            &ldquo;{activeEdit.reason}&rdquo;
-                          </div>
-                        )}
                       </div>
 
                       {/* 3. Customer Decision */}
-                      <div className="relative">
-                        <span className={`absolute -left-5 top-1.5 h-2 w-2 rounded-full border-2 border-white ring-2 ${customerDec?.status === 'ACCEPTED' ? 'bg-emerald-600 ring-emerald-400' : customerDec?.status === 'REJECTED' ? 'bg-rose-600 ring-rose-400' : 'bg-amber-400 ring-amber-300'}`} />
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-xs font-semibold text-brand-navy">Customer Acceptance</span>
-                          {customerDec?.status === 'ACCEPTED' ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                              <CheckCircle2 className="h-3 w-3" /> Accepted
-                            </span>
-                          ) : customerDec?.status === 'REJECTED' ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
-                              <XCircle className="h-3 w-3" /> Declined
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                              <Clock className="h-3 w-3" /> Awaiting
-                            </span>
+                      <div className="flex items-start gap-3 relative">
+                        <div className="flex flex-col items-center shrink-0 mt-0.5">
+                          <span className={`h-2.5 w-2.5 rounded-full border-2 border-white ring-2 ${normCustStatus === 'ACCEPTED' ? 'bg-emerald-600 ring-emerald-400' : ['REJECTED', 'DECLINED'].includes(normCustStatus) ? 'bg-rose-600 ring-rose-400' : 'bg-amber-400 ring-amber-300'}`} />
+                          {quote.status === 'Accepted' && quote.agent_review?.status === 'approved' && (
+                            <span className="w-0.5 h-full min-h-[24px] bg-amber-200 mt-1" />
                           )}
                         </div>
-                        {customerDec?.decided_at && (
-                          <p className="text-[10px] text-brand-slateLight mt-0.5">
-                            {customerDec.status === 'ACCEPTED' ? 'Offer accepted on ' : 'Offer declined on '}
-                            {new Date(customerDec.decided_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        )}
+                        <div className="flex-1 min-w-0 pb-1">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className="text-xs font-semibold text-brand-navy">Customer Acceptance</span>
+                            {normCustStatus === 'ACCEPTED' ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                <CheckCircle2 className="h-3 w-3" /> Accepted
+                              </span>
+                            ) : ['REJECTED', 'DECLINED'].includes(normCustStatus) ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                                <XCircle className="h-3 w-3" /> Declined
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                                <Clock className="h-3 w-3" /> Awaiting
+                              </span>
+                            )}
+                          </div>
+                          {customerDec?.decided_at && (
+                            <p className="text-[10px] text-brand-slateLight mt-0.5">
+                              {normCustStatus === 'ACCEPTED' ? 'Offer accepted on ' : 'Offer declined on '}
+                              {new Date(customerDec.decided_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          )}
+                        </div>
                       </div>
 
                       {/* 4. Final Sign-off (if approved) */}
                       {quote.status === 'Accepted' && quote.agent_review?.status === 'approved' && (
-                        <div className="relative">
-                          <span className="absolute -left-5 top-1.5 h-2 w-2 rounded-full bg-emerald-600 border-2 border-white ring-2 ring-emerald-500" />
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-xs font-bold text-emerald-950">Final Agent Sign-off</span>
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
-                              Confirmed
-                            </span>
+                        <div className="flex items-start gap-3 relative">
+                          <div className="flex flex-col items-center shrink-0 mt-0.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-600 border-2 border-white ring-2 ring-emerald-500" />
                           </div>
-                          <p className="text-[10px] text-emerald-800 mt-0.5">
-                            Signed off by {quote.agent_review.agent_name || 'Carrier Agent'}
-                            {quote.agent_review.reviewed_at && ` • ${new Date(quote.agent_review.reviewed_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-emerald-950">Final Agent Sign-off</span>
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                                Confirmed
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-emerald-800 mt-0.5">
+                              Signed off by {quote.agent_review.agent_name || 'Carrier Agent'}
+                              {quote.agent_review.reviewed_at && ` • ${new Date(quote.agent_review.reviewed_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                            </p>
+                          </div>
                         </div>
                       )}
 

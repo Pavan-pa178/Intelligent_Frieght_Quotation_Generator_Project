@@ -634,6 +634,9 @@ export async function saveQuote(quote) {
   const existing = getSavedQuotes()
   const updated = [quote, ...existing.filter(q => q.id !== quote.id)]
   localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('portline_quote_updated', { detail: { quoteId: quote.id } }))
+  }
   if (!MOCK_MODE) {
     try {
       await apiFetch('/api/v1/quotes/', {
@@ -873,6 +876,10 @@ export async function deleteQuote(id) {
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
   } catch {}
 
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('portline_quote_updated', { detail: { quoteId: id, deleted: true } }))
+  }
+
   if (!MOCK_MODE) {
     try {
       await apiFetch(`/api/v1/quotes/${encodeURIComponent(id)}/`, { method: 'DELETE' })
@@ -909,6 +916,11 @@ export async function clearAllQuotes() {
     }
     toRemove.forEach(k => localStorage.removeItem(k))
   } catch {}
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('portline_quote_updated', { detail: { cleared: true } }))
+  }
+
   if (!MOCK_MODE) {
     try {
       await apiFetch('/api/v1/quotes/?confirm=true', { method: 'DELETE' })
@@ -1192,6 +1204,10 @@ export function saveAgentPriceEdit(quoteId, newPrice, reason, agentUser) {
       }
     }
 
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('portline_quote_updated', { detail: { quoteId, revised_price: numPrice } }))
+    }
+
     return record || { cleared: true }
   } catch (err) {
     console.error('saveAgentPriceEdit error:', err)
@@ -1447,6 +1463,10 @@ export async function selectQuoteRoute(quoteId, route, requestedBy = '') {
     }
   } catch {}
 
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('portline_quote_updated', { detail: { quoteId, route } }))
+  }
+
   if (MOCK_MODE) {
     await delay(150)
     return { ok: true, quote_id: quoteId, selected_route: route }
@@ -1535,11 +1555,12 @@ export async function customsActionOnQuote(quoteId, action, { requestedDocs = []
 
 // Customer uploads required customs documents
 export async function uploadQuoteDocuments(quoteId, uploadedDocs = [], uploadedBy = 'Customer') {
-  if (MOCK_MODE) {
-    await delay(300)
+  // Always update local storage
+  try {
     const all = getSavedQuotes()
+    const targetQid = (quoteId || '').trim().toUpperCase()
     const updated = all.map(q => {
-      if (q.id === quoteId) {
+      if ((q.id || '').trim().toUpperCase() === targetQid) {
         const m3_c = q.m3_customs || {}
         const checklist = (m3_c.checklist || []).map(item => {
           const match = uploadedDocs.some(ud => ud.name?.toLowerCase() === (item.item_name || item.name)?.toLowerCase())
@@ -1570,15 +1591,29 @@ export async function uploadQuoteDocuments(quoteId, uploadedDocs = [], uploadedB
       return q
     })
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+  } catch {}
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('portline_quote_updated', { detail: { quoteId, status: 'Documents Submitted (Pending Customs Sign-off)' } }))
+  }
+
+  if (MOCK_MODE) {
+    await delay(300)
     return { ok: true, quote_id: quoteId, status: 'Documents Submitted (Pending Customs Sign-off)' }
   }
-  return apiFetch(`/api/v1/quotes/${quoteId}/upload-documents/`, {
-    method: 'POST',
-    body: JSON.stringify({
-      uploaded_docs: uploadedDocs,
-      uploaded_by: uploadedBy
-    }),
-  })
+  try {
+    const res = await apiFetch(`/api/v1/quotes/${quoteId}/upload-documents/`, {
+      method: 'POST',
+      body: JSON.stringify({
+        uploaded_docs: uploadedDocs,
+        uploaded_by: uploadedBy
+      }),
+    })
+    return res || { ok: true, quote_id: quoteId, status: 'Documents Submitted (Pending Customs Sign-off)' }
+  } catch (err) {
+    console.warn('Backend upload documents notice (synced locally):', err.message)
+    return { ok: true, quote_id: quoteId, status: 'Documents Submitted (Pending Customs Sign-off)' }
+  }
 }
 
 

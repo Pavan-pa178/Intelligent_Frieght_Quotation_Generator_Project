@@ -42,7 +42,7 @@ class GatewaySearchView(APIView):
                             'lon': item.get('lon', 0),
                             'modes': ['AIR', 'EXPRESS_AIR']
                         })
-            else: # OCEAN / ROAD / MULTIMODAL
+            else: # OCEAN / GROUND_RAIL / ROAD / MULTIMODAL
                 col = get_collection('ports')
                 if col is not None and col.count_documents({}) > 0:
                     query = {'active': True}
@@ -55,16 +55,24 @@ class GatewaySearchView(APIView):
                         ]
                     cursor = col.find(query).limit(15)
                     for item in cursor:
+                        name_str = item.get('name', '')
+                        code_str = item.get('locode', '')
+                        gw_type = 'PORT'
+                        if 'ICD' in name_str or 'Rail' in name_str or '_RL' in code_str or 'Terminal' in name_str:
+                            gw_type = 'RAIL_TERMINAL'
+                        elif '_RD' in code_str or 'Road' in name_str or 'Hub' in name_str or 'Cross-Dock' in name_str:
+                            gw_type = 'ROAD_HUB'
+
                         results.append({
-                            'code': item.get('locode', ''),
-                            'name': item.get('name', ''),
+                            'code': code_str,
+                            'name': name_str,
                             'city': item.get('city', ''),
                             'country': item.get('country', ''),
                             'countryCode': item.get('country', ''),
-                            'type': 'PORT',
+                            'type': gw_type,
                             'lat': item.get('lat', 0),
                             'lon': item.get('lon', 0),
-                            'modes': ['OCEAN']
+                            'modes': ['GROUND_RAIL', 'OCEAN'] if mode in ['GROUND_RAIL', 'ROAD', 'RAIL'] else ['OCEAN', 'GROUND_RAIL']
                         })
         except Exception:
             pass
@@ -91,16 +99,24 @@ class GatewaySearchView(APIView):
                 for p in PORTS:
                     matches = (not q) or (q in p['locode'].lower() or q in p['name'].lower() or q in p['city'].lower() or q in p['country'].lower())
                     if matches and p.get('active', True):
+                        name_str = p.get('name', '')
+                        code_str = p.get('locode', '')
+                        gw_type = 'PORT'
+                        if 'ICD' in name_str or 'Rail' in name_str or '_RL' in code_str or 'Terminal' in name_str:
+                            gw_type = 'RAIL_TERMINAL'
+                        elif '_RD' in code_str or 'Road' in name_str or 'Hub' in name_str or 'Cross-Dock' in name_str:
+                            gw_type = 'ROAD_HUB'
+
                         results.append({
-                            'code': p['locode'],
-                            'name': p['name'],
+                            'code': code_str,
+                            'name': name_str,
                             'city': p['city'],
                             'country': p['country'],
                             'countryCode': p['country'],
-                            'type': 'PORT',
+                            'type': gw_type,
                             'lat': p['lat'],
                             'lon': p['lon'],
-                            'modes': ['OCEAN']
+                            'modes': ['GROUND_RAIL', 'OCEAN'] if mode in ['GROUND_RAIL', 'ROAD', 'RAIL'] else ['OCEAN', 'GROUND_RAIL']
                         })
 
         return Response(results[:20])

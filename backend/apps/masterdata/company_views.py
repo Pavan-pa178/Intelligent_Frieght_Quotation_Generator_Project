@@ -56,11 +56,24 @@ class CompanyListCreateView(APIView):
         carrier_key = data.get('carrier_key') or data.get('name')
         company_id = data.get('company_id') or f"COMP-{carrier_key.replace(' ', '').upper()[:4]}-{str(uuid.uuid4().hex[:4]).upper()}"
         
+        # Determine service category
+        service_category = data.get('service_category')
+        if not service_category:
+            modes_str = ' '.join(data.get('modes', [])) if isinstance(data.get('modes'), list) else str(data.get('modes', ''))
+            all_text = (modes_str + ' ' + str(data.get('name', ''))).lower()
+            if 'air' in all_text or 'express' in all_text:
+                service_category = 'AIR'
+            elif 'rail' in all_text or 'ground' in all_text or 'truck' in all_text or 'road' in all_text:
+                service_category = 'GROUND_RAIL'
+            else:
+                service_category = 'OCEAN'
+
         new_company = {
             'company_id': company_id,
             'name': data.get('name').strip(),
             'carrier_key': carrier_key.strip(),
-            'modes': data.get('modes', ['Ocean FCL', 'Ocean LCL']),
+            'service_category': service_category,
+            'modes': data.get('modes', ['Ocean FCL', 'Ocean LCL']) if isinstance(data.get('modes'), list) else [m.strip() for m in str(data.get('modes', '')).split(',') if m.strip()],
             'status': data.get('status', 'PENDING'),
             'is_eligible': data.get('is_eligible', False),
             'contract_tier': data.get('contract_tier', 'Standard Verified Partner'),

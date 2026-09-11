@@ -7,7 +7,7 @@ import {
 import StatusBadge from '../components/StatusBadge'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
-import { fetchAllQuotes, agentActionOnQuote, getAgentActions, sortQuotesByTime, enrichQuoteWithLocalState } from '../lib/api'
+import { fetchAllQuotes, agentActionOnQuote, getAgentActions, sortQuotesByTime, enrichQuoteWithLocalState, resolveEffectiveQuoteStatus } from '../lib/api'
 import { seedQuotes, resolveAssignedAgent, getAgentDesk, CARRIER_DESK_CONFIG, isCarrierMatch, DEFAULT_CARRIER_THEME } from '../lib/mockData'
 
 const DEFAULT_THEME = DEFAULT_CARRIER_THEME || {
@@ -60,6 +60,7 @@ export default function Agent() {
   const [selectedQuote, setSelectedQuote] = useState(null)
   const [newMsg, setNewMsg] = useState('')
   const [selectedDeskFilter, setSelectedDeskFilter] = useState(deskParam || 'ALL')
+  const [supervisorCategory, setSupervisorCategory] = useState('ALL')
 
   const isAgent = user?.role === 'agent' || user?.role === 'broker' || user?.role === 'admin'
   const currentDesk = getAgentDesk(user, deskParam) || CARRIER_DESK_CONFIG['default'] || {}
@@ -123,13 +124,7 @@ export default function Agent() {
     return Boolean(matchCarrier || matchEmail)
   })
 
-  const isBookingComplete = (q) => Boolean(
-    q.status === 'Booked' ||
-    q.pipeline_status === 'BOOKED' ||
-    q.booking_confirmed === true ||
-    q.customer_decision?.status === 'BOOKED' ||
-    (q.status === 'Accepted' && q.customer_decision?.is_booking_confirmation)
-  )
+  const isBookingComplete = (q) => resolveEffectiveQuoteStatus(q) === 'Booked'
 
   const booked = myDeskQuotes.filter(isBookingComplete)
   const pending = myDeskQuotes.filter(q => (!q.agent_review || q.agent_review.status === 'pending') && !isBookingComplete(q))
@@ -305,6 +300,29 @@ export default function Agent() {
                   Switch between individual carrier desk allocations or view unified network queue
                 </span>
               </div>
+              {/* Category Filter Pills for Supervisor */}
+              <div className="flex items-center gap-1.5 mb-2.5 overflow-x-auto pb-1">
+                {[
+                  { id: 'ALL', label: 'All Categories' },
+                  { id: 'OCEAN', label: '🌊 Ocean' },
+                  { id: 'AIR', label: '✈️ Air & Express' },
+                  { id: 'GROUND_RAIL', label: '🚆 Ground & Rail' }
+                ].map(c => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setSupervisorCategory(c.id)}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-colors whitespace-nowrap ${
+                      supervisorCategory === c.id
+                        ? 'bg-brand-navy text-white shadow-xs'
+                        : 'bg-brand-cloud/70 text-brand-slate hover:bg-brand-cloud hover:text-brand-navy'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setSelectedDeskFilter('ALL')}
@@ -316,7 +334,13 @@ export default function Agent() {
                 >
                   All Carrier Desks ({safeQuotes.filter(q => !q._isDemo).length})
                 </button>
-                {Object.entries(CARRIER_DESK_CONFIG).filter(([k]) => k !== 'GENERAL' && k !== 'default' && k !== 'General').map(([key, desk]) => {
+                {Object.entries(CARRIER_DESK_CONFIG)
+                  .filter(([k]) => k !== 'GENERAL' && k !== 'default' && k !== 'General')
+                  .filter(([k, desk]) => {
+                    if (supervisorCategory === 'ALL') return true
+                    return (desk.serviceCategory || 'OCEAN') === supervisorCategory
+                  })
+                  .map(([key, desk]) => {
                   const deskCount = safeQuotes.filter(q => !q._isDemo && resolveAssignedAgent(q).carrierKey === key).length
                   const active = selectedDeskFilter === key
                   return (
@@ -464,7 +488,7 @@ export default function Agent() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-xs font-bold text-brand-marine">{q.id}</span>
-                          <StatusBadge status={q.status || 'Draft'} />
+                          <StatusBadge status={resolveEffectiveQuoteStatus(q)} />
                           <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border shadow-xs ${cardTheme.badgeBg || 'bg-slate-50'} ${cardTheme.badgeText || 'text-slate-700'} ${cardTheme.badgeBorder || 'border-slate-200'}`}>
                             <Ship className="h-3 w-3" /> {assigned?.carrierKey || 'General'} Desk
                           </span>
@@ -581,7 +605,7 @@ export default function Agent() {
                         <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border shadow-xs ${cardTheme.badgeBg || 'bg-slate-50'} ${cardTheme.badgeText || 'text-slate-700'} ${cardTheme.badgeBorder || 'border-slate-200'}`}>
                           <Ship className="h-2.5 w-2.5" /> {assigned?.carrierKey || 'General'} Desk
                         </span>
-                        <StatusBadge status={q.status || (isApproved ? 'Approved by Agent' : 'Rejected by Agent')} />
+                        <StatusBadge status={resolveEffectiveQuoteStatus(q)} />
                       </div>
                       <div className="mt-1 text-[13px] font-semibold text-brand-navy">{q.customer} — {q.laneName}</div>
                       <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-brand-slate">
@@ -663,7 +687,7 @@ export default function Agent() {
                       <div className="font-mono text-xs font-semibold text-brand-marine">{selectedQuote.id}</div>
                       <div className="text-sm font-bold text-brand-navy">{selectedQuote.customer} — {selectedQuote.laneName}</div>
                     </div>
-                    <StatusBadge status={selectedQuote.status || 'Draft'} />
+                    <StatusBadge status={resolveEffectiveQuoteStatus(selectedQuote)} />
                   </div>
 
                   {/* Messages */}

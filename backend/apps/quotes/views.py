@@ -74,7 +74,13 @@ class QuoteListCreateView(APIView):
         if user_email:
             payload['user_email'] = user_email.lower()
 
+        import uuid
+        from datetime import datetime
         qid = payload.get('id')
+        if not qid:
+            qid = f"PQ-{datetime.utcnow().year}-{str(uuid.uuid4().hex[:6]).upper()}"
+            payload['id'] = qid
+
         saved = storage.save_quote(payload)
 
         if qid:
@@ -216,6 +222,10 @@ class QuoteAgentActionView(APIView):
         from datetime import datetime, timezone
         qid = (quote_id or '').strip()
         action = request.data.get('action', '').strip().lower()   # 'approved' | 'rejected' | 'revise_price'
+        if action == 'approve':
+            action = 'approved'
+        elif action == 'reject':
+            action = 'rejected'
         comment = request.data.get('comment', '').strip()
         agent_email = request.data.get('agent_email', '').strip()
         agent_name = request.data.get('agent_name', '').strip()

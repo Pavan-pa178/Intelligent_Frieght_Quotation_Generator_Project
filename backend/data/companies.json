@@ -24,7 +24,8 @@
         "status": "ACTIVE",
         "created_at": "2026-01-15T09:00:00Z"
       }
-    ]
+    ],
+    "service_category": "OCEAN"
   },
   {
     "company_id": "COMP-MSC-02",
@@ -50,7 +51,8 @@
         "status": "ACTIVE",
         "created_at": "2026-01-15T09:00:00Z"
       }
-    ]
+    ],
+    "service_category": "OCEAN"
   },
   {
     "company_id": "COMP-MSK-03",
@@ -77,7 +79,8 @@
         "status": "ACTIVE",
         "created_at": "2026-01-15T09:00:00Z"
       }
-    ]
+    ],
+    "service_category": "OCEAN"
   },
   {
     "company_id": "COMP-EVG-04",
@@ -102,7 +105,8 @@
         "status": "ACTIVE",
         "created_at": "2026-01-15T09:00:00Z"
       }
-    ]
+    ],
+    "service_category": "OCEAN"
   },
   {
     "company_id": "COMP-HLG-05",
@@ -128,7 +132,8 @@
         "status": "ACTIVE",
         "created_at": "2026-01-15T09:00:00Z"
       }
-    ]
+    ],
+    "service_category": "OCEAN"
   },
   {
     "company_id": "COMP-COS-06",
@@ -153,7 +158,8 @@
         "status": "ACTIVE",
         "created_at": "2026-01-15T09:00:00Z"
       }
-    ]
+    ],
+    "service_category": "OCEAN"
   },
   {
     "company_id": "COMP-ONE-07",
@@ -178,7 +184,8 @@
         "status": "ACTIVE",
         "created_at": "2026-01-15T09:00:00Z"
       }
-    ]
+    ],
+    "service_category": "OCEAN"
   },
   {
     "company_id": "COMP-AIR-08",
@@ -205,7 +212,8 @@
         "status": "ACTIVE",
         "created_at": "2026-01-15T09:00:00Z"
       }
-    ]
+    ],
+    "service_category": "AIR"
   },
   {
     "company_id": "COMP-EXP-09",
@@ -231,7 +239,8 @@
         "status": "ACTIVE",
         "created_at": "2026-01-15T09:00:00Z"
       }
-    ]
+    ],
+    "service_category": "AIR"
   },
   {
     "company_id": "COMP-GEN-10",
@@ -253,6 +262,365 @@
         "email": "agent@portline.in",
         "role": "agent",
         "phone": "+91 98210 10030",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ],
+    "service_category": "OCEAN"
+  },
+  {
+    "company_id": "COMP-EK-09",
+    "name": "Emirates SkyCargo",
+    "carrier_key": "Emirates SkyCargo",
+    "service_category": "AIR",
+    "modes": [
+      "Air Freight",
+      "Express Air",
+      "Air Priority"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Global Air Cargo Strategic SLA",
+    "sla_hours": "30m Urgent Air SLA",
+    "manager_email": "manager.emirates@portline.in",
+    "logo_color": "#C2410C",
+    "agents": [
+      {
+        "agent_id": "AGT-EK-01",
+        "name": "Farhan Khan",
+        "email": "agent.emirates@portline.in",
+        "role": "agent",
+        "phone": "+91 98209 10031",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-DTD-10",
+    "name": "DTDC Express",
+    "carrier_key": "DTDC Express",
+    "service_category": "AIR",
+    "modes": [
+      "Express Courier",
+      "Air Priority",
+      "Express Air"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Express Courier Platinum Partner",
+    "sla_hours": "30m Rapid SLA",
+    "manager_email": "manager.dtdc@portline.in",
+    "logo_color": "#D97706",
+    "agents": [
+      {
+        "agent_id": "AGT-DTD-01",
+        "name": "Rakesh Sharma",
+        "email": "agent.dtdc@portline.in",
+        "role": "agent",
+        "phone": "+91 98210 10032",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-DEL-11",
+    "name": "Delta Cargo Movers",
+    "carrier_key": "Delta Cargo Movers",
+    "service_category": "AIR",
+    "modes": [
+      "Air Freight",
+      "Air Charter",
+      "Express Air"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Commercial Freight Forwarder Direct",
+    "sla_hours": "1h Priority SLA",
+    "manager_email": "manager.deltacargo@portline.in",
+    "logo_color": "#2563EB",
+    "agents": [
+      {
+        "agent_id": "AGT-DEL-01",
+        "name": "Suresh Babu",
+        "email": "agent.deltacargo@portline.in",
+        "role": "agent",
+        "phone": "+91 98211 10033",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-COC-12",
+    "name": "Cocanada Xpress",
+    "carrier_key": "Cocanada Xpress",
+    "service_category": "AIR",
+    "modes": [
+      "Express Air",
+      "Air Priority",
+      "Air Cargo"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Regional Fast-Track Air Provider",
+    "sla_hours": "45m Regional SLA",
+    "manager_email": "manager.cocanada@portline.in",
+    "logo_color": "#0D9488",
+    "agents": [
+      {
+        "agent_id": "AGT-COC-01",
+        "name": "Venkat Rao",
+        "email": "agent.cocanada@portline.in",
+        "role": "agent",
+        "phone": "+91 98212 10034",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-BLU-13",
+    "name": "Blue Dart Aviation",
+    "carrier_key": "Blue Dart Aviation",
+    "service_category": "AIR",
+    "modes": [
+      "Express Air",
+      "Air Priority",
+      "Air Freight"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Scheduled Cargo Airline Tier 1",
+    "sla_hours": "30m Rapid SLA",
+    "manager_email": "manager.bluedart@portline.in",
+    "logo_color": "#0284C7",
+    "agents": [
+      {
+        "agent_id": "AGT-BLU-01",
+        "name": "Anita Deshmukh",
+        "email": "agent.bluedart@portline.in",
+        "role": "agent",
+        "phone": "+91 98213 10035",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-LH-14",
+    "name": "Lufthansa Cargo",
+    "carrier_key": "Lufthansa Cargo",
+    "service_category": "AIR",
+    "modes": [
+      "Air Freight",
+      "Air Pharma/Cold Chain"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Premium Express Air Carrier",
+    "sla_hours": "45m Urgent Air SLA",
+    "manager_email": "manager.lufthansa@portline.in",
+    "logo_color": "#F59E0B",
+    "agents": [
+      {
+        "agent_id": "AGT-LH-01",
+        "name": "Marcus Weber",
+        "email": "agent.lufthansa@portline.in",
+        "role": "agent",
+        "phone": "+91 98214 10036",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-VRLA-15",
+    "name": "VRL Air Cargo",
+    "carrier_key": "VRL Air Cargo",
+    "service_category": "AIR",
+    "modes": [
+      "Air Freight",
+      "Express Air"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Priority Cargo Charter Agreement",
+    "sla_hours": "1h Standard SLA",
+    "manager_email": "manager.vrlair@portline.in",
+    "logo_color": "#16A34A",
+    "agents": [
+      {
+        "agent_id": "AGT-VRLA-01",
+        "name": "Vijay Sankeshwar",
+        "email": "agent.vrl@portline.in",
+        "role": "agent",
+        "phone": "+91 98215 10037",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-CON-16",
+    "name": "CONCOR (Container Corporation of India)",
+    "carrier_key": "CONCOR",
+    "service_category": "GROUND_RAIL",
+    "modes": [
+      "Rail Intermodal",
+      "Rail Bulk"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "National Rail Logistics Authority",
+    "sla_hours": "2h Guaranteed SLA",
+    "manager_email": "manager.concor@portline.in",
+    "logo_color": "#0369A1",
+    "agents": [
+      {
+        "agent_id": "AGT-CON-01",
+        "name": "Rajesh Kumar",
+        "email": "agent.concor@portline.in",
+        "role": "agent",
+        "phone": "+91 98216 10038",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-VRL-17",
+    "name": "VRL Logistics (Road & Rail)",
+    "carrier_key": "VRL Logistics",
+    "service_category": "GROUND_RAIL",
+    "modes": [
+      "Ground FTL",
+      "Ground LTL"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Tier 1 National Highway Carrier",
+    "sla_hours": "1.5h Road SLA",
+    "manager_email": "manager.vrllogistics@portline.in",
+    "logo_color": "#15803D",
+    "agents": [
+      {
+        "agent_id": "AGT-VRL-01",
+        "name": "Anand Sankeshwar",
+        "email": "agent.vrllogistics@portline.in",
+        "role": "agent",
+        "phone": "+91 98217 10039",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-TCI-18",
+    "name": "TCI Freight (Transport Corporation of India)",
+    "carrier_key": "TCI Freight",
+    "service_category": "GROUND_RAIL",
+    "modes": [
+      "Ground FTL",
+      "Ground LTL",
+      "Rail Intermodal"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Integrated Multimodal Leader",
+    "sla_hours": "2h Standard SLA",
+    "manager_email": "manager.tci@portline.in",
+    "logo_color": "#B45309",
+    "agents": [
+      {
+        "agent_id": "AGT-TCI-01",
+        "name": "Ramesh Agarwal",
+        "email": "agent.tci@portline.in",
+        "role": "agent",
+        "phone": "+91 98218 10040",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-GAT-19",
+    "name": "GATI-KWE",
+    "carrier_key": "GATI-KWE",
+    "service_category": "GROUND_RAIL",
+    "modes": [
+      "Ground FTL",
+      "Ground Express",
+      "Rail Intermodal"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Express Surface Network Partner",
+    "sla_hours": "2h SLA",
+    "manager_email": "manager.gati@portline.in",
+    "logo_color": "#7C3AED",
+    "agents": [
+      {
+        "agent_id": "AGT-GAT-01",
+        "name": "Manoj Joshi",
+        "email": "agent.gati@portline.in",
+        "role": "agent",
+        "phone": "+91 98219 10041",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-ALL-20",
+    "name": "Allcargo Logistics",
+    "carrier_key": "Allcargo Logistics",
+    "service_category": "GROUND_RAIL",
+    "modes": [
+      "Ground FTL",
+      "Rail Intermodal"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Global CFS & Rail Railhead",
+    "sla_hours": "2h Standard SLA",
+    "manager_email": "manager.allcargo@portline.in",
+    "logo_color": "#0F766E",
+    "agents": [
+      {
+        "agent_id": "AGT-ALL-01",
+        "name": "Shashi Kiran",
+        "email": "agent.allcargo@portline.in",
+        "role": "agent",
+        "phone": "+91 98220 10042",
+        "status": "ACTIVE",
+        "created_at": "2026-01-15T09:00:00Z"
+      }
+    ]
+  },
+  {
+    "company_id": "COMP-DLV-21",
+    "name": "Delhivery Freight",
+    "carrier_key": "Delhivery Freight",
+    "service_category": "GROUND_RAIL",
+    "modes": [
+      "Ground FTL",
+      "Ground LTL"
+    ],
+    "status": "APPROVED",
+    "is_eligible": true,
+    "contract_tier": "Tech-Enabled Automated Surface Fleet",
+    "sla_hours": "1.5h Priority SLA",
+    "manager_email": "manager.delhivery@portline.in",
+    "logo_color": "#DC2626",
+    "agents": [
+      {
+        "agent_id": "AGT-DLV-01",
+        "name": "Sahil Barua",
+        "email": "agent.delhivery@portline.in",
+        "role": "agent",
+        "phone": "+91 98221 10043",
         "status": "ACTIVE",
         "created_at": "2026-01-15T09:00:00Z"
       }
