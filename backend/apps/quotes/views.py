@@ -460,8 +460,16 @@ class QuoteCustomsActionView(APIView):
                 }
                 # Both Agent and Customs approved -> Quote is ready for customer acceptance
                 status_label = 'Approved by Customs and Awaiting for Customer confirmation'
+                doc_req = q.get('customs_document_request') or {}
+                if isinstance(doc_req, dict) and doc_req:
+                    doc_req_update = {**doc_req, 'status': 'APPROVED', 'approved_at': now_str}
+                else:
+                    doc_req_update = {'status': 'APPROVED', 'approved_at': now_str}
+
                 _update_quote_anywhere(qid, {
                     'customs_review': customs_review,
+                    'customs_document_request': doc_req_update,
+                    'customs_document_request.status': 'APPROVED',
                     'status': status_label,
                     'pipeline_status': 'CUSTOMS_APPROVED',
                     'm3_customs.compliance_status': 'APPROVED',

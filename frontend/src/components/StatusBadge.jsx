@@ -46,6 +46,7 @@ const PULSE = new Set([
   'Price Revised (Awaiting Customer Decision)',
   'Revised Priced Accepted (Agent Approval Pending)',
   'Price Accepted (Pending Agent Sign-off)',
+  'Documents Submitted (Pending Customs Sign-off)',
   'Approved by Customs and Awaiting for Customer confirmation'
 ])
 

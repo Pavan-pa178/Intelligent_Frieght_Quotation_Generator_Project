@@ -754,12 +754,17 @@ export function resolveEffectiveQuoteStatus(q) {
     return 'Booked'
   }
 
-  // 12. Booking declined by Customer
+  // 12. Booking declined by Customer (${customerName})
   if (
     rawStatusUpper.includes('BOOKING DECLINE') ||
     pipeStatus === 'BOOKING_DECLINED' ||
     custDec === 'DECLINED_BOOKING' ||
-    (custDec === 'REJECTED' && (rawStatusUpper.includes('CUSTOMS') || pipeStatus === 'CUSTOMS_APPROVED'))
+    (custDec === 'REJECTED' && (
+      rawStatusUpper.includes('CUSTOMS') ||
+      pipeStatus === 'CUSTOMS_APPROVED' ||
+      customsStatus === 'approved' ||
+      q.customs_review?.status === 'approved'
+    ))
   ) {
     return `Booking decline by Customer (${custName})`
   }
@@ -777,64 +782,89 @@ export function resolveEffectiveQuoteStatus(q) {
   // 5. Revised Price Declined (Customer declined price revision)
   if (
     custDec === 'DECLINED_REVISION' ||
-    custDec === 'REJECTED' ||
-    rawStatusUpper.includes('REVISED PRICE DECLINED')
+    rawStatusUpper.includes('REVISED PRICE DECLINED') ||
+    (custDec === 'REJECTED' && (q.agent_price_edit?.revised_price > 0 || rawStatusUpper.includes('PRICE REVISED') || rawStatusUpper.includes('REVISED PRICE')))
   ) {
-    if (q.agent_price_edit?.revised_price > 0 || rawStatusUpper.includes('PRICE REVISED') || rawStatusUpper.includes('REVISED PRICE')) {
-      return 'Revised Price Declined'
-    }
+    return 'Revised Price Declined'
   }
 
-  // 3 & 4. Agent Price Revision in progress or accepted
-  if (q.agent_price_edit && Number(q.agent_price_edit.revised_price) > 0) {
-    if (custDec === 'ACCEPTED' || rawStatusUpper.includes('REVISED PRICED ACCEPTED') || rawStatusUpper.includes('PRICE ACCEPTED')) {
-      // 4. Customer accepted revised price, pending final agent approval
-      if (agentStatus !== 'approved' && !rawStatusUpper.includes('APPROVED BY AGENT') && !rawStatusUpper.includes('APPROVED BY CUSTOMS')) {
-        return 'Revised Priced Accepted (Agent Approval Pending)'
-      }
-      // If agent has approved the accepted revision, proceed to customs checks below
-    } else if (agentStatus !== 'approved' && !rawStatusUpper.includes('APPROVED')) {
-      // 3. Agent requested price revision - awaiting customer decision
-      return 'Price Revised (Awaiting Customer Decision)'
-    }
-  }
-
-  // 9. Documents Submitted (Pending Customs Sign-off)
+  // 4. Revised Priced Accepted (Agent Approval Pending)
+  // Customer accepted revised price, pending final agent sign-off
   if (
-    rawStatusUpper.includes('DOCUMENTS SUBMITTED') ||
-    rawStatusUpper.includes('DOCS_SUBMITTED') ||
-    pipeStatus === 'DOCS_SUBMITTED' ||
-    q.customs_document_request?.status === 'DOCUMENTS_SUBMITTED'
+    (custDec === 'ACCEPTED' || rawStatusUpper.includes('REVISED PRICED ACCEPTED') || rawStatusUpper.includes('PRICE ACCEPTED')) &&
+    Number(q.agent_price_edit?.revised_price) > 0 &&
+    agentStatus !== 'approved' &&
+    !rawStatusUpper.includes('APPROVED BY AGENT') &&
+    !rawStatusUpper.includes('APPROVED BY CUSTOMS') &&
+    pipeStatus !== 'AGENT_APPROVED' &&
+    pipeStatus !== 'CUSTOMS_APPROVED'
   ) {
-    return 'Documents Submitted (Pending Customs Sign-off)'
+    return 'Revised Priced Accepted (Agent Approval Pending)'
   }
 
-  // 8. Documents Requested by Customs
+  // 3. Price Revised (Awaiting Customer Decision)
+  // Agent requested price revision - awaiting customer decision
   if (
-    rawStatusUpper.includes('DOCUMENTS REQUESTED') ||
-    rawStatusUpper.includes('CUSTOMS_DOCS_REQUESTED') ||
-    pipeStatus === 'CUSTOMS_DOCS_REQUESTED' ||
-    q.customs_document_request?.status === 'REQUESTED' ||
-    q.customs_document_request?.status === 'PENDING_CUSTOMER_UPLOAD'
+    q.agent_price_edit &&
+    Number(q.agent_price_edit.revised_price) > 0 &&
+    custDec !== 'ACCEPTED' &&
+    custDec !== 'REJECTED' &&
+    custDec !== 'DECLINED_REVISION' &&
+    agentStatus !== 'approved' &&
+    !rawStatusUpper.includes('APPROVED')
   ) {
-    return 'Documents Requested by Customs'
+    return 'Price Revised (Awaiting Customer Decision)'
   }
 
   // 10. Approved by Customs and Awaiting for Customer confirmation
+  // CRITICAL: Evaluated BEFORE Documents Submitted & Requested so that Customs sign-off immediately clears pending docs state!
   const isCustomsApproved = Boolean(
     customsStatus === 'approved' ||
+    q.customs_review?.status === 'approved' ||
     pipeStatus === 'CUSTOMS_APPROVED' ||
     rawStatusUpper === 'APPROVED BY CUSTOMS' ||
     rawStatusUpper.includes('APPROVED BY CUSTOMS AND AWAITING') ||
-    q.m3_customs?.compliance_status === 'APPROVED'
+    (q.m3_customs?.compliance_status === 'APPROVED' && (agentStatus === 'approved' || q.agent_review?.status === 'approved'))
   )
   if (isCustomsApproved) {
     return 'Approved by Customs and Awaiting for Customer confirmation'
   }
 
+  // 9. Documents Submitted (Pending Customs Sign-off)
+  // Evaluated only if customs has NOT yet signed off
+  const isDocsSubmitted = Boolean(
+    !isCustomsApproved && (
+      q.customs_document_request?.status === 'DOCUMENTS_SUBMITTED' ||
+      rawStatusUpper.includes('DOCUMENTS SUBMITTED') ||
+      rawStatusUpper.includes('DOCS_SUBMITTED') ||
+      pipeStatus === 'DOCS_SUBMITTED' ||
+      (q.customer_uploaded_documents && q.customer_uploaded_documents.length > 0 && q.customs_document_request?.requested_docs?.length > 0)
+    )
+  )
+  if (isDocsSubmitted) {
+    return 'Documents Submitted (Pending Customs Sign-off)'
+  }
+
+  // 8. Documents Requested by Customs
+  // Evaluated only if customs has NOT signed off and documents have NOT yet been submitted
+  const isDocsRequested = Boolean(
+    !isCustomsApproved &&
+    !isDocsSubmitted && (
+      q.customs_document_request?.status === 'REQUESTED' ||
+      q.customs_document_request?.status === 'PENDING_CUSTOMER_UPLOAD' ||
+      rawStatusUpper.includes('DOCUMENTS REQUESTED') ||
+      rawStatusUpper.includes('CUSTOMS_DOCS_REQUESTED') ||
+      pipeStatus === 'CUSTOMS_DOCS_REQUESTED'
+    )
+  )
+  if (isDocsRequested) {
+    return 'Documents Requested by Customs'
+  }
+
   // 6. Approved by Agent and Awaiting Customs Clearance
   const isAgentApproved = Boolean(
     agentStatus === 'approved' ||
+    q.agent_review?.status === 'approved' ||
     pipeStatus === 'AGENT_APPROVED' ||
     rawStatusUpper === 'AGENT APPROVED' ||
     rawStatusUpper === 'APPROVED BY AGENT' ||
@@ -890,27 +920,33 @@ export function enrichQuoteWithLocalState(q) {
   const priceEdits = getAgentPriceEdits()
   const priceEdit = q.agent_price_edit || priceEdits[q.id] || priceEdits[normId]
 
-  // Deeply merge fields so latest agent review, customs review, and customer decision are always preserved
+  // Remote review decisions take precedence if present; fallback to local
+  const customsReview = (q.customs_review && q.customs_review.status)
+    ? q.customs_review
+    : (localMatch?.customs_review?.status ? localMatch.customs_review : (q.customs_review || localMatch?.customs_review || null))
+
+  const agentReview = (q.agent_review && q.agent_review.status)
+    ? q.agent_review
+    : (localAction || localMatch?.agent_review || null)
+
+  const customerDecision = (q.customer_decision && q.customer_decision.status)
+    ? q.customer_decision
+    : (localMatch?.customer_decision?.status ? localMatch.customer_decision : (q.customer_decision || localMatch?.customer_decision || null))
+
+  let customsDocReq = q.customs_document_request || localMatch?.customs_document_request || null
+  if (customsReview?.status === 'approved' && customsDocReq) {
+    customsDocReq = { ...customsDocReq, status: 'APPROVED' }
+  }
+
+  // Deeply merge fields so latest server state and local state combine cleanly
   const merged = {
-    ...q,
     ...(localMatch || {}),
+    ...q,
     ...(priceEdit && Number(priceEdit.revised_price) > 0 ? { agent_price_edit: priceEdit } : {}),
-    ...(localAction ? { agent_review: localAction } : {}),
-  }
-
-  // Preserve customer decision if either remote or local has it
-  if (!merged.customer_decision && (q.customer_decision || localMatch?.customer_decision)) {
-    merged.customer_decision = q.customer_decision || localMatch?.customer_decision
-  }
-
-  // Preserve customs review if either remote or local has it
-  if (!merged.customs_review && (q.customs_review || localMatch?.customs_review)) {
-    merged.customs_review = q.customs_review || localMatch?.customs_review
-  }
-
-  // Preserve customs docs request if either remote or local has it
-  if (!merged.customs_document_request && (q.customs_document_request || localMatch?.customs_document_request)) {
-    merged.customs_document_request = q.customs_document_request || localMatch?.customs_document_request
+    ...(agentReview ? { agent_review: agentReview } : {}),
+    ...(customsReview ? { customs_review: customsReview } : {}),
+    ...(customerDecision ? { customer_decision: customerDecision } : {}),
+    ...(customsDocReq ? { customs_document_request: customsDocReq } : {}),
   }
 
   // Preserve customer uploaded documents if either remote or local has it
@@ -1713,8 +1749,12 @@ export async function customsActionOnQuote(quoteId, action, { requestedDocs = []
       status,
       customs_status: status,
       pipeline_status,
-      customs_review: action === 'approve' ? { status: 'approved', officer_name: officerUser?.name || 'Customs Officer', reviewed_at: new Date().toISOString(), notes: comment } : null,
-      customs_document_request: action === 'request_documents' ? { requested_docs: requestedDocs, officer_notes: comment, status: 'PENDING_CUSTOMER_UPLOAD', requested_at: new Date().toISOString() } : q.customs_document_request
+      customs_review: action === 'approve' 
+        ? { status: 'approved', officer_name: officerUser?.name || 'Customs Officer', reviewed_at: new Date().toISOString(), notes: comment } 
+        : (action === 'reject' ? { status: 'rejected', officer_name: officerUser?.name || 'Customs Officer', reviewed_at: new Date().toISOString(), notes: comment } : null),
+      customs_document_request: action === 'request_documents' 
+        ? { requested_docs: requestedDocs, officer_notes: comment, status: 'PENDING_CUSTOMER_UPLOAD', requested_at: new Date().toISOString() } 
+        : (action === 'approve' ? { ...(q.customs_document_request || {}), status: 'APPROVED', approved_at: new Date().toISOString() } : q.customs_document_request)
     } : q)
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
   } catch {}

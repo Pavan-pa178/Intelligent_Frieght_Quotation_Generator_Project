@@ -438,7 +438,11 @@ export default function QuoteDetail() {
 
       const newStatus = isBooking
         ? 'Booked'
-        : (isAcceptRevision ? 'Price Accepted (Pending Agent Sign-off)' : (hasPriceRevision ? 'Revised Price Declined' : 'Rejected'))
+        : (isAcceptRevision 
+            ? 'Revised Priced Accepted (Agent Approval Pending)' 
+            : (hasPriceRevision 
+                ? 'Revised Price Declined' 
+                : `Booking decline by Customer (${user?.name || quote.customer || 'Customer'})`))
 
       const revPrice = (hasPriceRevision && activeRevisedPrice > 0) ? activeRevisedPrice : null
 
@@ -584,8 +588,10 @@ export default function QuoteDetail() {
     quote?.agent_review?.status === 'approved' || 
     quote?.status === 'Approved by Agent' ||
     quote?.status === 'Agent Approved' ||
+    quote?.status === 'Approved by Agent and Awaiting Customs Clearance' ||
     quote?.pipeline_status === 'AGENT_APPROVED' ||
     quote?.status === 'Approved by Customs' ||
+    quote?.status === 'Approved by Customs and Awaiting for Customer confirmation' ||
     quote?.status === 'Approved' ||
     quote?.pipeline_status === 'CUSTOMS_APPROVED'
 
@@ -595,11 +601,13 @@ export default function QuoteDetail() {
     quote?.pipeline_status === 'AGENT_REJECTED' ||
     (quote?.status === 'Rejected' && !quote?.customer_decision?.status && quote?.customs_review?.status !== 'rejected')
 
-  const customsApproved = 
+  const customsApproved = Boolean(
     quote?.customs_review?.status === 'approved' || 
     quote?.status === 'Approved by Customs' ||
+    quote?.status === 'Approved by Customs and Awaiting for Customer confirmation' ||
     quote?.pipeline_status === 'CUSTOMS_APPROVED' ||
-    quote?.m3_customs?.compliance_status === 'APPROVED'
+    (quote?.m3_customs?.compliance_status === 'APPROVED' && agentApproved)
+  )
 
   const customsRejected = 
     quote?.customs_review?.status === 'rejected' ||
@@ -614,12 +622,14 @@ export default function QuoteDetail() {
      quote?.booking_confirmed === true ||
      (quote?.status === 'Accepted' && quote?.customer_decision?.is_booking_confirmation)) &&
     quote?.status !== 'Price Accepted (Pending Agent Sign-off)' &&
+    quote?.status !== 'Revised Priced Accepted (Agent Approval Pending)' &&
     quote?.status !== 'Price Revised (Awaiting Customer Decision)'
   )
 
   const isRejectedByCustomer = 
     quote?.customer_decision?.status === 'REJECTED' ||
     quote?.status === 'Revised Price Declined' ||
+    quote?.status?.startsWith('Booking decline by Customer') ||
     quote?.status === 'Declined by Customer' ||
     (quote?.status === 'Rejected' && quote?.customer_decision?.status === 'REJECTED')
 
@@ -633,23 +643,26 @@ export default function QuoteDetail() {
     agentApproved &&
     customsApproved &&
     quote?.status !== 'Price Accepted (Pending Agent Sign-off)' &&
+    quote?.status !== 'Revised Priced Accepted (Agent Approval Pending)' &&
     quote?.status !== 'Price Revised (Awaiting Customer Decision)'
 
   const canCustomerAccept = isReadyForCustomerBooking || hasPriceRevision
   const isAcceptedByCustomer = isQuoteBooked
 
   const docReq = quote?.customs_document_request
-  const docsSubmitted = 
+  const docsSubmitted = !customsApproved && Boolean(
     docReq?.status === 'DOCUMENTS_SUBMITTED' || 
     quote?.status === 'Documents Submitted (Pending Customs Sign-off)' || 
-    quote?.status?.toLowerCase()?.includes('submitted') ||
     quote?.pipeline_status === 'DOCS_SUBMITTED'
+  )
 
-  const hasOfficerRequestedDocs = 
-    Boolean(docReq?.requested_docs && Array.isArray(docReq.requested_docs) && docReq.requested_docs.length > 0) ||
+  const hasOfficerRequestedDocs = !customsApproved && !docsSubmitted && Boolean(
+    (docReq?.requested_docs && Array.isArray(docReq.requested_docs) && docReq.requested_docs.length > 0 && docReq?.status !== 'APPROVED') ||
     quote?.status === 'Documents Requested' ||
+    quote?.status === 'Documents Requested by Customs' ||
     docReq?.status === 'REQUESTED' ||
     docReq?.status === 'PENDING_CUSTOMER_UPLOAD'
+  )
 
   const pendingDocsList = useMemo(() => {
     if (docReq?.requested_docs && Array.isArray(docReq.requested_docs) && docReq.requested_docs.length > 0) {
@@ -856,7 +869,7 @@ export default function QuoteDetail() {
           )}
 
           {/* DYNAMIC CONSIGNMENT LIFECYCLE UPDATE WINDOW */}
-          {quote.status === 'Price Accepted (Pending Agent Sign-off)' && !isAgentOrAdmin ? (
+          {(quote.status === 'Price Accepted (Pending Agent Sign-off)' || quote.status === 'Revised Priced Accepted (Agent Approval Pending)') && !isAgentOrAdmin ? (
             /* 1a. CUSTOMER ACCEPTED REVISED PRICE · PENDING FINAL AGENT SIGN-OFF (CUSTOMER ONLY) */
             <div className="mb-8 rounded-2xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-5 shadow-xs">
               <div className="flex flex-wrap items-center justify-between gap-4">

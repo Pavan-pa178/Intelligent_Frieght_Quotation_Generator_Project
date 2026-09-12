@@ -170,11 +170,13 @@ export default function Quotes() {
       const matchStatus = 
         statusFilter === 'All' ||
         qStatus === sf ||
-        (sf === 'draft' && (qStatus === 'draft' || qStatus === 'quoted' || qStatus.includes('pending') || qStatus.includes('awaiting'))) ||
-        (sf === 'approved' && (qStatus.includes('approved') || qStatus === 'approved by agent' || qStatus === 'approved by customs')) ||
+        qStatus.includes(sf) ||
+        (sf.startsWith('booking decline') && qStatus.startsWith('booking decline')) ||
+        (sf === 'draft' && (qStatus === 'quotation pending' || qStatus === 'draft' || qStatus === 'quoted' || qStatus.includes('pending') || qStatus.includes('awaiting'))) ||
+        (sf === 'approved' && (qStatus.includes('approved') || qStatus.includes('customs'))) ||
         (sf === 'accepted' && (qStatus === 'accepted' || qStatus === 'booked')) ||
         (sf === 'rejected' && (qStatus.includes('reject') || qStatus.includes('decline'))) ||
-        (sf === 'documents requested' && qStatus.includes('doc'))
+        (sf === 'documents requested' && (qStatus.includes('doc') || qStatus.includes('submitted')))
 
       return matchSearch && matchLane && matchMode && matchStatus
     })
@@ -322,11 +324,18 @@ export default function Quotes() {
                   className="rounded-[10px] border-[1.5px] border-brand-line px-3.5 py-2.5 text-xs font-medium bg-white text-brand-navy focus:border-brand-marine"
                 >
                   <option value="All">All statuses</option>
-                  <option value="Draft">Draft / Quoted</option>
-                  <option value="Approved">Approved</option>
-                  <option value="Accepted">Accepted / Booked</option>
-                  <option value="Documents Requested">Documents Requested</option>
-                  <option value="Rejected">Rejected</option>
+                  <option value="Quotation Pending">Quotation Pending</option>
+                  <option value="Agent Approval Pending">Agent Approval Pending</option>
+                  <option value="Price Revised (Awaiting Customer Decision)">Price Revised</option>
+                  <option value="Revised Priced Accepted (Agent Approval Pending)">Revised Price Accepted</option>
+                  <option value="Revised Price Declined">Revised Price Declined</option>
+                  <option value="Approved by Agent and Awaiting Customs Clearance">Approved by Agent</option>
+                  <option value="Documents Requested by Customs">Documents Requested</option>
+                  <option value="Documents Submitted (Pending Customs Sign-off)">Documents Submitted</option>
+                  <option value="Approved by Customs and Awaiting for Customer confirmation">Approved by Customs</option>
+                  <option value="Booked">Booked</option>
+                  <option value="Booking decline by Customer">Booking Declined</option>
+                  <option value="Rejected by Agent">Rejected by Agent</option>
                 </select>
 
                 <button
