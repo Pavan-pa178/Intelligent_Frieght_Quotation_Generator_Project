@@ -144,100 +144,11 @@ export const routeAnalytics = {
   ]
 }
 
-// ---------------------------------------------------------------------------
-// DEMO QUOTES — pre-seeded quotes for demo accounts (ravi@sharmatextiles.in,
-// demo@portline.in). These are hardcoded and NEVER wiped by Admin "Clear All".
-// They will not appear in production customer accounts.
-// ---------------------------------------------------------------------------
-export const DEMO_EMAIL_LIST = ['customer.demo@portline.in', 'shipper.demo@portline.in', 'ravi@sharmatextiles.in', 'demo@portline.in']
-
-export const DEMO_QUOTES = [
-  {
-    id: 'QT-DEMO-00101',
-    _isDemo: true,
-    user_email: 'customer.demo@portline.in',
-    customer: 'Sharma Textiles',
-    city: 'Nhava Sheva',
-    laneCode: 'INNSA → AEJEA',
-    laneName: 'Nhava Sheva → Jebel Ali',
-    region: 'India–UAE',
-    mode: 'Ocean FCL',
-    modeKey: 'ocean',
-    basis: '1 × 40HC',
-    transit: '6–9 days',
-    indicativeTotal: 148500,
-    status: 'Approved',
-    pipeline_status: 'CUSTOMS_APPROVED',
-    created: '2026-08-01T08:30:00.000Z',
-    created_at: '2026-08-01T08:30:00.000Z',
-    agent_review: { status: 'approved', agent_name: 'Arjun Agent', reviewed_at: '2026-08-02T10:00:00.000Z' },
-    customs_review: { status: 'approved', officer_name: 'Inspector Rajesh Kumar', reviewed_at: '2026-08-03T09:00:00.000Z' },
-    details: {
-      originGw: { code: 'INNSA', name: 'Jawaharlal Nehru Port', city: 'Nhava Sheva', country: 'India', countryCode: 'IN' },
-      destGw: { code: 'AEJEA', name: 'Jebel Ali Port', city: 'Dubai', country: 'UAE', countryCode: 'AE' },
-      commodity: 'Cotton Fabric Rolls',
-      hsCode: '520811',
-      grossWeightKg: 18000,
-    }
-  },
-  {
-    id: 'QT-DEMO-00102',
-    _isDemo: true,
-    user_email: 'ravi@sharmatextiles.in',
-    customer: 'Sharma Textiles',
-    city: 'Mumbai',
-    laneCode: 'BOM → FRA',
-    laneName: 'Mumbai → Frankfurt',
-    region: 'India–Germany',
-    mode: 'Air Freight',
-    modeKey: 'air',
-    basis: '380 kg / 2.14 CBM',
-    transit: '3–5 days',
-    indicativeTotal: 98750,
-    status: 'Draft',
-    pipeline_status: 'DRAFT',
-    created: '2026-08-15T11:00:00.000Z',
-    created_at: '2026-08-15T11:00:00.000Z',
-    details: {
-      originGw: { code: 'BOM', name: 'Chhatrapati Shivaji Maharaj International Airport', city: 'Mumbai', country: 'India', countryCode: 'IN' },
-      destGw: { code: 'FRA', name: 'Frankfurt Airport', city: 'Frankfurt', country: 'Germany', countryCode: 'DE' },
-      commodity: 'Textile Samples',
-      hsCode: '621000',
-      grossWeightKg: 380,
-    }
-  },
-  {
-    id: 'QT-DEMO-00103',
-    _isDemo: true,
-    user_email: 'ravi@sharmatextiles.in',
-    customer: 'Sharma Textiles',
-    city: 'Nhava Sheva',
-    laneCode: 'INNSA → SGSIN',
-    laneName: 'Nhava Sheva → Singapore',
-    region: 'India–Singapore',
-    mode: 'Ocean FCL',
-    modeKey: 'ocean',
-    basis: '2 × 20GP',
-    transit: '11–15 days',
-    indicativeTotal: 186000,
-    status: 'Accepted',
-    pipeline_status: 'ACCEPTED',
-    customer_decision: { status: 'ACCEPTED', decided_at: '2026-08-20T07:30:00.000Z' },
-    created: '2026-08-18T09:00:00.000Z',
-    created_at: '2026-08-18T09:00:00.000Z',
-    details: {
-      originGw: { code: 'INNSA', name: 'Jawaharlal Nehru Port', city: 'Nhava Sheva', country: 'India', countryCode: 'IN' },
-      destGw: { code: 'SGSIN', name: 'Port of Singapore', city: 'Singapore', country: 'Singapore', countryCode: 'SG' },
-      commodity: 'Woven Fabric',
-      hsCode: '520811',
-      grossWeightKg: 24000,
-    }
-  },
-]
+export const DEMO_EMAIL_LIST = []
+export const DEMO_QUOTES = []
 
 // ---------------------------------------------------------------------------
 // CARRIER → DEDICATED AGENT DESK CONFIGURATION
-// Detailed desk styling, brand identities, badges, and agent assignments.
 // ---------------------------------------------------------------------------
 export {
   DEFAULT_CARRIER_THEME,

@@ -33,7 +33,10 @@ export default function CustomsWorkspace() {
 
   const loadCustomsData = useCallback(() => {
     fetchAllQuotes().then((quotes) => {
-      if (!quotes || quotes.length === 0) return
+      if (!quotes || quotes.length === 0) {
+        setCases([])
+        return
+      }
       const relevantQuotes = quotes.filter(q => 
         q.agent_review?.status === 'approved' || 
         q.pipeline_status === 'AGENT_APPROVED' ||
@@ -45,54 +48,54 @@ export default function CustomsWorkspace() {
         q.status === 'Documents Submitted (Pending Customs Sign-off)'
       )
 
-      if (relevantQuotes.length > 0) {
-        const dynamicCases = relevantQuotes.map(q => {
-          const d = q.details || {}
-          const m3_c = q.m3_customs || {}
-          const checklist = m3_c.checklist || [
-            { name: 'Commercial Invoice (USD/EUR)', uploaded: true, status: 'VERIFIED' },
-            { name: 'Packing List with Net/Gross Weight', uploaded: true, status: 'VERIFIED' },
-            { name: 'EU Declaration of Conformity', uploaded: false, status: 'MISSING' },
-            { name: 'RoHS 3 Compliance Certificate', uploaded: false, status: 'MISSING' }
-          ]
-          const isApproved = q.customs_review?.status === 'approved' || q.pipeline_status === 'CUSTOMS_APPROVED'
-          return {
-            quoteId: q.id,
-            checkId: `CUST-${q.id.replace('QT-', '')}`,
-            shipmentId: q.id,
-            origin: `${d.originGw?.city || 'Origin'} (${d.originGw?.code || 'INMAA'})`,
-            destination: `${d.destGw?.city || 'Destination'} (${d.destGw?.code || 'NLRTM'})`,
-            hsCode: d.hsCode || '850440',
-            commodity: d.commodity || 'Static Converters & Solar Inverters',
-            readinessScore: m3_c.readiness_score || (isApproved ? 100 : 70),
-            riskLevel: m3_c.risk_level || 'MEDIUM',
-            status: isApproved ? 'APPROVED' : (
-              (q.pipeline_status === 'DOCS_SUBMITTED' || (q.customer_uploaded_documents && q.customer_uploaded_documents.length > 0)) 
-                ? 'DOCS_SUBMITTED' 
-                : (q.pipeline_status === 'CUSTOMS_DOCS_REQUESTED' ? 'DOCS_FLAGGED' : 'PENDING_REVIEW')
-            ),
-            requiresOfficer: !isApproved,
-            summary: m3_c.summary || 'Trade compliance file generated from customs RAG engine.',
-            customerUploadedDocuments: q.customer_uploaded_documents || [],
-            checklist: checklist.map(c => {
-              const cName = c.item_name || c.name
-              const hasUpload = (q.customer_uploaded_documents || []).some(
-                ud => (ud.name || '').toLowerCase() === (cName || '').toLowerCase()
-              )
-              return {
-                name: cName,
-                uploaded: hasUpload || (c.document_uploaded ?? c.uploaded ?? false),
-                status: hasUpload ? 'CUSTOMER_UPLOADED' : (c.status || 'PENDING')
-              }
-            }),
-            citation: m3_c.citations?.[0]?.citation || 'EU Union Customs Code Art 127 advance filing & Low Voltage Directive'
-          }
-        })
-        setCases(prev => {
-          const existingIds = new Set(dynamicCases.map(c => c.checkId))
-          return [...dynamicCases, ...prev.filter(c => !existingIds.has(c.checkId))]
-        })
+      if (relevantQuotes.length === 0) {
+        setCases([])
+        return
       }
+
+      const dynamicCases = relevantQuotes.map(q => {
+        const d = q.details || {}
+        const m3_c = q.m3_customs || {}
+        const checklist = m3_c.checklist || [
+          { name: 'Commercial Invoice (USD/EUR)', uploaded: true, status: 'VERIFIED' },
+          { name: 'Packing List with Net/Gross Weight', uploaded: true, status: 'VERIFIED' },
+          { name: 'EU Declaration of Conformity', uploaded: false, status: 'MISSING' },
+          { name: 'RoHS 3 Compliance Certificate', uploaded: false, status: 'MISSING' }
+        ]
+        const isApproved = q.customs_review?.status === 'approved' || q.pipeline_status === 'CUSTOMS_APPROVED'
+        return {
+          quoteId: q.id,
+          checkId: `CUST-${q.id.replace('QT-', '')}`,
+          shipmentId: q.id,
+          origin: `${d.originGw?.city || 'Origin'} (${d.originGw?.code || 'INMAA'})`,
+          destination: `${d.destGw?.city || 'Destination'} (${d.destGw?.code || 'NLRTM'})`,
+          hsCode: d.hsCode || '850440',
+          commodity: d.commodity || 'Static Converters & Solar Inverters',
+          readinessScore: m3_c.readiness_score || (isApproved ? 100 : 70),
+          riskLevel: m3_c.risk_level || 'MEDIUM',
+          status: isApproved ? 'APPROVED' : (
+            (q.pipeline_status === 'DOCS_SUBMITTED' || (q.customer_uploaded_documents && q.customer_uploaded_documents.length > 0)) 
+              ? 'DOCS_SUBMITTED' 
+              : (q.pipeline_status === 'CUSTOMS_DOCS_REQUESTED' ? 'DOCS_FLAGGED' : 'PENDING_REVIEW')
+          ),
+          requiresOfficer: !isApproved,
+          summary: m3_c.summary || 'Trade compliance file generated from customs RAG engine.',
+          customerUploadedDocuments: q.customer_uploaded_documents || [],
+          checklist: checklist.map(c => {
+            const cName = c.item_name || c.name
+            const hasUpload = (q.customer_uploaded_documents || []).some(
+              ud => (ud.name || '').toLowerCase() === (cName || '').toLowerCase()
+            )
+            return {
+              name: cName,
+              uploaded: hasUpload || (c.document_uploaded ?? c.uploaded ?? false),
+              status: hasUpload ? 'CUSTOMER_UPLOADED' : (c.status || 'PENDING')
+            }
+          }),
+          citation: m3_c.citations?.[0]?.citation || 'EU Union Customs Code Art 127 advance filing & Low Voltage Directive'
+        }
+      })
+      setCases(dynamicCases)
     })
   }, [])
 

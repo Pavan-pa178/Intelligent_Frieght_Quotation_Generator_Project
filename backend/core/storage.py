@@ -189,6 +189,44 @@ def update_shipments_by_quote_id(qid, update_fields):
             _write_json_file(SHIPMENTS_FILE, shipments)
         return matched_count
 
+def delete_shipment(identifier):
+    if not identifier:
+        return False
+    ident = str(identifier).strip().upper()
+    with _lock:
+        shipments = _read_json_file(SHIPMENTS_FILE)
+        new_shipments = [
+            s for s in shipments
+            if (
+                str(s.get('shipment_id', '')).strip().upper() != ident and
+                str(s.get('id', '')).strip().upper() != ident and
+                str(s.get('tn', '')).strip().upper() != ident and
+                str(s.get('quote_id', '')).strip().upper() != ident and
+                str(s.get('quoteId', '')).strip().upper() != ident
+            )
+        ]
+        deleted = len(new_shipments) < len(shipments)
+        if deleted:
+            _write_json_file(SHIPMENTS_FILE, new_shipments)
+        return deleted
+
+def delete_shipments_by_email(email):
+    if not email:
+        return 0
+    target_email = str(email).strip().lower()
+    with _lock:
+        shipments = _read_json_file(SHIPMENTS_FILE)
+        new_shipments = [s for s in shipments if str(s.get('user_email', '')).strip().lower() != target_email]
+        count = len(shipments) - len(new_shipments)
+        if count > 0:
+            _write_json_file(SHIPMENTS_FILE, new_shipments)
+        return count
+
+def clear_all_shipments():
+    with _lock:
+        _write_json_file(SHIPMENTS_FILE, [])
+        return True
+
 
 # ─── COMPANIES & AGENTS STORAGE ──────────────────────────────────────────────
 

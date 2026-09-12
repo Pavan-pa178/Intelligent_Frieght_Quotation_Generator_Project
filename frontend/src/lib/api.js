@@ -474,8 +474,21 @@ export async function updateUserProfile(payload) {
 
 // ---------------- Shipments ----------------
 
+export function getDeletedShipmentIds() {
+  try {
+    const raw = localStorage.getItem('portline_deleted_shipment_ids')
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
 export async function fetchShipments(email = '') {
+  const deletedShipments = new Set(getDeletedShipmentIds().map(id => String(id).trim().toUpperCase()))
+  const isCleared = localStorage.getItem('portline_shipments_cleared') === 'true'
+
   const getLocalShipments = () => {
+    if (isCleared) return []
     const list = []
     const seen = new Set()
     const targetEmail = (email || '').trim().toLowerCase()
@@ -499,7 +512,7 @@ export async function fetchShipments(email = '') {
                 if (Array.isArray(arr)) {
                   for (const s of arr) {
                     const idKey = (s.tn || s.id || s.shipment_id || '').toUpperCase()
-                    if (idKey && !seen.has(idKey)) {
+                    if (idKey && !seen.has(idKey) && !deletedShipments.has(idKey)) {
                       seen.add(idKey)
                       list.push(s)
                     }
@@ -512,7 +525,10 @@ export async function fetchShipments(email = '') {
       }
     } catch {}
 
-    return list
+    return list.filter(s => {
+      const idKey = (s.tn || s.id || s.shipment_id || '').toUpperCase()
+      return !deletedShipments.has(idKey)
+    })
   }
 
   if (MOCK_MODE) {
@@ -523,13 +539,20 @@ export async function fetchShipments(email = '') {
   try {
     const res = await apiFetch(`/api/v1/shipments/${query}`)
     if (Array.isArray(res)) {
+      const validBackend = res.filter(s => {
+        const idKey = (s.tn || s.id || s.shipment_id || '').toUpperCase()
+        return !deletedShipments.has(idKey)
+      })
+      if (isCleared && validBackend.length === 0) {
+        return []
+      }
       const local = getLocalShipments()
-      const seen = new Set(res.map(s => (s.tn || s.id || s.shipment_id || '').toUpperCase()))
+      const seen = new Set(validBackend.map(s => (s.tn || s.id || s.shipment_id || '').toUpperCase()))
       const extras = local.filter(s => {
         const idKey = (s.tn || s.id || s.shipment_id || '').toUpperCase()
-        return idKey && !seen.has(idKey)
+        return idKey && !seen.has(idKey) && !deletedShipments.has(idKey)
       })
-      return [...res, ...extras]
+      return [...validBackend, ...extras]
     }
     return getLocalShipments()
   } catch {
@@ -543,16 +566,22 @@ export async function clearAllShipments() {
     const toRemove = []
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)
-      if (k && k.startsWith('portline_shipments_')) {
+      if (k && (k.startsWith('portline_shipments_') || k.startsWith('portline_shipment_'))) {
         toRemove.push(k)
       }
     }
     toRemove.forEach(k => localStorage.removeItem(k))
+    localStorage.setItem('portline_shipments_cleared', 'true')
+    localStorage.removeItem('portline_deleted_shipment_ids')
   } catch {}
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('portline_shipment_updated', { detail: { cleared: true } }))
+  }
 
   if (!MOCK_MODE) {
     try {
-      await apiFetch('/api/v1/shipments/', { method: 'DELETE' })
+      await apiFetch('/api/v1/shipments/?confirm=true', { method: 'DELETE' })
     } catch {
       // ignore
     }
@@ -561,6 +590,9 @@ export async function clearAllShipments() {
 }
 
 export async function createShipmentRequest(payload) {
+  try {
+    localStorage.removeItem('portline_shipments_cleared')
+  } catch {}
   if (MOCK_MODE) {
     await delay(30)
     return { ...payload, date: new Date().toISOString().slice(0, 10) }
@@ -588,18 +620,47 @@ export async function cancelShipmentRequest(trackingNumber, reason = 'Cancelled 
 
 export async function deleteShipmentRequest(trackingNumber) {
   if (!trackingNumber) return { ok: true }
-  if (MOCK_MODE) {
-    await delay(30)
-    return { ok: true, trackingNumber }
-  }
+  const cleanTn = trackingNumber.trim().toUpperCase()
+
   try {
-    return await apiFetch('/api/v1/shipments/' + encodeURIComponent(trackingNumber.trim()) + '/', {
-      method: 'DELETE'
-    })
-  } catch (err) {
-    console.warn('Backend shipment delete notice:', err.message)
-    return { ok: true }
+    const deletedIds = getDeletedShipmentIds()
+    if (!deletedIds.includes(cleanTn)) {
+      deletedIds.push(cleanTn)
+      localStorage.setItem('portline_deleted_shipment_ids', JSON.stringify(deletedIds))
+    }
+    // Remove from all local storage shipment keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && (k.startsWith('portline_shipments_') || k === 'portline_customer_shipments')) {
+        try {
+          const raw = localStorage.getItem(k)
+          if (raw) {
+            const arr = JSON.parse(raw)
+            if (Array.isArray(arr)) {
+              const filtered = arr.filter(s => (s.tn || s.id || s.shipment_id || '').toUpperCase() !== cleanTn)
+              localStorage.setItem(k, JSON.stringify(filtered))
+            }
+          }
+        } catch {}
+      }
+    }
+  } catch {}
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('portline_shipment_updated', { detail: { trackingNumber: trackingNumber.trim(), deleted: true } }))
   }
+
+  if (!MOCK_MODE) {
+    try {
+      await apiFetch('/api/v1/shipments/' + encodeURIComponent(trackingNumber.trim()) + '/', {
+        method: 'DELETE'
+      })
+    } catch (err) {
+      console.warn('Backend shipment delete notice:', err.message)
+      return { ok: true }
+    }
+  }
+  return { ok: true, trackingNumber }
 }
 
 export async function trackShipmentRequest(trackingNumber, localShipments = []) {
@@ -621,16 +682,38 @@ export function getRateTable() {
 
 // ---------------- Quotations & Intelligence ----------------
 
-export function getSavedQuotes() {
+export function getDeletedQuoteIds() {
   try {
-    const raw = localStorage.getItem(QUOTES_STORAGE_KEY)
+    const raw = localStorage.getItem('portline_deleted_quote_ids')
     return raw ? JSON.parse(raw) : []
   } catch {
     return []
   }
 }
 
+export function getSavedQuotes() {
+  try {
+    const isCleared = localStorage.getItem('portline_quotes_cleared') === 'true'
+    const raw = localStorage.getItem(QUOTES_STORAGE_KEY)
+    const list = raw ? JSON.parse(raw) : []
+    if (isCleared && list.length === 0) return []
+    const deletedIds = new Set(getDeletedQuoteIds().map(id => String(id).trim().toUpperCase()))
+    return list.filter(q => {
+      const qid = (q.id || '').trim().toUpperCase()
+      return qid && !deletedIds.has(qid)
+    })
+  } catch {
+    return []
+  }
+}
+
 export async function saveQuote(quote) {
+  try {
+    localStorage.removeItem('portline_quotes_cleared')
+    const qid = (quote.id || '').trim().toUpperCase()
+    const deleted = getDeletedQuoteIds().filter(id => id !== qid)
+    localStorage.setItem('portline_deleted_quote_ids', JSON.stringify(deleted))
+  } catch {}
   const existing = getSavedQuotes()
   const updated = [quote, ...existing.filter(q => q.id !== quote.id)]
   localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
@@ -851,8 +934,9 @@ function attachAgentPriceEditsToList(list) {
 }
 
 export async function fetchQuotes(email) {
+  const isCleared = localStorage.getItem('portline_quotes_cleared') === 'true'
+  const deletedIds = new Set(getDeletedQuoteIds().map(id => String(id).trim().toUpperCase()))
   const emailLower = (email || '').trim().toLowerCase()
-  const isDemoEmail = emailLower && DEMO_EMAIL_LIST.some(d => d.toLowerCase() === emailLower)
 
   let list = []
 
@@ -861,11 +945,18 @@ export async function fetchQuotes(email) {
     try {
       const res = await apiFetch(`/api/v1/quotes/${query}`)
       if (Array.isArray(res)) {
-        list = res
+        list = res.filter(q => {
+          const qid = (q.id || '').trim().toUpperCase()
+          return qid && !deletedIds.has(qid)
+        })
       }
     } catch {
       // Backend unavailable, fallback to local storage
     }
+  }
+
+  if (isCleared && list.length === 0) {
+    return []
   }
 
   // Merge with locally saved quotes so any quotes created or updated in the session are not lost
@@ -874,20 +965,10 @@ export async function fetchQuotes(email) {
 
   for (const lq of localQuotes) {
     const lqId = (lq.id || '').trim().toUpperCase()
-    if (lqId && !seenIds.has(lqId)) {
+    if (lqId && !seenIds.has(lqId) && !deletedIds.has(lqId)) {
       if (!emailLower || (lq.user_email || '').trim().toLowerCase() === emailLower) {
         seenIds.add(lqId)
         list.push(lq)
-      }
-    }
-  }
-
-  if (isDemoEmail) {
-    for (const dq of DEMO_QUOTES) {
-      const dqId = (dq.id || '').trim().toUpperCase()
-      if (dqId && !seenIds.has(dqId) && dq.user_email.toLowerCase() === emailLower) {
-        seenIds.add(dqId)
-        list.push(dq)
       }
     }
   }
@@ -904,9 +985,32 @@ export async function deleteQuote(id) {
   if (!id) return { ok: true }
   const qid = id.trim().toUpperCase()
   try {
+    const deletedIds = getDeletedQuoteIds()
+    if (!deletedIds.includes(qid)) {
+      deletedIds.push(qid)
+      localStorage.setItem('portline_deleted_quote_ids', JSON.stringify(deletedIds))
+    }
     const all = getSavedQuotes()
     const updated = all.filter(q => (q.id || '').trim().toUpperCase() !== qid)
     localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(updated))
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && (k.startsWith('portline_quotes_') || k.startsWith('portline_quote_'))) {
+        try {
+          const raw = localStorage.getItem(k)
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) {
+              const filtered = parsed.filter(item => (item.id || '').trim().toUpperCase() !== qid)
+              localStorage.setItem(k, JSON.stringify(filtered))
+            } else if (parsed && (parsed.id || '').trim().toUpperCase() === qid) {
+              localStorage.removeItem(k)
+            }
+          }
+        } catch {}
+      }
+    }
   } catch {}
 
   if (typeof window !== 'undefined') {
@@ -924,22 +1028,14 @@ export async function deleteQuote(id) {
 }
 
 export async function clearAllQuotes() {
-  // Wipe non-demo quotes from localStorage, preserve demo seed quotes
   try {
-    const saved = getSavedQuotes()
-    const demoProtected = saved.filter(q => q._isDemo === true)
-    if (demoProtected.length > 0) {
-      localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(demoProtected))
-    } else {
-      localStorage.removeItem(QUOTES_STORAGE_KEY)
-    }
-  } catch {
     localStorage.removeItem(QUOTES_STORAGE_KEY)
-  }
-  localStorage.removeItem('portline_agent_actions')
-  localStorage.removeItem('portline_agent_messages')
-  localStorage.removeItem('portline_customs_cases')
-  try {
+    localStorage.setItem('portline_quotes_cleared', 'true')
+    localStorage.removeItem('portline_deleted_quote_ids')
+    localStorage.removeItem('portline_agent_actions')
+    localStorage.removeItem('portline_agent_messages')
+    localStorage.removeItem('portline_customs_cases')
+    localStorage.removeItem('portline_agent_price_revisions')
     const toRemove = []
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)
@@ -967,6 +1063,9 @@ export async function clearAllQuotes() {
 export async function fetchQuoteById(id) {
   if (!id) return null
   const normId = id.trim().toUpperCase()
+  const deletedIds = new Set(getDeletedQuoteIds().map(qid => String(qid).trim().toUpperCase()))
+  if (deletedIds.has(normId)) return null
+
   let found = null
 
   if (!MOCK_MODE) {
@@ -1013,21 +1112,31 @@ export async function sendContactMessage(payload) {
 
 // Fetch ALL quotes (for admin panel — all users)
 export async function fetchAllQuotes() {
+  const isCleared = localStorage.getItem('portline_quotes_cleared') === 'true'
+  const deletedIds = new Set(getDeletedQuoteIds().map(id => String(id).trim().toUpperCase()))
   let list = []
   if (!MOCK_MODE) {
     try {
       const res = await apiFetch('/api/v1/quotes/')
       if (Array.isArray(res)) {
-        list = res
+        list = res.filter(q => {
+          const qid = (q.id || '').trim().toUpperCase()
+          return qid && !deletedIds.has(qid)
+        })
       }
     } catch {}
+  }
+
+  // If cleared and backend returned empty, do not resurrect old local quotes!
+  if (isCleared && list.length === 0) {
+    return []
   }
 
   const localSaved = getSavedQuotes()
   const seenIds = new Set(list.map(q => (q.id || '').trim().toUpperCase()))
   for (const lq of localSaved) {
     const lqId = (lq.id || '').trim().toUpperCase()
-    if (lqId && !seenIds.has(lqId)) {
+    if (lqId && !seenIds.has(lqId) && !deletedIds.has(lqId)) {
       seenIds.add(lqId)
       list.push(lq)
     }

@@ -45,15 +45,25 @@ class ShipmentListCreateView(APIView):
 
     def delete(self, request):
         user_email = request.query_params.get('email', '').strip().lower()
+        deleted_count = 0
         try:
             col = get_collection('shipments')
             if col is not None:
                 query = {'user_email': user_email} if user_email else {}
                 res = col.delete_many(query)
-                return Response({'ok': True, 'message': 'Shipments cleared successfully', 'deleted_count': res.deleted_count})
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return Response({'ok': True, 'message': 'Shipments cleared successfully'})
+                deleted_count = res.deleted_count
+        except Exception:
+            pass
+
+        if user_email:
+            storage.delete_shipments_by_email(user_email)
+        else:
+            storage.clear_all_shipments()
+
+        global SEED_SHIPMENTS
+        SEED_SHIPMENTS.clear()
+
+        return Response({'ok': True, 'message': 'Shipments cleared successfully', 'deleted_count': deleted_count})
 
     def post(self, request):
         payload = request.data
@@ -147,16 +157,34 @@ class TrackingDetailView(APIView):
         return Response({'detail': f'Shipment {tn} not found'}, status=status.HTTP_404_NOT_FOUND)
 
     def delete(self, request, tracking_number):
+        import re
         tn = (tracking_number or '').strip().upper()
         deleted = False
+
+        # 1. Delete from disk storage
+        disk_deleted = storage.delete_shipment(tn)
+        if disk_deleted:
+            deleted = True
+
+        # 2. Delete from MongoDB
         try:
             col = get_collection('shipments')
             if col is not None:
-                res = col.delete_one({'tn': {'$regex': f'^{tn}$', '$options': 'i'}})
+                query = {
+                    '$or': [
+                        {'tn': {'$regex': f'^{re.escape(tn)}$', '$options': 'i'}},
+                        {'shipment_id': {'$regex': f'^{re.escape(tn)}$', '$options': 'i'}},
+                        {'id': {'$regex': f'^{re.escape(tn)}$', '$options': 'i'}},
+                        {'quote_id': {'$regex': f'^{re.escape(tn)}$', '$options': 'i'}},
+                        {'quoteId': {'$regex': f'^{re.escape(tn)}$', '$options': 'i'}}
+                    ]
+                }
+                res = col.delete_many(query)
                 if res.deleted_count > 0:
                     deleted = True
         except Exception:
             pass
+
         return Response({'ok': True, 'tracking_number': tracking_number, 'deleted': deleted, 'message': f'Shipment {tracking_number} deleted successfully'}, status=status.HTTP_200_OK)
 
 

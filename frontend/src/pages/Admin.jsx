@@ -12,7 +12,7 @@ import AdminMasterData from '../components/AdminMasterData'
 import { useApp } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
 import {
-  fetchAllQuotes, fetchShipments, clearAllShipments, fetchAllUsers,
+  fetchAllQuotes, fetchShipments, clearAllShipments, deleteShipmentRequest, fetchAllUsers,
   adminCreateUser, adminUpdateUser, adminDeleteUser,
   agentActionOnQuote, clearAllQuotes, deleteQuote,
   fetchCompanies, verifyCompany, createCompany, addCompanyAgent, removeCompanyAgent,
@@ -1496,37 +1496,57 @@ export default function Admin() {
                       {['Tracking #', 'Booked By', 'Route', 'Service', 'Weight', 'Cost', 'Date', 'Status'].map(h => (
                         <th key={h} className="px-4 py-3 font-semibold text-brand-slate text-xs uppercase tracking-wide whitespace-nowrap">{h}</th>
                       ))}
+                      <th className="px-4 py-3 font-semibold text-brand-slate text-xs uppercase tracking-wide whitespace-nowrap text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredShipments.map((s, i) => (
-                      <tr key={s.tn || i} className="border-b border-brand-line/50 hover:bg-brand-cloud/30">
-                        <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-marine">{s.tn || 'N/A'}</td>
-                        <td className="px-4 py-3">
-                          <div className="font-semibold text-brand-navy text-[13px]">
-                            {s.userName || s.destinationContactName || s.customer || (s.user_email ? s.user_email.split('@')[0] : 'Customer')}
-                          </div>
-                          <div className="text-[11px] text-brand-slate">
-                            {s.userCompany || s.destinationCompany || s.user_email || '—'}
-                          </div>
-                          {s.user_email && (s.userCompany || s.destinationCompany) && (
-                            <div className="text-[10px] text-brand-slateLight font-mono">{s.user_email}</div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="text-[13px] font-medium text-brand-navy">{s.from} to {s.to}</div>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-brand-slate">{s.service || 'N/A'}</td>
-                        <td className="px-4 py-3 font-mono text-xs">{s.weight ? `${Number(s.weight).toLocaleString()} kg` : 'N/A'}</td>
-                        <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-navy">
-                          {s.cost ? `Rs.${Number(s.cost).toLocaleString('en-IN')}` : 'N/A'}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-brand-slate">{s.date || 'N/A'}</td>
-                        <td className="px-4 py-3"><StatusBadge status={s.status || 'Booked'} /></td>
-                      </tr>
-                    ))}
+                    {filteredShipments.map((s, i) => {
+                      const shipmentTn = s.tn || s.shipment_id || s.id || ''
+                      return (
+                        <tr key={shipmentTn || i} className="border-b border-brand-line/50 hover:bg-brand-cloud/30">
+                          <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-marine">{s.tn || 'N/A'}</td>
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-brand-navy text-[13px]">
+                              {s.userName || s.destinationContactName || s.customer || (s.user_email ? s.user_email.split('@')[0] : 'Customer')}
+                            </div>
+                            <div className="text-[11px] text-brand-slate">
+                              {s.userCompany || s.destinationCompany || s.user_email || '—'}
+                            </div>
+                            {s.user_email && (s.userCompany || s.destinationCompany) && (
+                              <div className="text-[10px] text-brand-slateLight font-mono">{s.user_email}</div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-[13px] font-medium text-brand-navy">{s.from} to {s.to}</div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-brand-slate">{s.service || 'N/A'}</td>
+                          <td className="px-4 py-3 font-mono text-xs">{s.weight ? `${Number(s.weight).toLocaleString()} kg` : 'N/A'}</td>
+                          <td className="px-4 py-3 font-mono text-xs font-semibold text-brand-navy">
+                            {s.cost ? `Rs.${Number(s.cost).toLocaleString('en-IN')}` : 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-brand-slate">{s.date || 'N/A'}</td>
+                          <td className="px-4 py-3"><StatusBadge status={s.status || 'Booked'} /></td>
+                          <td className="px-4 py-3 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (window.confirm(`Are you sure you want to delete shipment ${shipmentTn}? This cannot be undone.`)) {
+                                  await deleteShipmentRequest(shipmentTn)
+                                  setShipments(prev => prev.filter(item => (item.tn || item.shipment_id || item.id) !== shipmentTn))
+                                  toast(`Shipment ${shipmentTn} deleted successfully.`)
+                                }
+                              }}
+                              title={`Delete shipment ${shipmentTn}`}
+                              className="p-1 rounded text-brand-slateLight hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
                     {filteredShipments.length === 0 && (
-                      <tr><td colSpan={8} className="px-6 py-10 text-center text-sm text-brand-slateLight">No shipments found</td></tr>
+                      <tr><td colSpan={9} className="px-6 py-10 text-center text-sm text-brand-slateLight">No shipments found</td></tr>
                     )}
                   </tbody>
                 </table>

@@ -75,10 +75,24 @@ export function AppProvider({ children }) {
   }, [user])
 
   useEffect(() => {
-    const refreshUserShipments = () => {
+    const refreshUserShipments = (e) => {
+      if (e?.detail?.cleared) {
+        setShipments([])
+        if (user) saveUserShipments(user, [])
+        return
+      }
+      if (e?.detail?.deleted && e.detail.trackingNumber) {
+        const tnDel = e.detail.trackingNumber.trim().toUpperCase()
+        setShipments(prev => {
+          const updated = (Array.isArray(prev) ? prev : []).filter(s => (s.tn || s.shipment_id || s.id || '').trim().toUpperCase() !== tnDel)
+          if (user) saveUserShipments(user, updated)
+          return updated
+        })
+        return
+      }
       if (user && typeof user === 'object' && user.email) {
         const local = loadUserShipments(user)
-        if (local && local.length) setShipments(local)
+        setShipments(local)
         fetchShipments(user.email).then(remote => {
           if (Array.isArray(remote)) {
             setShipments(remote)

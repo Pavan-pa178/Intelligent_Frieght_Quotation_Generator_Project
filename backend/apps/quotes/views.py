@@ -105,10 +105,6 @@ class QuoteListCreateView(APIView):
         return Response(saved or payload, status=status.HTTP_201_CREATED)
 
     def delete(self, request):
-        confirm = request.query_params.get('confirm') or (request.data.get('confirm') if isinstance(request.data, dict) else None)
-        if confirm not in ('true', True):
-            return Response({'ok': False, 'detail': 'Explicit confirmation required (?confirm=true) to clear quotations.'}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
             col = get_collection('quotes')
             if col is not None:
@@ -116,8 +112,9 @@ class QuoteListCreateView(APIView):
         except Exception:
             pass
         storage.clear_all_quotes()
-        global IN_MEMORY_QUOTES
+        global IN_MEMORY_QUOTES, SEED_QUOTES
         IN_MEMORY_QUOTES.clear()
+        SEED_QUOTES.clear()
         return Response({'ok': True, 'message': 'All quotations cleared successfully'})
 
 class QuoteDetailView(APIView):
@@ -141,17 +138,26 @@ class QuoteDetailView(APIView):
         return Response({'detail': f'Quotation {quote_id} not found'}, status=status.HTTP_404_NOT_FOUND)
 
     def delete(self, request, quote_id):
+        import re
         qid = (quote_id or '').strip().upper()
         deleted = False
+
+        # 1. Delete from disk storage
+        disk_deleted = storage.delete_quote_by_id(qid)
+        if disk_deleted:
+            deleted = True
+
+        # 2. Delete from MongoDB
         try:
             col = get_collection('quotes')
             if col is not None:
-                res = col.delete_one({'id': {'$regex': f'^{qid}$', '$options': 'i'}})
+                res = col.delete_many({'id': {'$regex': f'^{re.escape(qid)}$', '$options': 'i'}})
                 if res.deleted_count > 0:
                     deleted = True
         except Exception:
             pass
 
+        # 3. Delete from in-memory pool
         global IN_MEMORY_QUOTES
         before_count = len(IN_MEMORY_QUOTES)
         IN_MEMORY_QUOTES = [q for q in IN_MEMORY_QUOTES if (q.get('id') or '').strip().upper() != qid]
