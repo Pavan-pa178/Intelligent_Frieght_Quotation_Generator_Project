@@ -104,6 +104,10 @@ export default function Agent() {
   const agentEmail = (user?.email || '').toLowerCase()
   const myDeskQuotes = safeQuotes.filter(q => {
     if (q._isDemo) return false // never show demo seed quotes in agent queue
+    
+    // Customer must finalise quote first! Unfinalised draft quotes remain in customer workspace
+    if (!q.is_finalised) return false
+
     const assigned = resolveAssignedAgent(q)
     
     // If admin or supervisor lead agent (agent@portline.in):
@@ -126,9 +130,22 @@ export default function Agent() {
 
   const isBookingComplete = (q) => resolveEffectiveQuoteStatus(q) === 'Booked'
 
+  const isAgentPending = (q) => {
+    if (isBookingComplete(q)) return false
+    const effStatus = resolveEffectiveQuoteStatus(q)
+    if (effStatus === 'Agent Approval Pending' || effStatus === 'Revised Priced Accepted (Agent Approval Pending)') return true
+    if (!q.agent_review || q.agent_review.status === 'pending') {
+      return effStatus !== 'Approved by Agent and Awaiting Customs Clearance' && 
+             !effStatus.includes('Customs') && 
+             !effStatus.includes('Rejected') && 
+             !effStatus.includes('Declined')
+    }
+    return false
+  }
+
   const booked = myDeskQuotes.filter(isBookingComplete)
-  const pending = myDeskQuotes.filter(q => (!q.agent_review || q.agent_review.status === 'pending') && !isBookingComplete(q))
-  const reviewed = myDeskQuotes.filter(q => q.agent_review && q.agent_review.status !== 'pending')
+  const pending = myDeskQuotes.filter(isAgentPending)
+  const reviewed = myDeskQuotes.filter(q => !isAgentPending(q) && !isBookingComplete(q))
 
   const getState = (id) => actionStates[id] || { loading: false, comment: '', showComment: false }
   const setState = (id, patch) => setActionStates(prev => ({ ...prev, [id]: { ...getState(id), ...patch } }))

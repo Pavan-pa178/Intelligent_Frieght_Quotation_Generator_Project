@@ -16,6 +16,7 @@ import {
   deleteQuote,
   customerDecisionOnQuote,
   selectQuoteRoute,
+  finaliseQuote,
   uploadQuoteDocuments,
   fetchBackendMLPrice,
   fetchBackendWeatherAssess,
@@ -468,15 +469,17 @@ export default function QuoteDetail() {
     }
   }
 
+  const [finalising, setFinalising] = useState(false)
+
   const handleSelectRoute = async (route) => {
     // Agents & Admins cannot override customer route selection
     if (isAgentOrAdmin) {
       toast("Route selection is reserved for the customer. As an agent, your role is to validate the customer's preferred route.")
       return
     }
-    // Block if quotation is already approved or accepted
-    if (quote?.status === 'Accepted' || agentApproved) {
-      toast('Route selection is locked because this quotation has already been approved.')
+    // Block if quotation is already finalised or approved
+    if (quote?.is_finalised || quote?.status === 'Accepted' || agentApproved) {
+      toast('Route selection is locked because this quotation has already been finalised and submitted for commercial review.')
       return
     }
 
@@ -490,11 +493,43 @@ export default function QuoteDetail() {
 
     try {
       await selectQuoteRoute(quote.id, route, user?.email || quote.user_email)
-      toast(`Route selected: ${route.carrier} (${route.transitDays}d) — ₹${(route.cost || 0).toLocaleString('en-IN')}. Route request logged.`)
+      toast(`Route selected: ${route.carrier} (${route.transitDays}d) — ₹${(route.cost || 0).toLocaleString('en-IN')}. Click "Finalise Quote" below to submit for agent approval.`)
     } catch (err) {
       toast(`Route selection notice: ${err.message}`)
     } finally {
       setSelectingRouteId(null)
+    }
+  }
+
+  const handleFinaliseQuote = async () => {
+    if (isAgentOrAdmin) {
+      toast("Only the customer can finalise and lock route selection.")
+      return
+    }
+    const currentRoute = quote?.selected_route || recommendedRoutes[0]
+    if (!currentRoute) {
+      toast("Please select a route option first.")
+      return
+    }
+    setFinalising(true)
+    try {
+      await finaliseQuote(quote.id, currentRoute, user)
+      setQuote(prev => ({
+        ...prev,
+        is_finalised: true,
+        finalised_at: new Date().toISOString(),
+        selected_route: currentRoute,
+        carrier: currentRoute.carrier,
+        assigned_carrier: currentRoute.carrier,
+        indicativeTotal: currentRoute.cost || prev.indicativeTotal,
+        status: 'Agent Approval Pending',
+        pipeline_status: 'AGENT_APPROVAL_PENDING'
+      }))
+      toast(`Quotation finalised with ${currentRoute.carrier}! Dispatched to carrier desk for commercial agent approval.`)
+    } catch (err) {
+      toast(`Finalise error: ${err.message}`)
+    } finally {
+      setFinalising(false)
     }
   }
 
@@ -1477,13 +1512,17 @@ export default function QuoteDetail() {
                                 <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500 border border-slate-200 cursor-not-allowed flex items-center gap-1">
                                   <Lock className="h-3 w-3 text-slate-400" /> Option Only
                                 </span>
+                              ) : quote.is_finalised ? (
+                                <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500 border border-slate-200 cursor-not-allowed flex items-center gap-1">
+                                  <Lock className="h-3 w-3 text-slate-400" /> Locked
+                                </span>
                               ) : (
                                 <button
                                   type="button"
-                                  disabled={quote.status === 'Accepted' || agentApproved || Boolean(selectingRouteId)}
+                                  disabled={quote.is_finalised || quote.status === 'Accepted' || agentApproved || Boolean(selectingRouteId)}
                                   onClick={() => handleSelectRoute(r)}
                                   className={`rounded-lg px-3.5 py-2 text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 ${
-                                    quote.status === 'Accepted' || agentApproved
+                                    quote.is_finalised || quote.status === 'Accepted' || agentApproved
                                       ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                                       : selectingRouteId === r.id
                                         ? 'bg-brand-marine text-white cursor-wait'
@@ -1516,6 +1555,55 @@ export default function QuoteDetail() {
                       )
                     })}
                   </div>
+
+                  {/* Finalise Route CTA / Locked Route Status */}
+                  {!quote.is_finalised && !isAgentOrAdmin && (
+                    <div className="mt-4 rounded-xl border-2 border-brand-orange bg-gradient-to-r from-orange-50 via-amber-50 to-orange-50 p-5 shadow-sm">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-full bg-brand-orange px-2.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                              Action Required
+                            </span>
+                            <h4 className="text-sm font-bold text-brand-navy">Finalise Route Selection</h4>
+                          </div>
+                          <p className="text-xs text-brand-slate mt-1">
+                            Selected Carrier: <strong className="text-brand-navy">{quote.selected_route?.carrier || routes[0]?.carrier}</strong>. Click below to lock your route and submit the quotation for commercial agent approval.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={finalising}
+                          onClick={handleFinaliseQuote}
+                          className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand-orange px-5 py-3 text-sm font-bold text-white shadow-md hover:bg-brand-orangeLight transition-all transform hover:-translate-y-0.5 disabled:opacity-50 cursor-pointer"
+                        >
+                          {finalising ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Finalising...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="h-4 w-4 stroke-[2.5]" />
+                              Finalise Quote with {quote.selected_route?.carrier || routes[0]?.carrier}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {quote.is_finalised && (
+                    <div className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50/80 p-4 flex items-center justify-between gap-3 text-xs text-emerald-950 shadow-2xs">
+                      <div className="flex items-center gap-2">
+                        <Lock className="h-4 w-4 text-emerald-700 shrink-0" />
+                        <span><strong>Route Selection Finalised:</strong> Locked with <strong>{quote.selected_route?.carrier || quote.carrier}</strong>. Dispatched for commercial agent review.</span>
+                      </div>
+                      <span className="rounded-full bg-emerald-200 px-3 py-0.5 font-mono text-[10px] font-bold text-emerald-900 border border-emerald-300 shrink-0">
+                        LOCKED
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1555,12 +1643,12 @@ export default function QuoteDetail() {
                     </div>
                   </div>
 
-                  {quote.status === 'Price Accepted (Pending Agent Sign-off)' ? (
-                    <div className="rounded-xl bg-emerald-50 border border-emerald-300 p-5 text-center">
-                      <Clock className="h-9 w-9 text-emerald-600 mx-auto mb-2" />
-                      <h4 className="text-base font-bold text-emerald-950">Revised Price Offer Accepted</h4>
-                      <p className="text-xs text-emerald-800 mt-1">
-                        You agreed to the revised tariff of ₹ {Number(agentPriceEdit?.revised_price || quote.agent_price_edit?.revised_price || 0).toLocaleString('en-IN')}. Awaiting final freight agent sign-off.
+                  {quote.status === 'Revised Priced Accepted (Agent Approval Pending)' || quote.status === 'Price Accepted (Pending Agent Sign-off)' ? (
+                    <div className="rounded-xl bg-teal-50 border border-teal-300 p-5 text-center">
+                      <Clock className="h-9 w-9 text-teal-600 mx-auto mb-2" />
+                      <h4 className="text-base font-bold text-teal-950">Revised Price Offer Accepted</h4>
+                      <p className="text-xs text-teal-800 mt-1">
+                        You agreed to the revised tariff of ₹ {Number(agentPriceEdit?.revised_price || quote.agent_price_edit?.revised_price || 0).toLocaleString('en-IN')}. Awaiting final freight agent sign-off before statutory customs dispatch.
                       </p>
                     </div>
                   ) : isQuoteBooked ? (
@@ -1571,7 +1659,7 @@ export default function QuoteDetail() {
                         Carrier allocation secured with {quote.selected_route?.carrier || 'Carrier'}. Operations team notified.
                       </p>
                     </div>
-                  ) : quote.customer_decision?.status === 'REJECTED' || quote.status === 'Rejected' || quote.status === 'Revised Price Declined' ? (
+                  ) : quote.customer_decision?.status === 'REJECTED' || quote.status === 'Rejected' || quote.status === 'Revised Price Declined' || (quote.status && quote.status.startsWith('Booking decline')) ? (
                     <div className="rounded-xl bg-rose-50 border border-rose-200 p-5 text-center">
                       <XCircle className="h-9 w-9 text-rose-600 mx-auto mb-2" />
                       <h4 className="text-base font-bold text-rose-900">Quotation Declined</h4>
@@ -1600,7 +1688,7 @@ export default function QuoteDetail() {
                         <button
                           type="button"
                           disabled={deciding}
-                          onClick={() => handleCustomerDecision(isReadyForCustomerBooking ? 'booked' : 'accepted')}
+                          onClick={() => handleCustomerDecision(isReadyForCustomerBooking ? 'booked' : 'accept_revision')}
                           className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-7 py-3 text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
                         >
                           <ThumbsUp className="h-4 w-4" />
@@ -1621,9 +1709,17 @@ export default function QuoteDetail() {
                     <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
                       <Clock className="h-5 w-5 text-amber-600 shrink-0" />
                       <span>
-                        {!agentApproved 
-                          ? 'Freight Agent is validating the commercial tariff schedule.' 
-                          : 'Customs Authorities are inspecting trade documentation.'} The booking buttons will activate as soon as approvals are granted.
+                        {!quote.is_finalised
+                          ? 'Please select your preferred carrier route above and click "Finalise Quote" to submit for agent approval.'
+                          : quote.status === 'Approved by Agent and Awaiting Customs Clearance'
+                            ? 'Freight Agent has approved the commercials. Awaiting Statutory Customs Clearance.'
+                            : quote.status === 'Documents Requested by Customs'
+                              ? 'Customs Authorities have requested statutory documents. Please upload required certificates.'
+                              : quote.status === 'Documents Submitted (Pending Customs Sign-off)'
+                                ? 'Customs documents submitted. Awaiting Customs Officer verification and sign-off.'
+                                : !agentApproved 
+                                  ? 'Freight Agent is validating the commercial tariff schedule.' 
+                                  : 'Customs Authorities are inspecting trade documentation.'} The booking buttons will activate as soon as approvals are granted.
                       </span>
                     </div>
                   )}

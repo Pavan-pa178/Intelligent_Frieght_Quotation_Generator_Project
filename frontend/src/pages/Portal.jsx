@@ -54,26 +54,27 @@ export default function Portal() {
     if (e && e.stopPropagation) e.stopPropagation()
     setQuoteDecisionLoading(quoteId)
     try {
-      const isAccept = decision === 'accepted'
+      const isAccept = decision === 'accepted' || decision === 'accept_revision'
       const note = isAccept ? 'Accepted revised price offer via customer dashboard' : 'Declined revised price offer via customer dashboard'
-      const res = await customerDecisionOnQuote(quoteId, decision, note, user)
+      const apiDecision = isAccept ? 'accept_revision' : 'declined'
+      const res = await customerDecisionOnQuote(quoteId, apiDecision, note, user)
       if (res && (res.ok || res.status)) {
-        toast?.(isAccept ? `Quotation ${quoteId} revised offer accepted!` : `Quotation ${quoteId} revised offer declined.`)
+        toast?.(isAccept ? `Quotation ${quoteId} revised offer accepted! Forwarded for agent final approval.` : `Quotation ${quoteId} revised offer declined.`)
         // Update local state
         setQuotes(prev => prev.map(q => {
           if (q.id === quoteId) {
-            const newStatus = isAccept ? 'Price Accepted (Pending Agent Sign-off)' : 'Revised Price Declined'
+            const newStatus = isAccept ? 'Revised Priced Accepted (Agent Approval Pending)' : 'Revised Price Declined'
             const revPrice = (isAccept && (revisedPrice || q.agent_price_edit?.revised_price)) ? Number(revisedPrice || q.agent_price_edit?.revised_price) : null
             return {
               ...q,
               status: newStatus,
-              pipeline_status: newStatus.toUpperCase(),
+              pipeline_status: isAccept ? 'REVISED_PRICED_ACCEPTED' : 'REVISED_PRICE_DECLINED',
               ...(revPrice ? {
                 indicativeTotal: revPrice,
                 original_indicative_total: q.original_indicative_total || q.indicativeTotal
               } : {}),
               customer_decision: {
-                status: decision.toUpperCase(),
+                status: isAccept ? 'ACCEPTED' : 'DECLINED',
                 decided_at: new Date().toISOString(),
                 is_revised_price: true
               }
@@ -95,9 +96,10 @@ export default function Portal() {
   const revisedQuotesNeedingAction = useMemo(() => {
     return quotes.filter(q => {
       const hasEdit = q.agent_price_edit && Number(q.agent_price_edit.revised_price) > 0
-      const decided = Boolean(q.customer_decision?.status)
-      const isAccepted = q.status === 'Accepted' || (q.status || '').includes('Price Accepted')
-      return hasEdit && !decided && !isAccepted
+      const decided = Boolean(q.customer_decision?.status) || Boolean(q.customer_decision_at)
+      const st = q.status || ''
+      const isPendingDecision = st === 'Price Revised (Awaiting Customer Decision)' || (hasEdit && !decided && !st.includes('Accepted') && !st.includes('Declined'))
+      return isPendingDecision && !decided
     })
   }, [quotes])
   const [cancelModalShipment, setCancelModalShipment] = useState(null)
@@ -447,7 +449,9 @@ export default function Portal() {
                       <div className="divide-y divide-brand-line/60">
                         {quotes.map((q) => {
                           const hasEdit = q.agent_price_edit && Number(q.agent_price_edit.revised_price) > 0
-                          const isAwaitingAction = hasEdit && !q.customer_decision?.status && q.status !== 'Accepted'
+                          const decided = Boolean(q.customer_decision?.status) || Boolean(q.customer_decision_at)
+                          const st = q.status || ''
+                          const isAwaitingAction = (resolveEffectiveQuoteStatus(q) === 'Price Revised (Awaiting Customer Decision)' || (hasEdit && !decided && !st.includes('Accepted') && !st.includes('Declined'))) && !decided
 
                           return (
                             <div key={q.id} className="py-4 hover:bg-brand-cloud/40 transition-colors rounded-xl px-3 group">
@@ -491,7 +495,7 @@ export default function Portal() {
                                         <button
                                           type="button"
                                           disabled={quoteDecisionLoading === q.id}
-                                          onClick={(e) => handleCustomerQuickDecision(e, q.id, 'accepted', q.agent_price_edit.revised_price)}
+                                          onClick={(e) => handleCustomerQuickDecision(e, q.id, 'accept_revision', q.agent_price_edit.revised_price)}
                                           className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs transition-colors disabled:opacity-50"
                                         >
                                           <Check className="h-3 w-3" /> Accept

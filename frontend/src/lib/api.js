@@ -651,15 +651,16 @@ export async function saveQuote(quote) {
 }
 
 export function resolveEffectiveQuoteStatus(q) {
-  if (!q) return 'Draft'
+  if (!q) return 'Quotation Pending'
   const custDec = (q.customer_decision?.status || '').toUpperCase()
   const rawStatus = (q.status || '').trim()
   const rawStatusUpper = rawStatus.toUpperCase()
   const pipeStatus = (q.pipeline_status || '').toUpperCase()
   const agentStatus = (q.agent_review?.status || '').toLowerCase()
   const customsStatus = (q.customs_review?.status || '').toLowerCase()
+  const custName = q.customer_decision?.customer_name || q.customer || q.userName || 'Customer'
 
-  // 1. Explicitly Booked by Customer (highest lifecycle state)
+  // 11. Booked (Customer accepted & clicked Accept & Book Quotation)
   if (
     rawStatusUpper === 'BOOKED' ||
     pipeStatus === 'BOOKED' ||
@@ -670,86 +671,118 @@ export function resolveEffectiveQuoteStatus(q) {
     return 'Booked'
   }
 
-  // 2. Specific Rejections
+  // 12. Booking declined by Customer
+  if (
+    rawStatusUpper.includes('BOOKING DECLINE') ||
+    pipeStatus === 'BOOKING_DECLINED' ||
+    custDec === 'DECLINED_BOOKING' ||
+    (custDec === 'REJECTED' && (rawStatusUpper.includes('CUSTOMS') || pipeStatus === 'CUSTOMS_APPROVED'))
+  ) {
+    return `Booking decline by Customer (${custName})`
+  }
+
+  // 7. Rejected by Agent
   if (agentStatus === 'rejected' || rawStatusUpper === 'REJECTED BY AGENT' || pipeStatus === 'AGENT_REJECTED') {
     return 'Rejected by Agent'
   }
+
+  // Statutory Customs Rejection
   if (customsStatus === 'rejected' || rawStatusUpper === 'REJECTED BY CUSTOMS' || pipeStatus === 'CUSTOMS_REJECTED' || q.m3_customs?.compliance_status === 'REJECTED') {
     return 'Rejected by Customs'
   }
-  if (custDec === 'REJECTED' || rawStatusUpper.includes('DECLINED')) {
-    return q.agent_price_edit?.revised_price > 0 ? 'Revised Price Declined' : 'Declined by Customer'
-  }
-  if (rawStatusUpper.includes('REJECT')) {
-    return 'Rejected'
+
+  // 5. Revised Price Declined (Customer declined price revision)
+  if (
+    custDec === 'DECLINED_REVISION' ||
+    custDec === 'REJECTED' ||
+    rawStatusUpper.includes('REVISED PRICE DECLINED')
+  ) {
+    if (q.agent_price_edit?.revised_price > 0 || rawStatusUpper.includes('PRICE REVISED') || rawStatusUpper.includes('REVISED PRICE')) {
+      return 'Revised Price Declined'
+    }
   }
 
-  // 3. Agent Price Revision in progress
+  // 3 & 4. Agent Price Revision in progress or accepted
   if (q.agent_price_edit && Number(q.agent_price_edit.revised_price) > 0) {
-    if (custDec === 'ACCEPTED' || rawStatusUpper.includes('PRICE ACCEPTED')) {
-      // Customer accepted revised price, but agent has not signed off yet
-      if (agentStatus !== 'approved' && !rawStatusUpper.includes('APPROVED')) {
-        return 'Price Accepted (Pending Agent Sign-off)'
+    if (custDec === 'ACCEPTED' || rawStatusUpper.includes('REVISED PRICED ACCEPTED') || rawStatusUpper.includes('PRICE ACCEPTED')) {
+      // 4. Customer accepted revised price, pending final agent approval
+      if (agentStatus !== 'approved' && !rawStatusUpper.includes('APPROVED BY AGENT') && !rawStatusUpper.includes('APPROVED BY CUSTOMS')) {
+        return 'Revised Priced Accepted (Agent Approval Pending)'
       }
-      // If agent has approved, continue down to check Customs approval / Ready for booking
+      // If agent has approved the accepted revision, proceed to customs checks below
     } else if (agentStatus !== 'approved' && !rawStatusUpper.includes('APPROVED')) {
-      // Customer has not yet accepted or rejected the revised price
+      // 3. Agent requested price revision - awaiting customer decision
       return 'Price Revised (Awaiting Customer Decision)'
     }
   }
 
-  // 4. Customs Document Requests & Submissions
+  // 9. Documents Submitted (Pending Customs Sign-off)
   if (
-    rawStatusUpper.includes('SUBMITTED') ||
+    rawStatusUpper.includes('DOCUMENTS SUBMITTED') ||
+    rawStatusUpper.includes('DOCS_SUBMITTED') ||
     pipeStatus === 'DOCS_SUBMITTED' ||
     q.customs_document_request?.status === 'DOCUMENTS_SUBMITTED'
   ) {
     return 'Documents Submitted (Pending Customs Sign-off)'
   }
+
+  // 8. Documents Requested by Customs
   if (
-    rawStatusUpper.includes('DOCUMENT') ||
-    rawStatusUpper.includes('DOC') ||
+    rawStatusUpper.includes('DOCUMENTS REQUESTED') ||
+    rawStatusUpper.includes('CUSTOMS_DOCS_REQUESTED') ||
     pipeStatus === 'CUSTOMS_DOCS_REQUESTED' ||
     q.customs_document_request?.status === 'REQUESTED' ||
     q.customs_document_request?.status === 'PENDING_CUSTOMER_UPLOAD'
   ) {
-    return 'Documents Requested'
+    return 'Documents Requested by Customs'
   }
 
-  // 5. Approved by Customs (Customs has inspected and verified compliance)
+  // 10. Approved by Customs and Awaiting for Customer confirmation
   const isCustomsApproved = Boolean(
     customsStatus === 'approved' ||
     pipeStatus === 'CUSTOMS_APPROVED' ||
     rawStatusUpper === 'APPROVED BY CUSTOMS' ||
+    rawStatusUpper.includes('APPROVED BY CUSTOMS AND AWAITING') ||
     q.m3_customs?.compliance_status === 'APPROVED'
   )
+  if (isCustomsApproved) {
+    return 'Approved by Customs and Awaiting for Customer confirmation'
+  }
+
+  // 6. Approved by Agent and Awaiting Customs Clearance
   const isAgentApproved = Boolean(
     agentStatus === 'approved' ||
     pipeStatus === 'AGENT_APPROVED' ||
     rawStatusUpper === 'AGENT APPROVED' ||
     rawStatusUpper === 'APPROVED BY AGENT' ||
-    rawStatusUpper === 'APPROVED' ||
-    rawStatusUpper === 'ACCEPTED'
+    rawStatusUpper.includes('APPROVED BY AGENT AND AWAITING') ||
+    (rawStatusUpper === 'APPROVED' && !isCustomsApproved)
   )
-
-  if (isCustomsApproved) {
-    return 'Approved by Customs'
-  }
-
-  // 6. Approved by Agent (Customs is pending)
   if (isAgentApproved) {
-    return 'Approved by Agent'
+    return 'Approved by Agent and Awaiting Customs Clearance'
   }
 
-  // 7. Initial state: Agent approval is pending
+  // 2. Agent Approval Pending (Finalised by customer, waiting for Agent review)
   if (
+    q.is_finalised === true ||
+    rawStatusUpper === 'AGENT APPROVAL PENDING' ||
+    pipeStatus === 'AGENT_PENDING' ||
+    pipeStatus === 'AGENT_APPROVAL_PENDING'
+  ) {
+    return 'Agent Approval Pending'
+  }
+
+  // 1. Quotation Pending (Initial state before customer clicks 'Finalise Quote')
+  if (
+    rawStatusUpper === 'QUOTATION PENDING' ||
     rawStatusUpper === 'QUOTED' ||
     rawStatusUpper === 'DRAFT' ||
     rawStatusUpper === 'PENDING' ||
     rawStatusUpper === 'PENDING REVIEW' ||
-    !rawStatus
+    !rawStatus ||
+    !q.is_finalised
   ) {
-    return 'Agent Approval Pending'
+    return 'Quotation Pending'
   }
 
   return rawStatus
@@ -1031,7 +1064,7 @@ export async function agentActionOnQuote(quoteId, action, comment, agentUser) {
     targetQ?.m3_customs?.compliance_status === 'APPROVED'
   )
   const quote_status = action === 'approved'
-    ? (isCustomsAlreadyApproved ? 'Approved by Customs' : 'Approved by Agent')
+    ? (isCustomsAlreadyApproved ? 'Approved by Customs and Awaiting for Customer confirmation' : 'Approved by Agent and Awaiting Customs Clearance')
     : 'Rejected by Agent'
   const pipeStatus = action === 'approved'
     ? (isCustomsAlreadyApproved ? 'CUSTOMS_APPROVED' : 'AGENT_APPROVED')
@@ -1247,31 +1280,54 @@ export async function triggerQuotePipeline(shipmentId, payload = {}) {
   })
 }
 
-// Customer accepts or rejects a quote
+// Customer accepts or rejects a quote, price revision, or final booking
 export async function customerDecisionOnQuote(quoteId, decision, notes = '', customerUser = null) {
   const allSaved = getSavedQuotes()
   const targetQ = allSaved.find(q => (q.id || '').toUpperCase() === (quoteId || '').toUpperCase())
+  const custName = customerUser?.name || targetQ?.customer || 'Customer'
+  const rawStatus = targetQ?.status || ''
+
   const isRevisionAcceptance = Boolean(
     decision === 'accept_revision' ||
-    (targetQ?.status === 'Price Revised (Awaiting Customer Decision)' && decision === 'accepted')
+    (rawStatus.includes('Price Revised') && (decision === 'accepted' || decision === 'accept')) ||
+    (targetQ?.agent_price_edit?.revised_price > 0 && decision === 'accepted' && !targetQ?.customs_review?.status)
   )
   const isDecline = decision === 'rejected' || decision === 'declined'
+  const isCustomsApprovedState = Boolean(
+    rawStatus.includes('Approved by Customs') ||
+    targetQ?.customs_review?.status === 'approved' ||
+    targetQ?.pipeline_status === 'CUSTOMS_APPROVED'
+  )
+  const isDeclineBooking = isDecline && isCustomsApprovedState
+  const isExplicitBooking = Boolean(
+    (decision === 'booked' || decision === 'book' || decision === 'accept_booking') ||
+    (decision === 'accepted' && isCustomsApprovedState)
+  )
 
   let status
-  if (isDecline) {
-    status = (targetQ?.status || '').includes('Price Revised') ? 'Revised Price Declined' : 'Declined by Customer'
-  } else if (isRevisionAcceptance) {
-    status = 'Price Accepted (Pending Agent Sign-off)'
-  } else {
-    // Final booking confirmation by customer
+  if (isRevisionAcceptance) {
+    status = 'Revised Priced Accepted (Agent Approval Pending)'
+  } else if (isDeclineBooking) {
+    status = `Booking decline by Customer (${custName})`
+  } else if (isDecline) {
+    status = (rawStatus.includes('Price Revised') || targetQ?.agent_price_edit?.revised_price > 0)
+      ? 'Revised Price Declined'
+      : `Booking decline by Customer (${custName})`
+  } else if (isExplicitBooking) {
     status = 'Booked'
+  } else {
+    // If not explicit booking and revision was present, treat as revision acceptance
+    status = (targetQ?.agent_price_edit?.revised_price > 0)
+      ? 'Revised Priced Accepted (Agent Approval Pending)'
+      : 'Revised Priced Accepted (Agent Approval Pending)'
   }
 
   const isBooking = status === 'Booked'
 
   const record = {
-    status: isRevisionAcceptance ? 'ACCEPTED' : (isDecline ? 'REJECTED' : 'BOOKED'),
+    status: isRevisionAcceptance ? 'ACCEPTED' : (isDecline ? 'REJECTED' : (isBooking ? 'BOOKED' : 'ACCEPTED')),
     notes,
+    customer_name: custName,
     decided_at: new Date().toISOString(),
     is_revised_price: isRevisionAcceptance,
     is_booking_confirmation: isBooking
@@ -1409,11 +1465,11 @@ export async function customerDecisionOnQuote(quoteId, decision, notes = '', cus
   return apiFetch(`/api/v1/quotes/${quoteId}/customer-decision/`, {
     method: 'POST',
     body: JSON.stringify({
-      decision: isBooking ? 'booked' : (isRevisionAcceptance ? 'accept_revision' : 'rejected'),
-      action: isBooking ? 'booked' : (isRevisionAcceptance ? 'accept_revision' : 'rejected'),
+      decision: isBooking ? 'booked' : (isRevisionAcceptance ? 'accept_revision' : (isDeclineBooking ? 'declined_booking' : 'rejected')),
+      action: isBooking ? 'booked' : (isRevisionAcceptance ? 'accept_revision' : (isDeclineBooking ? 'declined_booking' : 'rejected')),
       notes,
       customer_email: customerUser?.email,
-      customer_name: customerUser?.name
+      customer_name: custName
     }),
   })
 }
@@ -1427,6 +1483,8 @@ export async function selectQuoteRoute(quoteId, route, requestedBy = '') {
     const updated = all.map(q => ((q.id || '').trim().toUpperCase() === targetQid) ? {
       ...q,
       selected_route: route,
+      carrier: route?.carrier || q.carrier,
+      assigned_carrier: route?.carrier || q.assigned_carrier,
       indicativeTotal: route.cost || q.indicativeTotal,
       route_approval_status: 'PENDING_APPROVAL'
     } : q)
@@ -1477,10 +1535,66 @@ export async function selectQuoteRoute(quoteId, route, requestedBy = '') {
   })
 }
 
+// Customer finalises quote with a chosen route: locks route selection and dispatches to carrier agent
+export async function finaliseQuote(quoteId, route, user = null) {
+  if (!quoteId) return { ok: false }
+  const targetQid = quoteId.trim().toUpperCase()
+  const nowStr = new Date().toISOString()
+  const all = getSavedQuotes()
+  const selectedCarrier = route?.carrier || 'Carrier'
+  const cost = route?.cost
+
+  const updated = all.map(q => {
+    if ((q.id || '').trim().toUpperCase() === targetQid) {
+      return {
+        ...q,
+        is_finalised: true,
+        finalised_at: nowStr,
+        selected_route: route ? { ...route, approval_status: 'PENDING_APPROVAL', selected_at: nowStr } : q.selected_route,
+        carrier: selectedCarrier,
+        assigned_carrier: selectedCarrier,
+        ...(cost ? { indicativeTotal: cost } : {}),
+        status: 'Agent Approval Pending',
+        pipeline_status: 'AGENT_APPROVAL_PENDING',
+        route_approval_status: 'PENDING_APPROVAL'
+      }
+    }
+    return q
+  })
+
+  try {
+    localStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(sortQuotesByTime(updated)))
+  } catch {}
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('portline_quote_updated', { detail: { quoteId, finalised: true, route } }))
+  }
+
+  if (!MOCK_MODE) {
+    try {
+      await apiFetch(`/api/v1/quotes/${encodeURIComponent(quoteId)}/select-route/`, {
+        method: 'POST',
+        body: JSON.stringify({
+          route,
+          is_finalised: true,
+          carrier: selectedCarrier,
+          requested_by: user?.email || user?.name || 'Customer'
+        })
+      })
+    } catch (err) {
+      console.warn('Backend finalise quote notice:', err.message)
+    }
+  }
+
+  return { ok: true, quote_id: quoteId, status: 'Agent Approval Pending', carrier: selectedCarrier }
+}
+
 // Customs Officer approves documentation or requests specific documents
 export async function customsActionOnQuote(quoteId, action, { requestedDocs = [], comment = '', officerUser = null } = {}) {
-  const status = action === 'approve' ? 'Approved by Customs' : action === 'reject' ? 'Rejected by Customs' : 'Documents Requested'
-  const pipeline_status = action === 'approve' ? 'CUSTOMS_APPROVED' : action === 'reject' ? 'CUSTOMS_REJECTED' : 'CUSTOMS_DOCS_REQUESTED'
+  const status = action === 'approve'
+    ? 'Approved by Customs and Awaiting for Customer confirmation'
+    : (action === 'reject' ? 'Rejected by Customs' : 'Documents Requested by Customs')
+  const pipeline_status = action === 'approve' ? 'CUSTOMS_APPROVED' : (action === 'reject' ? 'CUSTOMS_REJECTED' : 'CUSTOMS_DOCS_REQUESTED')
   
   // Always update local storage quotes
   try {

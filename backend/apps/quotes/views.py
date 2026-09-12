@@ -311,7 +311,7 @@ class QuoteAgentActionView(APIView):
                     q.get('m3_customs', {}).get('compliance_status') == 'APPROVED'
                 )
             )
-            quote_status = 'Approved by Customs' if is_customs_done else 'Approved by Agent'
+            quote_status = 'Approved by Customs and Awaiting for Customer confirmation' if is_customs_done else 'Approved by Agent and Awaiting Customs Clearance'
             pipeline_status = 'CUSTOMS_APPROVED' if is_customs_done else 'AGENT_APPROVED'
         else:
             quote_status = 'Rejected by Agent'
@@ -364,6 +364,8 @@ class QuoteRouteSelectView(APIView):
         qid = (quote_id or '').strip()
         route = request.data.get('route') or {}
         requested_by = request.data.get('requested_by') or (request.user.email if request.user and request.user.is_authenticated else 'Customer')
+        is_finalised = request.data.get('is_finalised', False)
+        carrier_name = route.get('carrier') or request.data.get('carrier') or ''
 
         if not route or not route.get('carrier'):
             return Response({'detail': 'Valid route payload required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -373,7 +375,7 @@ class QuoteRouteSelectView(APIView):
             **route,
             'requested_by': requested_by,
             'selected_at': now_str,
-            'approval_status': 'PENDING_APPROVAL'
+            'approval_status': 'PENDING_APPROVAL' if is_finalised else 'DRAFT_SELECTED'
         }
 
         cost = route.get('cost')
@@ -381,9 +383,15 @@ class QuoteRouteSelectView(APIView):
         try:
             update_fields = {
                 'selected_route': route_record,
-                'route_approval_status': 'PENDING_APPROVAL',
+                'carrier': carrier_name,
+                'assigned_carrier': carrier_name,
+                'is_finalised': bool(is_finalised),
+                'route_approval_status': 'PENDING_APPROVAL' if is_finalised else 'DRAFT_SELECTED',
                 'route_requested_at': now_str
             }
+            if is_finalised:
+                update_fields['status'] = 'Agent Approval Pending'
+                update_fields['pipeline_status'] = 'AGENT_PENDING'
             if cost:
                 update_fields['indicativeTotal'] = cost
 
@@ -392,7 +400,7 @@ class QuoteRouteSelectView(APIView):
             # Sync linked shipment cost and carrier
             shipments_col = get_collection('shipments')
             if shipments_col is not None:
-                shipment_update = {'carrier': route.get('carrier')}
+                shipment_update = {'carrier': carrier_name}
                 if cost:
                     shipment_update['cost'] = cost
                 query_clauses = [{'quote_id': qid}, {'quoteId': qid}]
@@ -410,6 +418,8 @@ class QuoteRouteSelectView(APIView):
             'ok': True,
             'quote_id': qid,
             'selected_route': route_record,
+            'carrier': carrier_name,
+            'is_finalised': bool(is_finalised),
             'indicativeTotal': cost
         }, status=status.HTTP_200_OK)
 
@@ -443,14 +453,14 @@ class QuoteCustomsActionView(APIView):
                     'notes': officer_notes
                 }
                 # Both Agent and Customs approved -> Quote is ready for customer acceptance
+                status_label = 'Approved by Customs and Awaiting for Customer confirmation'
                 _update_quote_anywhere(qid, {
                     'customs_review': customs_review,
-                    'status': 'Approved by Customs',
+                    'status': status_label,
                     'pipeline_status': 'CUSTOMS_APPROVED',
                     'm3_customs.compliance_status': 'APPROVED',
                     'm3_customs.requires_officer_review': False
                 })
-                status_label = 'Approved by Customs'
 
             elif action == 'request_documents':
                 doc_request = {
@@ -460,12 +470,12 @@ class QuoteCustomsActionView(APIView):
                     'officer_name': officer_name,
                     'status': 'PENDING_CUSTOMER_UPLOAD'
                 }
+                status_label = 'Documents Requested by Customs'
                 _update_quote_anywhere(qid, {
                     'customs_document_request': doc_request,
-                    'status': 'Documents Requested',
+                    'status': status_label,
                     'pipeline_status': 'CUSTOMS_DOCS_REQUESTED'
                 })
-                status_label = 'Documents Requested'
 
             elif action == 'reject':
                 customs_review = {
@@ -619,11 +629,16 @@ class QuoteCustomerDecisionView(APIView):
             quote_status = 'Booked'
             pipeline_status = 'BOOKED'
         elif is_revision_acceptance:
-            quote_status = 'Price Accepted (Pending Agent Sign-off)'
-            pipeline_status = 'PRICE_ACCEPTED_PENDING_AGENT'
+            quote_status = 'Revised Priced Accepted (Agent Approval Pending)'
+            pipeline_status = 'REVISED_PRICED_ACCEPTED'
         else:
-            quote_status = 'Revised Price Declined' if 'PRICE REVISED' in q_status_upper else 'Declined by Customer'
-            pipeline_status = 'REJECTED'
+            cust_name_str = customer_name or 'Customer'
+            if 'PRICE REVISED' in q_status_upper or (q.get('agent_price_edit') and not q.get('customer_decision')):
+                quote_status = 'Revised Price Declined'
+                pipeline_status = 'REVISED_PRICE_DECLINED'
+            else:
+                quote_status = f"Booking decline by Customer ({cust_name_str})"
+                pipeline_status = 'BOOKING_DECLINED'
 
         rev_val = float(q.get('agent_price_edit', {}).get('revised_price', 0)) if q.get('agent_price_edit') else 0
         effective_cost = rev_val if rev_val > 0 else (q.get('indicativeTotal') or 0)

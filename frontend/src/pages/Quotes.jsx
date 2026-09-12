@@ -50,26 +50,27 @@ export default function Quotes() {
     if (e && e.stopPropagation) e.stopPropagation()
     setDecisionLoading(quoteId)
     try {
-      const isAccept = decision === 'accepted'
+      const isAccept = decision === 'accepted' || decision === 'accept_revision'
       const note = isAccept ? 'Accepted revised price offer' : 'Declined revised price offer'
-      const res = await customerDecisionOnQuote(quoteId, decision, note, user)
+      const apiDecision = isAccept ? 'accept_revision' : 'declined'
+      const res = await customerDecisionOnQuote(quoteId, apiDecision, note, user)
       if (res && (res.ok || res.status)) {
-        toast?.(isAccept ? `Quotation ${quoteId} revised offer accepted!` : `Quotation ${quoteId} revised offer declined.`)
+        toast?.(isAccept ? `Quotation ${quoteId} revised offer accepted! Forwarded for agent final approval.` : `Quotation ${quoteId} revised offer declined.`)
         // Update local list
         setQuotes(prev => prev.map(q => {
           if (q.id === quoteId) {
-            const newStatus = isAccept ? 'Price Accepted (Pending Agent Sign-off)' : 'Revised Price Declined'
+            const newStatus = isAccept ? 'Revised Priced Accepted (Agent Approval Pending)' : 'Revised Price Declined'
             const revPrice = (isAccept && q.agent_price_edit?.revised_price > 0) ? Number(q.agent_price_edit.revised_price) : null
             return {
               ...q,
               status: newStatus,
-              pipeline_status: newStatus.toUpperCase(),
+              pipeline_status: isAccept ? 'REVISED_PRICED_ACCEPTED' : 'REVISED_PRICE_DECLINED',
               ...(revPrice ? {
                 indicativeTotal: revPrice,
                 original_indicative_total: q.original_indicative_total || q.indicativeTotal
               } : {}),
               customer_decision: {
-                status: decision.toUpperCase(),
+                status: isAccept ? 'ACCEPTED' : 'DECLINED',
                 decided_at: new Date().toISOString(),
                 is_revised_price: true
               }
@@ -92,9 +93,10 @@ export default function Quotes() {
     if (isElevated) return []
     return quotes.filter(q => {
       const hasEdit = q.agent_price_edit && Number(q.agent_price_edit.revised_price) > 0
-      const decided = Boolean(q.customer_decision?.status)
-      const isAccepted = q.status === 'Accepted' || (q.status || '').includes('Price Accepted')
-      return hasEdit && !decided && !isAccepted
+      const decided = Boolean(q.customer_decision?.status) || Boolean(q.customer_decision_at)
+      const st = q.status || ''
+      const isPendingDecision = st === 'Price Revised (Awaiting Customer Decision)' || (hasEdit && !decided && !st.includes('Accepted') && !st.includes('Declined'))
+      return isPendingDecision && !decided
     })
   }, [quotes, isElevated])
 
@@ -400,7 +402,7 @@ export default function Quotes() {
                           <button
                             type="button"
                             disabled={decisionLoading === q.id}
-                            onClick={(e) => handleCustomerQuickDecision(e, q.id, 'accepted', q.agent_price_edit.revised_price)}
+                            onClick={(e) => handleCustomerQuickDecision(e, q.id, 'accept_revision', q.agent_price_edit.revised_price)}
                             className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs transition-colors disabled:opacity-50"
                           >
                             <Check className="h-3.5 w-3.5 stroke-[2.5]" /> Accept
