@@ -17,7 +17,8 @@ def _enrich_company_stats(companies):
         # Match quotes for this carrier
         matching = []
         for q in all_quotes:
-            q_carrier = str(q.get('carrier') or q.get('selected_route', {}).get('carrier') or q.get('selectedCarrier') or '').strip().lower()
+            sel_route = q.get('selected_route') or {}
+            q_carrier = str(q.get('carrier') or sel_route.get('carrier') or q.get('selectedCarrier') or '').strip().lower()
             if c_name and (c_name in q_carrier or q_carrier in c_name):
                 matching.append(q)
         

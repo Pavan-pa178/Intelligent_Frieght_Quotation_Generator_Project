@@ -35,8 +35,8 @@
       "Ocean FCL",
       "Ocean LCL"
     ],
-    "status": "SUSPENDED",
-    "is_eligible": false,
+    "status": "APPROVED",
+    "is_eligible": true,
     "contract_tier": "Global Alliance Direct Contract",
     "sla_hours": "2h Guaranteed SLA",
     "manager_email": "manager.msc@portline.in",
@@ -196,8 +196,8 @@
       "Air Pharma/Cold Chain",
       "Air Freight"
     ],
-    "status": "SUSPENDED",
-    "is_eligible": false,
+    "status": "APPROVED",
+    "is_eligible": true,
     "contract_tier": "IATA Direct Carrier Integration",
     "sla_hours": "1h Priority SLA",
     "manager_email": "manager.air@portline.in",
@@ -498,8 +498,8 @@
       "Ground FTL",
       "Ground LTL"
     ],
-    "status": "SUSPENDED",
-    "is_eligible": false,
+    "status": "APPROVED",
+    "is_eligible": true,
     "contract_tier": "Tier 1 National Highway Carrier",
     "sla_hours": "1.5h Road SLA",
     "manager_email": "manager.vrllogistics@portline.in",
@@ -526,8 +526,8 @@
       "Ground LTL",
       "Rail Intermodal"
     ],
-    "status": "APPROVED",
-    "is_eligible": true,
+    "status": "SUSPENDED",
+    "is_eligible": false,
     "contract_tier": "Integrated Multimodal Leader",
     "sla_hours": "2h Standard SLA",
     "manager_email": "manager.tci@portline.in",
@@ -625,76 +625,5 @@
         "created_at": "2026-01-15T09:00:00Z"
       }
     ]
-  },
-  {
-    "company_id": "COMP-ZORO-72E2",
-    "name": "zoro",
-    "carrier_key": "zoro",
-    "service_category": "OCEAN",
-    "modes": [
-      "Ocean FCL",
-      "Ocean LCL"
-    ],
-    "status": "APPROVED",
-    "is_eligible": true,
-    "contract_tier": "Tier 1 Strategic Ocean Carrier",
-    "sla_hours": "2h SLA",
-    "manager_email": "manager.zoro@portline.in",
-    "logo_color": "#0A2540",
-    "agents": [],
-    "created_at": "2026-09-25T12:40:38.995592Z"
-  },
-  {
-    "company_id": "COMP-TEST-F98F",
-    "name": "Test Carrier Marine",
-    "carrier_key": "Test Carrier",
-    "service_category": "OCEAN",
-    "modes": [
-      "Ocean FCL"
-    ],
-    "status": "APPROVED",
-    "is_eligible": true,
-    "contract_tier": "Tier 1 Strategic Ocean Carrier",
-    "sla_hours": "2h SLA",
-    "manager_email": "manager.test@portline.in",
-    "logo_color": "#0A2540",
-    "agents": [],
-    "created_at": "2026-09-25T12:43:18.833554Z"
-  },
-  {
-    "company_id": "COMP-HANJ-55C3",
-    "name": "Hanjin Shipping Link",
-    "carrier_key": "Hanjin",
-    "service_category": "OCEAN",
-    "modes": [
-      "Ocean FCL",
-      "Ocean LCL"
-    ],
-    "status": "APPROVED",
-    "is_eligible": true,
-    "contract_tier": "Tier 1 Strategic Ocean Carrier",
-    "sla_hours": "2h SLA",
-    "manager_email": "manager.hanjin@portline.in",
-    "logo_color": "#0A2540",
-    "agents": [],
-    "created_at": "2026-09-25T12:46:46.755721Z"
-  },
-  {
-    "company_id": "COMP-PACS-DEC6",
-    "name": "Pacific Star Shipping",
-    "carrier_key": "PACSTAR",
-    "service_category": "OCEAN",
-    "modes": [
-      "Ocean FCL",
-      "Ocean LCL"
-    ],
-    "status": "APPROVED",
-    "is_eligible": true,
-    "contract_tier": "Tier 1 Strategic Ocean Carrier",
-    "sla_hours": "2h SLA",
-    "manager_email": "",
-    "logo_color": "#0A2540",
-    "agents": [],
-    "created_at": "2026-09-25T12:57:31.403347Z"
   }
 ]

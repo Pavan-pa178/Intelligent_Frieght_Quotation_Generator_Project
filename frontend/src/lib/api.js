@@ -2350,12 +2350,18 @@ export async function triggerMasterSeed(drop = false) {
 
 
 // ---------------- Companies & Agents B2B Management ----------------
+import defaultCompanies from './companies.json'
 
 export async function fetchCompanies(eligibleOnly = false) {
   try {
     const url = eligibleOnly ? '/api/v1/companies/?eligible=true' : '/api/v1/companies/'
     const res = await apiFetch(url)
-    if (Array.isArray(res)) return res
+    if (Array.isArray(res) && res.length > 0) {
+      try {
+        localStorage.setItem('portline_companies', JSON.stringify(res))
+      } catch {}
+      return res
+    }
   } catch (err) {
     console.warn('Backend companies endpoint unavailable, using cached companies:', err.message)
   }
@@ -2365,11 +2371,19 @@ export async function fetchCompanies(eligibleOnly = false) {
     const raw = localStorage.getItem('portline_companies')
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         return eligibleOnly ? parsed.filter(c => c.is_eligible) : parsed
       }
     }
   } catch {}
+
+  // Fallback to pre-seeded default carrier companies (23 verified partner carriers across Ocean, Air, Ground)
+  if (Array.isArray(defaultCompanies) && defaultCompanies.length > 0) {
+    try {
+      localStorage.setItem('portline_companies', JSON.stringify(defaultCompanies))
+    } catch {}
+    return eligibleOnly ? defaultCompanies.filter(c => c.is_eligible) : defaultCompanies
+  }
 
   return []
 }
